@@ -5,7 +5,7 @@
 # http://www.image.ucar.edu/DAReS/DART/DART_download
 #
 # DART $Id$
-
+# example call: tcsh ./init_ensemble_var.csh 2017042700 param.csh
 
 # init_ensemble_var.csh - script that creates perturbed initial
 #                         conditions from the WRF-VAR system.
@@ -15,9 +15,10 @@
 # modified by G. Romine 2011-2018
 
 set initial_date = ${1}
-set paramfile = "/gpfs/data/fs71386/lkugler/DART/scripts/param.csh" #`readlink -f ${2}` # Get absolute path for param.csh from command line arg
+setenv paramfile  ${2}  # `readlink -f $BASE_DIR"/scripts/param.csh"` # Get absolute path for param.csh from command line arg
 source $paramfile
 
+echo "using ${PERTS_DIR}"
 cd ${RUN_DIR}
 
 # KRF Generate the i/o lists in rundir automatically when initializing the ensemble
@@ -58,10 +59,11 @@ ${COPY} ${TEMPLATE_DIR}/input.nml.template input.nml
 ${REMOVE} ${RUN_DIR}/WRF
 ${LINK} ${OUTPUT_DIR}/${initial_date} WRF
 
-set n = 1
+set n = 9
+#set NUM_ENS = 8  # for debug
 while ( $n <= $NUM_ENS )
 
-   echo "  QUEUEING ENSEMBLE MEMBER $n at `date`"
+   echo " 1/2 prepare to ADD PERTURBATIONS FOR ENSEMBLE MEMBER $n at `date`"
 
    mkdir -p ${RUN_DIR}/advance_temp${n}
 
@@ -74,7 +76,7 @@ while ( $n <= $NUM_ENS )
    ${COPY} ${OUTPUT_DIR}/${initial_date}/wrfinput_d01_${gdate[1]}_${gdate[2]}_mean \
            ${RUN_DIR}/advance_temp${n}/wrfvar_output.nc
    sleep 3
-   ${COPY} ${RUN_DIR}/add_bank_perts.ncl ${RUN_DIR}/advance_temp${n}/.
+   ${COPY} ${SHELL_SCRIPTS_DIR}/add_bank_perts.ncl ${RUN_DIR}/advance_temp${n}/.
 
    set cmd3 = "ncl 'MEM_NUM=${n}' 'PERTS_DIR="\""${PERTS_DIR}"\""' ${RUN_DIR}/advance_temp${n}/add_bank_perts.ncl"
    ${REMOVE} ${RUN_DIR}/advance_temp${n}/nclrun3.out
@@ -82,55 +84,19 @@ while ( $n <= $NUM_ENS )
           $cmd3
 EOF
    echo $cmd3 >! ${RUN_DIR}/advance_temp${n}/nclrun3.out.tim   # TJH replace cat above
-
-   cat >! ${RUN_DIR}/rt_assim_init_${n}.csh << EOF
-#!/bin/tcsh
-#
-#SBATCH -J assim_init
-#SBATCH -N 1
-#SBATCH -p mem_0384
-#SBATCH --qos p71386_0384
-#SBATCH --ntasks-per-node 48
-#SBATCH --ntasks-per-core  1
-#SBATCH --account p71386 
-#SBATCH --mail-type=END    # first have to state the type of event to occur 
-#SBATCH --mail-user=lukas.kugler@univie.ac.at   # and then your email address
-# # SBATCH --array 2-4
-
-
-   echo "rt_assim_init_${n}.csh is running in `pwd`"
-
-   cd ${RUN_DIR}/advance_temp${n}
-
-   if (-e wrfvar_output.nc) then
-      echo "Running nclrun3.out to create wrfinput_d01 for member $n at `date`"
-
-      chmod +x nclrun3.out
-      ./nclrun3.out >& add_perts.out
-
-      if !( -z add_perts.err ) then
-         echo "Perts added to member ${n}"
-      else
-         echo "ERROR! Non-zero status returned from add_bank_perts.ncl. Check ${RUN_DIR}/advance_temp${n}/add_perts.err."
-         cat add_perts.err
-         exit
-      endif
-
-      ${MOVE} wrfvar_output.nc wrfinput_d01
-   endif
-
-   cd $RUN_DIR
-
-   echo "Running first_advance.csh for member $n at `date`"
-   ${SHELL_SCRIPTS_DIR}/first_advance.csh $initial_date $n $paramfile
-
-EOF
-
-   sbatch ${RUN_DIR}/rt_assim_init_${n}.csh
-
    @ n++
 
 end
+
+echo "      2/2  Submit advancing ensembles to scheduler  "
+${COPY} ${SHELL_SCRIPTS_DIR}/rt_assim_init.sh ${RUN_DIR}/rt_assim_init.sh
+sed -i 's/$NUM_ENS/'${NUM_ENS}'/g' ${RUN_DIR}/rt_assim_init.sh  # affects size of SLURM job array
+source ${SHELL_SCRIPTS_DIR}/param.csh
+sbatch --export=initial_date=${initial_date},RUN_DIR=${RUN_DIR},SHELL_SCRIPTS_DIR=${SHELL_SCRIPTS_DIR},paramfile=${paramfile} ${RUN_DIR}/rt_assim_init.sh
+
+#   @ n++
+
+# end
 
 exit 0
 

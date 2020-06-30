@@ -70,7 +70,15 @@ $yyyy $mm $dd $hh $nn $ss
 EOF
 # For the MPT execution - ill-behaved on Cheyenne
 # mpirun  ./wrf.exe
+else if ( $SUPER_PLATFORM == 'vsc4' ) then
 
+cat >! $RUN_DIR/advance_temp${emember}/wrf.info << EOF
+${gdatef[2]}  ${gdatef[1]}
+${gdate[2]}   ${gdate[1]}
+$yyyy $mm $dd $hh $nn $ss
+          $domains
+ mpirun -np 6 ./wrf.exe
+EOF
 endif
 
 cd $RUN_DIR
