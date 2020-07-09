@@ -1,3 +1,4 @@
+#!/home/fs71386/lkugler/miniconda3/envs/DART/bin/python
 #!/jetfs/home/lkugler/miniconda3/envs/DART/bin/python
 
 """Add geogrid data to wrfinput
@@ -8,6 +9,7 @@ do not change E, F, HGT_M as they would alter the dynamics and have no impact on
 
 example call:
     ./wrfinput_add_geo.py geo_em.d01.nc wrfinput_d01
+
 """
 import os, sys
 import netCDF4 as nc
@@ -15,6 +17,7 @@ import netCDF4 as nc
 
 geo_data_file = sys.argv[1]  # '/home/fs71386/lkugler/compile_WRF/WPS-release-v4.2/geo_em.d01.nc'
 wrfinput_file = sys.argv[2]  # '/home/fs71386/lkugler/DART/wrfinput_d01'
+
 
 geo_ds = nc.Dataset(geo_data_file, 'r')
 wrfinp_ds = nc.Dataset(wrfinput_file, 'r+')
@@ -47,8 +50,6 @@ fields_new = ["XLAT",     "XLONG",      "CLAT",
                 "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
 
 for old, new in zip(fields_old, fields_new):
-    if 'MAPFAC' in old:
-        continue
     print(old, new)
     print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
     wrfinp_ds.variables[new][:] = geo_ds.variables[old][:]
@@ -56,4 +57,3 @@ for old, new in zip(fields_old, fields_new):
 
 wrfinp_ds.close()
 geo_ds.close()
-

@@ -15,21 +15,21 @@
 # module load mpt          # set this appropriately #%%%#
 # module load nco          # set this appropriately #%%%#
 # module load ncl/6.6.2    # set this appropriately #%%%#
-conda activate DART
+#conda activate DART
 
 #  Set the assimilation parameters
-set NUM_ENS            = 50
+set NUM_ENS            = 20
 set ASSIM_INT_MINUTES  = 0   # 0 means use ASSIM_INT_HOURS
 set ASSIM_INT_HOURS    = 6   # ignored if ASSIM_INT_MINUTES > 0
 set IC_PERT_SCALE      = 0.25
-set ADAPTIVE_INFLATION = 1   # set to 1 if using adaptive inflaton to tell the scripts to look for the files
+set ADAPTIVE_INFLATION = 0   # set to 1 if using adaptive inflaton to tell the scripts to look for the files
 set NUM_DOMAINS        = 1
 
 #  Directories where things are run
 #  IMPORTANT : Scripts provided rely on this directory structure and these directory names relative to BASE_DIR.
 #              Do not change, otherwise tutorial will fail.    
-set BASE_DIR         = /gpfs/data/fs71386/lkugler/DART     # set this appropriately #%%%#
-set RUN_DIR          = ${BASE_DIR}/rundir
+set BASE_DIR         = /gpfs/data/fs71386/lkugler/DART-WRF     # set this appropriately #%%%#
+setenv RUN_DIR         ${BASE_DIR}/rundir
 set TEMPLATE_DIR     = ${BASE_DIR}/template
 set OBSPROC_DIR      = ${BASE_DIR}/obsproc
 set OUTPUT_DIR       = ${BASE_DIR}/output
@@ -39,7 +39,7 @@ set OBS_DIAG_DIR     = ${BASE_DIR}/obs_diag
 set PERTS_DIR        = ${BASE_DIR}/perts
 
 #  Directories that can be used by many things
-set SHELL_SCRIPTS_DIR = ${BASE_DIR}/scripts
+setenv  SHELL_SCRIPTS_DIR ${BASE_DIR}/scripts
 set DART_DIR          = /home/fs71386/lkugler/DART           # set this appropriately #%%%#
 set WRF_DM_SRC_DIR    = /home/fs71386/lkugler/compile/WRF-4.1.5              # set this appropriately #%%%#
 set WPS_SRC_DIR       = /home/fs71386/lkugler/compile/WPS-release-v4.2                      # set this appropriately #%%%# 
@@ -47,7 +47,7 @@ set VAR_SRC_DIR       = /home/fs71386/lkugler/compile/WRFDA           # set this
 
 # for generating wrf template files
 set GEO_FILES_DIR     = /home/fs71386/lkugler/compile/WPS-release-v4.2        # set this appropriately #%%%#
-set GRIB_DATA_DIR     = /gpfs/data/fs71386/lkugler/DART/icbc/grib_data   # set this appropriately #%%%#
+set GRIB_DATA_DIR     = /gpfs/data/fs71386/lkugler/DART-WRF/icbc/grib_data   # set this appropriately #%%%#
 set GRIB_SRC          = 'GFS'                         # set this appropriately #%%%#
 
 # list of variables for extraction and cycling

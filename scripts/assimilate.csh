@@ -33,8 +33,8 @@ else if ( $SUPER_PLATFORM == 'cheyenne' ) then
    limit stacksize unlimited
    mpiexec_mpt dplace -s 1 ./filter || exit 1
 
-else if ( $SUPER_PLATFORM == 'slurm' ) then
-   mpirun -np 48 ./filter || exit 1
+else if ( $SUPER_PLATFORM == 'vsc4' ) then
+   mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-47 -np 48 ./filter || exit 1
 
 endif
 

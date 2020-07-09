@@ -1,11 +1,12 @@
-#!/bin/tcsh
+#!/bin/csh
 #
 # DART software - Copyright UCAR. This open source software is provided
 # by UCAR, "as is", without charge, subject to all terms of use at
 # http://www.image.ucar.edu/DAReS/DART/DART_download
 #
 # DART $Id$
-
+#set -e
+#set -u
 
 if ( $#argv > 0 ) then
    set n     = ${1}   # pass in the ensemble member number
@@ -20,36 +21,39 @@ else # values come from environment variables   #TJH If these are not set ....
 endif
 source $paramfile
 
+echo "prep_ic.csh using n=$n datep=$datep dn=$dn paramfile=$paramfile"
 
 if ( $dn == 1 ) then
-
-   set num_vars = $#cycle_vars_a    # defined in paramfile
+   set num_vars = $#cycle_vars_a
    set cycle_str = ''   # these are variables we want to cycle
    set i = 1
    while ( $i < $num_vars )
       set cycle_str = `echo ${cycle_str}$cycle_vars_a[$i],`
-      @ i ++
+      @ i++
    end
    set cycle_str = `echo ${cycle_str}$cycle_vars_a[$num_vars]`
 
 else   # larger domain numbers use a different list of cycled variables (includes radar)
 
-   set num_vars = $#cycle_vars_b    # defined in paramfile
+   set num_vars = $cycle_vars_a    # defined in paramfile
    set cycle_str = ''   # these are variables we want to cycle
    set i = 1
-   while ( $i < $num_vars )
-      set cycle_str = `echo ${cycle_str}$cycle_vars_b[$i],`
+   while ( { $i < $num_vars } )
+      set cycle_str = `echo ${cycle_str}$cycle_vars_a[$i],`
       @ i ++
    end
-   set cycle_str = `echo ${cycle_str}$cycle_vars_b[$num_vars]`
 
+   set cycle_str = `echo ${cycle_str}$cycle_vars_b[$num_vars]`
+   echo ${cycle_str}
 endif
 
 set ensstring = `printf %04d $n`
 set dchar     = `printf %02d $dn`
-# echo "putting cycle vars from  \
-#          ${OUTPUT_DIR}/${datep}/PRIORS/prior_d${dchar}.${ensstring} \
-#          into  ${RUN_DIR}/advance_temp${n}/wrfinput_d${dchar}"
+
+echo ncks -A -v ${cycle_str} \
+          ${OUTPUT_DIR}/${datep}/PRIORS/prior_d${dchar}.${ensstring} \
+          ${RUN_DIR}/advance_temp${n}/wrfinput_d${dchar}
+
 ncks -A -v ${cycle_str} \
           ${OUTPUT_DIR}/${datep}/PRIORS/prior_d${dchar}.${ensstring} \
           ${RUN_DIR}/advance_temp${n}/wrfinput_d${dchar}
@@ -62,3 +66,4 @@ exit 0
 # $URL$
 # $Revision$
 # $Date$
+

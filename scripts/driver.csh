@@ -22,14 +22,14 @@
 #   run as: nohup csh driver.csh 2017042706 param.csh >& run.log &
 ########################################################################
 # Set the correct values here
-set paramfile = "/jetfs/home/lkugler/DART-WRF/scripts/param.csh"  # `readlink -f ${2}` # Get absolute path for param.csh from command line arg
-set datefnl   =  2017042712 # target date   YYYYMMDDHH  # set this appropriately #%%%#
+set paramfile = `readlink -f ${2}`  #  # Get absolute path for param.csh from command line arg
+set datefnl   =  2007073006 # target date   YYYYMMDDHH  # set this appropriately #%%%#
+
 ########################################################################
 # Likely do not need to change anything below
 ########################################################################
-
+conda activate DART
 source $paramfile
-
 echo `uname -a`
 cd ${RUN_DIR}
 ln -sf ${DART_DIR}/models/wrf/work/filter .
@@ -179,7 +179,6 @@ while ( 1 == 1 )
 
    # Copy the inflation files from the previous time, update for domains
    #TJH ADAPTIVE_INFLATION comes from scripts/param.csh but is disjoint from input.nml
-
    if ( $ADAPTIVE_INFLATION == 1 ) then
       # Create the home for inflation and future state space diagnostic files
       # Should try to check each file here, but shortcutting for prior (most common) and link them all
@@ -268,10 +267,31 @@ while ( 1 == 1 )
       qsub assimilate.csh
 
       set this_filter_runtime = $CFILTER_TIME
-   else if ( $SUPER_PLATFORM == 'slurm' ) then
+   else if ( $SUPER_PLATFORM == 'none' ) then
       echo "csh ${SHELL_SCRIPTS_DIR}/assimilate.csh ${datea} nan ${paramfile}"
       csh ${SHELL_SCRIPTS_DIR}/assimilate.csh ${datea} nan ${paramfile}
       set this_filter_runtime = $CFILTER_TIME
+
+   else if ( $SUPER_PLATFORM == 'vsc4' ) then
+      
+      echo "2i\"                                                                             >! script.sed
+      echo "#=================================================================\"             >> script.sed
+      echo "#SBATCH -J assimilate\"                                                          >> script.sed
+      echo "#SBATCH -N 1\"                                                                   >> script.sed
+      echo "#SBATCH -p mem_0384\"                                                            >> script.sed
+      echo "#SBATCH -p mem_0384\"                                                            >> script.sed
+      echo "#SBATCH --account p71386\"                                                       >> script.sed
+      echo "#SBATCH --time=30\"                                                              >> script.sed
+      echo "#SBATCH --ntasks-per-core  1\"                                                   >> script.sed
+      echo "#SBATCH --ntasks-per-node 48\"                                                   >> script.sed
+      echo "#================================================================="              >> script.sed
+      echo 's%${1}%'"${datea}%g"                                                             >> script.sed
+      echo 's%${3}%'"${paramfile}%g"                                                         >> script.sed
+      sed -f script.sed ${SHELL_SCRIPTS_DIR}/assimilate.csh >! assimilate.csh
+
+      sbatch assimilate.csh
+
+      set this_filter_runtime = 60  # minutes
    endif
 
    cd $RUN_DIR   # make sure we are still in the right place
@@ -429,6 +449,24 @@ while ( 1 == 1 )
          sed -f script.sed ${SHELL_SCRIPTS_DIR}/assim_advance.csh >! assim_advance_mem${n}.csh
          qsub assim_advance_mem${n}.csh
 
+    else if ( $SUPER_PLATFORM == 'vsc4' ) then
+
+      echo "2i\"                                                                             >! script.sed
+      echo "#=================================================================\"             >> script.sed
+      echo "#SBATCH -J assimilate\"                                                          >> script.sed
+      echo "#SBATCH -N 1\"                                                                   >> script.sed
+      echo "#SBATCH -p mem_0384\"                                                            >> script.sed
+      echo "#SBATCH -p mem_0384\"                                                            >> script.sed
+      echo "#SBATCH --account p71386\"                                                       >> script.sed
+      echo "#SBATCH --time=30\"                                                              >> script.sed
+      echo "#SBATCH --ntasks-per-core  1\"                                                   >> script.sed
+      echo "#================================================================="              >> script.sed
+      echo 's%${1}%'"${datea}%g"                                                             >> script.sed
+      echo 's%${3}%'"${paramfile}%g"                                                         >> script.sed
+
+         sed -f script.sed ${SHELL_SCRIPTS_DIR}/assim_advance.csh >! assim_advance_mem${n}.csh
+         sbatch assim_advance_mem${n}.csh
+     
       endif
       @ n++
 
@@ -559,12 +597,12 @@ while ( 1 == 1 )
 
       #  Prep data for archive
       cd ${OUTPUT_DIR}/${datea}
-      gzip -f wrfinput_d*_${gdate[1]}_${gdate[2]}_mean wrfinput_d*_${gdatef[1]}_${gdatef[2]}_mean wrfbdy_d*_mean
-      tar -cvf retro.tar obs_seq.out wrfin*.gz wrfbdy_d*.gz
-      tar -rvf dart_data.tar obs_seq.out obs_seq.final wrfinput_d*.gz wrfbdy_d*.gz \
-                            Inflation_input/* logs/* *.dat input.nml
-      ${REMOVE} wrfinput_d*_${gdate[1]}_${gdate[2]}_mean.gz wrfbdy_d*.gz
-      gunzip -f wrfinput_d*_${gdatef[1]}_${gdatef[2]}_mean.gz
+      #gzip -f wrfinput_d*_${gdate[1]}_${gdate[2]}_mean wrfinput_d*_${gdatef[1]}_${gdatef[2]}_mean wrfbdy_d*_mean
+      #tar -cvf retro.tar obs_seq.out wrfin*.gz wrfbdy_d*.gz
+      #tar -rvf dart_data.tar obs_seq.out obs_seq.final wrfinput_d*.gz wrfbdy_d*.gz \
+      #                      Inflation_input/* logs/* *.dat input.nml
+      #${REMOVE} wrfinput_d*_${gdate[1]}_${gdate[2]}_mean.gz wrfbdy_d*.gz
+      #gunzip -f wrfinput_d*_${gdatef[1]}_${gdatef[2]}_mean.gz
 
       cd $RUN_DIR
       ${MOVE} ${RUN_DIR}/assim*.o*            ${OUTPUT_DIR}/${datea}/logs/.
