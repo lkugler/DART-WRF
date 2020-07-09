@@ -20,7 +20,6 @@ else # values come from environment variables   #TJH If these are not set ....
 endif
 source $paramfile
 
-echo "prep_ic.csh using n=$n datep=$datep dn=$dn paramfile=$paramf"
 
 if ( $dn == 1 ) then
 
@@ -32,7 +31,6 @@ if ( $dn == 1 ) then
       @ i ++
    end
    set cycle_str = `echo ${cycle_str}$cycle_vars_a[$num_vars]`
-   echo ${cycle_str}
 
 else   # larger domain numbers use a different list of cycled variables (includes radar)
 
@@ -44,13 +42,14 @@ else   # larger domain numbers use a different list of cycled variables (include
       @ i ++
    end
    set cycle_str = `echo ${cycle_str}$cycle_vars_b[$num_vars]`
-   echo ${cycle_str}
 
 endif
 
 set ensstring = `printf %04d $n`
 set dchar     = `printf %02d $dn`
-
+# echo "putting cycle vars from  \
+#          ${OUTPUT_DIR}/${datep}/PRIORS/prior_d${dchar}.${ensstring} \
+#          into  ${RUN_DIR}/advance_temp${n}/wrfinput_d${dchar}"
 ncks -A -v ${cycle_str} \
           ${OUTPUT_DIR}/${datep}/PRIORS/prior_d${dchar}.${ensstring} \
           ${RUN_DIR}/advance_temp${n}/wrfinput_d${dchar}

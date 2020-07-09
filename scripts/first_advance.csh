@@ -52,7 +52,7 @@ if ( $SUPER_PLATFORM == 'yellowstone' ) then
  mpirun.lsf ./wrf.exe
 EOF
 
-else if ( $SUPER_PLATFORM == 'vsc4' ) then
+else if ( $SUPER_PLATFORM == 'slurm' ) then
 
    cat >! $RUN_DIR/advance_temp${emember}/wrf.info << EOF
  ${gdatef[2]}  ${gdatef[1]}
@@ -86,8 +86,8 @@ echo filter_restart_d01.${icnum}   >> ${RUN_DIR}/filter_control${icnum}
 echo prior_d01.${icnum}            >> ${RUN_DIR}/filter_control${icnum}
 
 #  integrate the model forward in time
-echo "${RUN_DIR}/new_advance_model.csh ${emember} 1 filter_control${icnum} $paramfile"
-${RUN_DIR}/new_advance_model.csh ${emember} 1 filter_control${icnum} $paramfile
+echo "${RUN_DIR}/advance_model.csh ${emember} 1 filter_control${icnum} $paramfile"
+${RUN_DIR}/advance_model.csh ${emember} 1 filter_control${icnum} $paramfile
 ${REMOVE} ${RUN_DIR}/filter_control${icnum}
 
 # move the output to the appropriate directory

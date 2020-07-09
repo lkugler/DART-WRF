@@ -22,7 +22,7 @@
 #   run as: nohup csh driver.csh 2017042706 param.csh >& run.log &
 ########################################################################
 # Set the correct values here
-set paramfile = "/gpfs/data/fs71386/lkugler/DART/scripts/param.csh"  # `readlink -f ${2}` # Get absolute path for param.csh from command line arg
+set paramfile = "/jetfs/home/lkugler/DART-WRF/scripts/param.csh"  # `readlink -f ${2}` # Get absolute path for param.csh from command line arg
 set datefnl   =  2017042712 # target date   YYYYMMDDHH  # set this appropriately #%%%#
 ########################################################################
 # Likely do not need to change anything below
@@ -32,6 +32,7 @@ source $paramfile
 
 echo `uname -a`
 cd ${RUN_DIR}
+ln -sf ${DART_DIR}/models/wrf/work/filter .
 
 #  First determine the appropriate analysis date
 
@@ -88,7 +89,7 @@ while ( 1 == 1 )
    else if ( $SUPER_PLATFORM == 'cheyenne' ) then
       set ic_queue = "economy"
       set sub_command = "qsub -l select=1:ncpus=2:mpiprocs=36:mem=5GB -l walltime=00:03:00 -q ${ic_queue} -A ${CNCAR_GAU_ACCOUNT} -j oe -N icgen "
-   else if ( $SUPER_PLATFORM == 'vsc4' ) then
+   else if ( $SUPER_PLATFORM == 'slurm' ) then
       set sub_command = ""
    endif
 
@@ -124,11 +125,12 @@ while ( 1 == 1 )
    #        for their system and/or production.
 
    set n = 1
-   while ( $n <= $NUM_ENS )
+   while ( $n <= 1) #$NUM_ENS )
       if ( $SUPER_PLATFORM == 'cheyenne' ) then   # can't pass along arguments in the same way
          $sub_command -v mem_num=${n},date=${datep},domain=${domains},paramf=${paramfile} ${SHELL_SCRIPTS_DIR}/prep_ic.csh
       else
-         ${SHELL_SCRIPTS_DIR}/prep_ic.csh ${n} ${datep} ${dn} ${paramfile}
+         echo "${SHELL_SCRIPTS_DIR}/prep_ic.csh ${n} ${datep} ${domains} ${paramfile}"
+         ${SHELL_SCRIPTS_DIR}/prep_ic.csh ${n} ${datep} ${domains} ${paramfile}
       endif
       @ n++
    end  # loop through ensemble members
@@ -141,7 +143,7 @@ while ( 1 == 1 )
       set dchar = `echo $dn + 100 | bc | cut -b2-3`
       set n = 1
       set loop = 1
-      while ( $n <= $NUM_ENS )
+      while ( $n <= 1) #$NUM_ENS )
          if (  -e    ${RUN_DIR}/ic_d${dchar}_${n}_ready) then
             ${REMOVE} ${RUN_DIR}/ic_d${dchar}_${n}_ready
             @ n++
@@ -266,7 +268,10 @@ while ( 1 == 1 )
       qsub assimilate.csh
 
       set this_filter_runtime = $CFILTER_TIME
-
+   else if ( $SUPER_PLATFORM == 'slurm' ) then
+      echo "csh ${SHELL_SCRIPTS_DIR}/assimilate.csh ${datea} nan ${paramfile}"
+      csh ${SHELL_SCRIPTS_DIR}/assimilate.csh ${datea} nan ${paramfile}
+      set this_filter_runtime = $CFILTER_TIME
    endif
 
    cd $RUN_DIR   # make sure we are still in the right place
