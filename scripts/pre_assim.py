@@ -1,11 +1,11 @@
-
 import os, sys, shutil
 import datetime as dt
 from config.cfg import exp, cluster
-from utils import symlink, copy_scp_srvx8, copy
+from utils import symlink, copy_scp_srvx8, copy, sed_inplace
 
 assim_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 background_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
+exppath_firstguess = str(sys.argv[3])
 
 #if cluster.name != 'srvx8':
 #    copy = copy_scp_srvx8  # use scp
@@ -15,11 +15,11 @@ for iens in range(1, exp.n_ens+1):
     #wrfout_run = cluster.wrf_rundir(iens) + time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
 
     print('link wrfout file to DART background file')
-    wrfout_run = cluster.archivedir()+background_init_time.strftime('/%Y-%m-%d_%H:%M/')  \
+    wrfout_run = exppath_firstguess+background_init_time.strftime('/%Y-%m-%d_%H:%M/')  \
                  +str(iens)+'/'+assim_time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
     dart_ensdir = cluster.dartrundir+'/advance_temp'+str(iens)
     wrfout_dart = dart_ensdir+'/wrfout_d01'
-    
+
     os.makedirs(dart_ensdir, exist_ok=True)
     print('linking', wrfout_run, 'to', wrfout_dart)
     symlink(wrfout_run, wrfout_dart)
@@ -49,3 +49,5 @@ os.system('rm -rf '+cluster.dartrundir+'/output_mean*')
 os.system('rm -rf '+cluster.dartrundir+'/output_sd*')
 os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
 
+print('replace measurement error with obs error for assimilation')  # FIXME !!! temporary only
+sed_inplace(cluster.dartrundir+'/obs_seq.out', '9.000000000000000E-004', '0.04')

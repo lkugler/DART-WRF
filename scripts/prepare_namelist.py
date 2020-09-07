@@ -1,4 +1,3 @@
-
 import os, sys, shutil
 import datetime as dt
 
@@ -8,13 +7,14 @@ from utils import sed_inplace, copy, symlink
 
 def run(cluster, iens, begin, end):
     rundir = cluster.wrf_rundir(iens)
-
+    print(rundir)
     copy(cluster.namelist, rundir+'/namelist.input')
 
     sed_inplace(rundir+'/namelist.input', '<dx>', str(int(exp.model_dx)))
     sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
-    
+
     archdir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/')
+    print('namelist for run from', begin, end, 'output to', archdir)
     sed_inplace(rundir+'/namelist.input', '<archivedir>', archdir)
     os.makedirs(archdir, exist_ok=True)
 
@@ -32,6 +32,5 @@ if __name__ == '__main__':
     end = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
 
     print('prepare namelists for all ens members')
-    print('begin', begin, 'end', end)
     for iens in range(1, exp.n_ens+1):
         run(cluster, iens, begin, end)

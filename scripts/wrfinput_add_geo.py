@@ -1,6 +1,3 @@
-#!/home/fs71386/lkugler/miniconda3/envs/DART/bin/python
-#!/jetfs/home/lkugler/miniconda3/envs/DART/bin/python
-
 """Add geogrid data to wrfinput
 this is needed for DART, but not provided by ideal.exe
 
@@ -13,6 +10,7 @@ example call:
 """
 import os, sys
 import netCDF4 as nc
+
 from config.cfg import exp, cluster
 
 def run(geo_data_file, wrfinput_file):

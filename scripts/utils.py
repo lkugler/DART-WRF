@@ -1,6 +1,12 @@
-
 import os, sys, shutil, glob
-copy = shutil.copy
+#copy = shutil.copy
+
+def copy(src, dst):
+    try:
+        os.remove(dst)
+    except:
+        pass
+    shutil.copy(src, dst)
 
 def mkdir(path):
     os.system('mkdir -p '+path)
@@ -25,6 +31,10 @@ def symlink(src, dst):
     except Exception as e:
         pass
     os.symlink(src, dst)
+
+def link_contents(src, dst):
+    for f in os.listdir(src):
+        symlink(src+'/'+f, dst+'/'+f)
 
 def copy_scp_srvx8(src, dst):
     os.system('scp '+src+' a1254888@srvx8.img.univie.ac.at:'+dst)
@@ -54,5 +64,3 @@ def sed_inplace(filename, pattern, repl):
 
 def append_file(f_main, f_gets_appended):
     os.system('cat '+f_gets_appended+' >> '+f_main)
-
-
