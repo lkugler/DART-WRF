@@ -1,11 +1,14 @@
 # DART-WRF
 
-This code runs an OSSE with DART and WRF on a cluster with SLURM.
+This code runs an Ensemble Data Assimilation system with the software packages DART and WRF. All workflow steps are submitted to the cluster manager SLURM, which takes care of the dependencies.
 
-- readable: see what it does at first glance
-- flexible: schedule jobs in python or any other language
-- Slurm-aware: functions return a SLURM ID `id1 = function()`, to start another function as soon as the one before returned `function2(depends_on=id1)` thanks to ![brentp/slurmpy](https://github.com/brentp/slurmpy).
+- Why should I use it?
+  - It's pythonic: see what it does at first glance, modular, flexible
+  - It handles dependencies using SLURM without 'sleeping loops of the main script'. 
+Functions return a SLURM ID which can be used to trigger the start of another function (interface by [brentp/slurmpy](https://github.com/brentp/slurmpy)).
 
+- Can I use it for real weather?
+  -  Yes, but you need to [convert your observations into DART format.](https://dart.ucar.edu/pages/Observations.html#obs_real)
 
 ### A possible workflow:
 `scheduler.py`
