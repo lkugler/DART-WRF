@@ -31,7 +31,7 @@
    async                    = 0,
    adv_ens_command          = "../shell_scripts/advance_model.csh",
    ens_size                 = <n_ens>,
-   obs_sequence_in_name     = "obs_seq.out",
+   obs_sequence_in_name     = "obs_seq_all.out",
    obs_sequence_out_name    = "obs_seq.final",
    input_state_file_list    = "input_list.txt"
    output_state_file_list   = "output_list.txt"

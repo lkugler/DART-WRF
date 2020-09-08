@@ -7,12 +7,14 @@ class ExperimentConfiguration(object):
         pass
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.11_LMU_filter2"
+exp.expname = "exp_v1.11_LMU_filter_domainobs"
 exp.model_dx = 2000
 exp.timestep = 10
 exp.n_ens = 40
 exp.n_nodes = 10
 exp.n_obs = 100
+
+exp.sat_channels = [1,]
 exp.error_variance = 0.0009
 
 

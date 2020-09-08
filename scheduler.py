@@ -23,6 +23,12 @@ def my_Slurm(*args, cfg_update=dict(), **kwargs):
     """
     return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), **kwargs)
 
+def slurm_submit(bashcmd, slurm_cfg_update=None, depends_on=None):
+    function_name = sys._getframe(1).f_code.co_name  # magic
+    id = my_Slurm(function_name, cfg_update=slurm_cfg_update, **kwargs
+                 ).run(bashcmd, depends_on=[depends_on])
+    return id
+
 
 def clear_logs(backup_existing_to_archive=True):
     dirs = ['/logs/', '/slurm-scripts/']
@@ -40,11 +46,11 @@ def clear_logs(backup_existing_to_archive=True):
 def prepare_wrfinput():
     """Create WRF/run directories and wrfinput files
     """
-    s = my_Slurm("pre_osse", cfg_update={"nodes": "1", "ntasks": "1", "time": "5",
-                 "mail-type": "BEGIN"})
+    s = my_Slurm("pre_osse", cfg_update={"time": "5", "mail-type": "BEGIN"})
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_wrfinput.py')
 
-    s = my_Slurm("ideal", cfg_update={"nodes": "1", "time": "10", "mem-per-cpu": "2G"})
+    s = my_Slurm("ideal", cfg_update={"ntasks": str(exp.n_nens), "time": "10",
+                                      "mem-per-cpu": "2G"})
     cmd = """# run ideal.exe in parallel, then add geodata
 export SLURM_STEP_GRES=none
 for ((n=1; n<="""+str(exp.n_ens)+"""; n++))
@@ -70,7 +76,7 @@ def update_wrfinput_from_archive(time, background_init_time, exppath, depends_on
     """Given that directories with wrfinput files exist,
     update these wrfinput files according to wrfout files
     """
-    s = my_Slurm("upd_wrfinput", cfg_update={"nodes": "1", "ntasks": "1", "time": "5"})
+    s = my_Slurm("upd_wrfinput", cfg_update={"time": "5"})
 
     # path of initial conditions, <iens> is replaced by member index
     IC_path = exppath + background_init_time.strftime('/%Y-%m-%d_%H:%M/')  \
@@ -82,7 +88,7 @@ def update_wrfinput_from_archive(time, background_init_time, exppath, depends_on
 def run_ENS(begin, end, depends_on=None, **kwargs):
     prev_id = depends_on
 
-    s = my_Slurm("preWRF", cfg_update=dict(nodes="1", ntasks="1", time="2"))
+    s = my_Slurm("preWRF", cfg_update=dict(time="2"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_namelist.py '
                + begin.strftime('%Y-%m-%d_%H:%M')+' '
                + end.strftime('%Y-%m-%d_%H:%M'),
@@ -103,13 +109,22 @@ def run_ENS(begin, end, depends_on=None, **kwargs):
 
 
 def gen_synth_obs(time, depends_on=None):
-    s = my_Slurm("pre_gensynthobs", cfg_update=dict(nodes="1", ntasks="1", time="2"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_gen_synth_obs.py '
-               +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[depends_on])
 
-    s = my_Slurm("gensynth", cfg_update=dict(nodes="1", time="20"))
-    cmd = 'cd '+cluster.dartrundir+'; mpirun -np 24 ./perfect_model_obs'
-    id2 = s.run(cmd, depends_on=[id])
+    # prepare state of nature run, from which observation is sampled
+    id = slurm_submit(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
+                      +time.strftime('%Y-%m-%d_%H:%M ') + str(channel_id),
+         cfg_update=dict(time="2"), depends_on=[depends_on])
+
+    for channel_id in exp.sat_channels:
+        s = my_Slurm("pre_gensynthobs", cfg_update=dict(time="2"))
+        id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_gen_synth_obs.py '
+                   +time.strftime('%Y-%m-%d_%H:%M ') + str(channel_id),
+                   depends_on=[id])
+
+        s = my_Slurm("gensynth", cfg_update=dict(time="20"))
+        cmd = 'cd '+cluster.dartrundir+'; mpirun -np 24 ./perfect_model_obs; '  \
+              + 'obs_seq.out >> obs_seq_all.out'  # combine all observations
+        id2 = s.run(cmd, depends_on=[id])
     return id2
 
 
@@ -120,22 +135,22 @@ def assimilate(assim_time, background_init_time,
     if first_guess is None:
         first_guess = cluster.archivedir()
 
-    s = my_Slurm("preAssim", cfg_update=dict(nodes="1", ntasks="1", time="2"))
+    s = my_Slurm("preAssim", cfg_update=dict(time="2"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_assim.py ' \
                +assim_time.strftime('%Y-%m-%d_%H:%M ')
                +background_init_time.strftime('%Y-%m-%d_%H:%M ')
                +first_guess,
                depends_on=[prev_id])
 
-    s = my_Slurm("Assim", cfg_update=dict(nodes="1", time="50", mem="200G"))
-    cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter'
+    s = my_Slurm("Assim", cfg_update=dict(time="50", mem="200G"))
+    cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter; rm obs_seq_all.out'
     id2 = s.run(cmd, depends_on=[id])
 
-    s = my_Slurm("archiveAssim", cfg_update=dict(nodes="1", ntasks="1", time="10"))
+    s = my_Slurm("archiveAssim", cfg_update=dict(time="10"))
     id3 = s.run(cluster.python+' '+cluster.scriptsdir+'/archive_assim.py '
                + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id2])
 
-    s = my_Slurm("updateIC", cfg_update=dict(nodes="1", ntasks="1", time="3"))
+    s = my_Slurm("updateIC", cfg_update=dict(time="3"))
     id4 = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_filteroutput.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id3])
     return id4
@@ -143,8 +158,7 @@ def assimilate(assim_time, background_init_time,
 def mailme(depends_on=None):
     id = depends_on
     if id:
-        s = my_Slurm("AllFinished", cfg_update={"nodes": "1", "ntasks": "1", "time": "1",
-                     "mail-type": "BEGIN"})
+        s = my_Slurm("AllFinished", cfg_update={"time": "1", "mail-type": "BEGIN"})
         s.run('sleep 1', depends_on=[id])
 
 
@@ -186,7 +200,7 @@ while time < dt.datetime(2008, 7, 30, 14, 15):
                      first_guess=first_guess,
                      depends_on=id)
 
-     # first_guess = None  #  
+     # first_guess = None  #
 
      background_init_time = assim_time  # start integration from here
      integration_end_time = assim_time + timedelta_integrate
