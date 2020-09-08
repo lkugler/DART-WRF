@@ -51,7 +51,7 @@ def run(time_dt, channel_id, n_obs, error_variance, output_path='./',
 
     # Brightness temperature or Reflectance?
     channel_id = int(channel_id)
-    if channel_id in [1, 2, 3, 11]:
+    if channel_id in [1, 2, 3, 12]:
         line_obstypedef = '         256 MSG_4_SEVIRI_BDRF'
     else:
         line_obstypedef = '         255 MSG_4_SEVIRI_TB'
@@ -97,13 +97,17 @@ def run(time_dt, channel_id, n_obs, error_variance, output_path='./',
         lons = ds.XLONG_M.isel(Time=0).values
         lats = ds.XLAT_M.isel(Time=0).values
         n_obs_x = int(np.sqrt(n_obs))
+        dx = int(len(ds.south_north)/n_obs_x)
+        skip = int(dx/2)
 
         for i in range(n_obs_x):
             for j in range(n_obs_x):
-                coords.append((lats[i,j], lons[i,j]))
+                coords.append((lats[skip+i*dx,skip+j*dx],
+                               lons[skip+i*dx,skip+j*dx]))
 
     try:
         import pickle
+        os.makedirs(os.path.dirname(fpath_obs_locations), exist_ok=True)
         with open(fpath_obs_locations, 'wb') as f:
             pickle.dump(coords, f); print(fpath_obs_locations, 'saved.')
     except Exception as e:
@@ -125,15 +129,13 @@ obs_kind_definitions
   num_obs:            """+n_obs_str+"  max_num_obs:            "+n_obs_str+"""
   first:            1  last:            """+n_obs_str
 
-    for i_obs in range(int(n_obs)):
-        # data
+    for i_obs in range(1, int(n_obs)+1):
 
-        lon = coords[i_obs][1]
-        lat = coords[i_obs][0]
+        lon = coords[i_obs-1][1]
+        lat = coords[i_obs-1][0]
 
         lon_rad = str(degr_to_rad(lon))
         lat_rad = str(degr_to_rad(lat))
-
 
         # compile text
         if i_obs < int(n_obs):

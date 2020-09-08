@@ -11,7 +11,12 @@ channel_id = int(sys.argv[2])
 copy(cluster.scriptsdir+'/../templates/input.nml',
      cluster.dartrundir+'/input.nml')
 sed_inplace(cluster.dartrundir+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
-append_file(cluster.dartrundir+'/input.nml', cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml')
+
+if channel_id in [1, 2, 3, 12]:
+    rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml'
+else:
+    rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
+append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
 # prepare observation file
 create_obs_sat.run(time, channel_id, exp.n_obs, exp.error_variance,
