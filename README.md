@@ -49,7 +49,7 @@ while time < dt.datetime(2008, 7, 30, 16, 15):
 ### SLURM submissions
 `scheduler.py` submits jobs into the SLURM queue with dependencies, so that SLURM starts the jobs itself as soon as resources are available. Most jobs need only one node, but model integration is done in a SLURM job array across e.g. 5 nodes:
 ```
-$ squeue -u `whoami` --sort=$E
+$ squeue -u `whoami` --sort=i
             308377  mem_0384 ideal-01  lkugler PD       0:00      1 (Resources)
             308378  mem_0384 prerun-a  lkugler PD       0:00      1 (Priority)
       308379_[1-5]  mem_0384 EnsWRF-3  lkugler PD       0:00      1 (Dependency)
