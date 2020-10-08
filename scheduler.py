@@ -122,39 +122,17 @@ def run_ENS(begin, end, depends_on=None):
     #           + begin.strftime('%Y-%m-%d_%H:%M'), depends_on=[id2])
     return id2
 
-
-def gen_synth_obs(time, depends_on=None):
-
-    # prepare state of nature run, from which observation is sampled
-    id = slurm_submit(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
-                      +time.strftime('%Y-%m-%d_%H:%M'), name='prep_nature',
-         cfg_update=dict(time="2"), depends_on=[depends_on])
-
-    for channel_id in exp.sat_channels:
-        s = my_Slurm("pre_gensynthobs", cfg_update=dict(time="2"))
-        id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_gen_synth_obs.py '
-                   +time.strftime('%Y-%m-%d_%H:%M ') + str(channel_id),
-                   depends_on=[id])
-
-        s = my_Slurm("gensynth", cfg_update=dict(ntasks="48", time="20"))
-        cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./perfect_model_obs; '  \
-              + 'cat obs_seq.out >> obs_seq_all.out'  # combine all observations
-        id2 = s.run(cmd, depends_on=[id])
-    return id2
-
-
 def assimilate(assim_time, background_init_time,
                prior_from_different_exp=False, depends_on=None):
-    """Run the assimilation process.
-
-    Expects a obs_seq.out file present in `dartrundir`
+    """Creates observations from a nature run and assimilates them.
 
     Args:
-        assim_time (dt.datetime): for timestamp of prior wrfout files
-        background_init_time (dt.datetime): for directory of prior wrfout files
+        assim_time (dt.datetime): timestamp of prior wrfout files
+        background_init_time (dt.datetime): 
+            timestamp to find the directory where the prior wrfout files are
         prior_from_different_exp (bool or str):
-            put a `str` if you want to take the prior from a different experiment
-            if False: use `archivedir` to get prior state
+            put a `str` to take the prior from a different experiment
+            if False: use `archivedir` (defined in config) to get prior state
             if str: use this directory to get prior state
     """
     id = depends_on
@@ -168,11 +146,6 @@ def assimilate(assim_time, background_init_time,
     id = slurm_submit(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
                       +time.strftime('%Y-%m-%d_%H:%M'), name='prep_nature',
          cfg_update=dict(time="2"), depends_on=[depends_on])
-
-    #s = my_Slurm("gensynth", cfg_update=dict(ntasks="48", time="20"))
-    #cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./perfect_model_obs; '  \
-    #      + 'cat obs_seq.out >> obs_seq_all.out'  # combine all observations
-    #id2 = s.run(cmd, depends_on=[id])
 
     # prepare prior model state
     s = my_Slurm("preAssim", cfg_update=dict(time="2"))
@@ -223,8 +196,11 @@ timedelta_integrate = dt.timedelta(minutes=30)
 timedelta_btw_assim = dt.timedelta(minutes=30)
 
 clear_logs(backup_existing_to_archive=True)
+id = None
 
-is_new_run = False
+start_from_existing_state = False
+is_new_run = not start_from_existing_state
+
 if is_new_run:
     id = prepare_wrfinput()  # create initial conditions
 
@@ -236,21 +212,20 @@ if is_new_run:
                 depends_on=id)
     time = integration_end_time
     first_guess = False
-else:
-    # id = prepare_wrfinput()  # create initial conditions
-    id = None
+    
+elif start_from_existing_state:
+    id = prepare_wrfinput()  # create initial conditions
+    
     # get initial conditions from archive
     background_init_time = dt.datetime(2008, 7, 30, 10)
     time = dt.datetime(2008, 7, 30, 10,30)
     exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
-    first_guess = False #exppath_arch
-    #id = update_wrfinput_from_archive(time, background_init_time, exppath_arch,
-    #                                  depends_on=id)
+    first_guess = exppath_arch
+    id = update_wrfinput_from_archive(time, background_init_time, exppath_arch,
+                                      depends_on=id)
 
 while time <= dt.datetime(2008, 7, 30, 16):
-
      assim_time = time
-     #id = gen_synth_obs(assim_time, depends_on=id)
      id = assimilate(assim_time,
                      background_init_time,
                      prior_from_different_exp=first_guess,
