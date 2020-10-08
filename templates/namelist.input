@@ -90,6 +90,7 @@
  tke_adv_opt                         = 1,      1,      1,
  non_hydrostatic                     = .true., .true., .true.,
  mix_full_fields                     = .true., .true., .true.,
+ use_theta_m			     = 0,
  /
 
  &bdy_control

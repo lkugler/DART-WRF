@@ -34,15 +34,17 @@ try:
     for iens in range(1, exp.n_ens+1):
         savedir = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
         mkdir(savedir)
-        
+
         copy(cluster.dartrundir+'/input.nml',
              cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/input.nml'))
 
         filter_in = cluster.dartrundir+'/preassim_member_'+str(iens).zfill(4)+'.nc'
         filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
 
-        copy(filter_in, savedir+time.strftime('/%Y-%m-%d_%H:%M_prior'))
-        copy(filter_out, savedir+time.strftime('/%Y-%m-%d_%H:%M_posterior'))
+        # files not necessary as wrfouts exist
+        #copy(filter_in, savedir+time.strftime('/%Y-%m-%d_%H:%M_prior'))
+        #copy(filter_out, savedir+time.strftime('/%Y-%m-%d_%H:%M_posterior'))
+
 
     # copy mean and sd to archive
     print('copy preassim, postassim mean and sd')

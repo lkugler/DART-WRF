@@ -1,9 +1,9 @@
-import os, sys, shutil
+import os, sys, shutil, warnings
 import datetime as dt
 
 sys.path.append(os.getcwd())
 from config.cfg import exp, cluster
-from utils import sed_inplace, copy, symlink
+from utils import sed_inplace, copy, symlink, mkdir
 
 def run(cluster, iens, begin, end):
     rundir = cluster.wrf_rundir(iens)
@@ -25,6 +25,17 @@ def run(cluster, iens, begin, end):
     for k, v in {'<y2>': '%Y', '<m2>': '%m', '<d2>': '%d',
                  '<HH2>': '%H', '<MM2>': '%M'}.items():
         sed_inplace(rundir+'/namelist.input', k, end.strftime(v))
+
+    #########################
+    try:
+        print('copy wrfinput of this run to archive')
+        wrfin_old = rundir+'/wrfinput_d01'
+        init_dir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
+        os.makedirs(init_dir, exist_ok=True)
+        wrfin_arch = init_dir+'/wrfinput_d01'
+        copy(wrfin_old, wrfin_arch)
+    except Exception as e:
+        warnings.warn(str(e))
 
 
 if __name__ == '__main__':

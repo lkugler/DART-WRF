@@ -28,19 +28,25 @@ def run(folder_obs_seq_final):
     print('running obs_diag program')
     os.chdir(rundir_program)
     symlink(cluster.dart_srcdir+'/obs_diag', rundir_program+'/obs_diag')
-    os.system('./obs_diag >& obs_diag.log')
+    try:
+        os.remove(rundir_program+'/obs_seq_to_netcdf')
+    except:
+        pass
+    os.system('./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
 
     outdir = '/'.join(folder_obs_seq_final.split('/')[:-1])
     print('moving output to', outdir+'/obs_diag_output.nc')
     copy(rundir_program+'/obs_diag_output.nc', outdir+'/obs_diag_output.nc')
 
     print('running obs_seq_to_netcdf program')
+    shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', cluster.dart_srcdir+'/obs_seq_to_netcdf')
     symlink(cluster.dart_srcdir+'/obs_seq_to_netcdf', rundir_program+'/obs_seq_to_netcdf')
-    os.system('./obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')
-    print('moving output to', outdir+'/obs_seq_output.nc')
-    copy(rundir_program+'/obs_diag_output.nc', outdir+'/obs_seq_output.nc')
+    os.system('./obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')  # caution, overwrites its own binary?!
+    print('moving output to', outdir+'/obs_seq...')
+    os.system('mv '+rundir_program+'/obs_epoch_*.nc '+outdir+'/')
 
 
 if __name__ == '__main__':
-    folder_obs_seq_final = '/home/fs71386/lkugler/data/sim_archive/exp_v1.11_LMU_filter_domainobs/obs_seq_final/'
+    #folder_obs_seq_final = '/home/fs71386/lkugler/data/sim_archive/exp_v1.11_LMU_filter2/obs_seq_final/'
+    folder_obs_seq_final = str(sys.argv[1])
     run(folder_obs_seq_final)

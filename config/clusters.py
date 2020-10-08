@@ -17,7 +17,7 @@ class ClusterConfig(object):
 
 vsc = ClusterConfig()
 vsc.name = 'vsc'
-vsc.python = '/home/fs71386/lkugler/miniconda3/bin/python'
+vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
 vsc.ncks = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/ncks'
 vsc.userdir = '/home/fs71386/lkugler'
 vsc.srcdir = '/home/fs71386/lkugler/compile/WRF/WRF-4.2.1/run'

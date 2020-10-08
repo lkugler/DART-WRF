@@ -46,15 +46,15 @@
    output_interval          = 1,
    num_groups               = 1,
    distributed_state        = .true.
-   compute_posterior        = .true.
+   compute_posterior        = .false.
    output_forward_op_errors = .false.,
    output_timestamps        = .false.,
    trace_execution          = .false.,
 
-   stages_to_write          = 'preassim', 'output'
-   output_members           = .true.
-   output_mean              = .true.
-   output_sd                = .true.
+   stages_to_write          = 'preassim'
+   output_members           = .false.
+   output_mean              = .false.
+   output_sd                = .false.
    write_all_stages_at_end  = .false.
 
    inf_flavor                  = 0,                      0,
@@ -104,10 +104,10 @@
 # to ~half at 300 km, and ~0 at the edges of the area.
 &assim_tools_nml
    filter_kind                     = 1,
-   cutoff                          = 0.005,
+   cutoff                          = 0.0001,
    sort_obs_inc                    = .false.,
    spread_restoration              = .false.,
-   sampling_error_correction       = .true.,
+   sampling_error_correction       = .false.,
    adaptive_localization_threshold = -1,
    output_localization_diagnostics = .false.,
    localization_diagnostics_file   = 'localization_diagnostics',
@@ -244,7 +244,7 @@
 # an internal structure that speeds up searches.  don't change it
 # based on your grid size.  nlon must be an odd number.
 &location_nml
-   horiz_dist_only             = .true.,
+   horiz_dist_only             = .false.,
    vert_normalization_pressure = 6666666.7,
    vert_normalization_height   = 5000000.0,
    vert_normalization_level    = 2666.7,
