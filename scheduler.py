@@ -23,6 +23,14 @@ def my_Slurm(*args, cfg_update=dict(), **kwargs):
     """
     return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), **kwargs)
 
+class Cmdline(object):
+    def __init__(self, name, cfg_update):
+        self.name = name
+
+    def run(self, cmd, **kwargs):
+        print('running', self.name, 'without SLURM')
+        os.system(cmd)
+
 def slurm_submit(bashcmd, name=None, cfg_update=None, depends_on=None):
     """Submit a 'workflow task'=script=job to the SLURM queue.
     Args:
@@ -73,8 +81,6 @@ for ((n=1; n<="""+str(exp.n_ens)+"""; n++))
 do
     rundir="""+cluster.userdir+'/run_WRF/'+exp.expname+"""/$n
     mv $rundir/rsl.out.0000 $rundir/rsl.out.input
-    mkdir -p """+cluster.archivedir()+"""/wrfinput/$n
-    cp $rundir/wrfinput_d01 """+cluster.archivedir()+"""/wrfinput/$n/wrfinput_d01
 done
 """
     id = slurm_submit(cmd, name="ideal", cfg_update={"ntasks": str(exp.n_ens),
@@ -94,7 +100,7 @@ def update_wrfinput_from_archive(time, background_init_time, exppath, depends_on
                 +IC_path, depends_on=[depends_on])
     return id
 
-def run_ENS(begin, end, depends_on=None, **kwargs):
+def run_ENS(begin, end, depends_on=None):
     prev_id = depends_on
 
     s = my_Slurm("preWRF", cfg_update=dict(time="2"))
@@ -104,7 +110,7 @@ def run_ENS(begin, end, depends_on=None, **kwargs):
                depends_on=[prev_id])
 
     runtime_real_hours = (end-begin).total_seconds()/3600
-    runtime_wallclock_mins_expected = int(11+runtime_real_hours*10)  # usually below 8 min/hour
+    runtime_wallclock_mins_expected = int(5+runtime_real_hours*9)  # usually below 8 min/hour
     s = my_Slurm("runWRF", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
                  "time": str(runtime_wallclock_mins_expected), "mem-per-cpu": "2G"})
     cmd = script_to_str(cluster.run_WRF).replace('<expname>', exp.expname)
@@ -138,44 +144,85 @@ def gen_synth_obs(time, depends_on=None):
 
 
 def assimilate(assim_time, background_init_time,
-               first_guess=None, depends_on=None, **kwargs):
-    prev_id = depends_on
+               prior_from_different_exp=False, depends_on=None):
+    """Run the assimilation process.
 
-    if first_guess is None:
-        first_guess = cluster.archivedir()
+    Expects a obs_seq.out file present in `dartrundir`
 
+    Args:
+        assim_time (dt.datetime): for timestamp of prior wrfout files
+        background_init_time (dt.datetime): for directory of prior wrfout files
+        prior_from_different_exp (bool or str):
+            put a `str` if you want to take the prior from a different experiment
+            if False: use `archivedir` to get prior state
+            if str: use this directory to get prior state
+    """
+    id = depends_on
+
+    if prior_from_different_exp:
+        prior_expdir = prior_from_different_exp
+    else:
+        prior_expdir = cluster.archivedir()
+
+    # prepare state of nature run, from which observation is sampled
+    id = slurm_submit(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
+                      +time.strftime('%Y-%m-%d_%H:%M'), name='prep_nature',
+         cfg_update=dict(time="2"), depends_on=[depends_on])
+
+    #s = my_Slurm("gensynth", cfg_update=dict(ntasks="48", time="20"))
+    #cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./perfect_model_obs; '  \
+    #      + 'cat obs_seq.out >> obs_seq_all.out'  # combine all observations
+    #id2 = s.run(cmd, depends_on=[id])
+
+    # prepare prior model state
     s = my_Slurm("preAssim", cfg_update=dict(time="2"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_assim.py ' \
+    id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_assim.py '
                +assim_time.strftime('%Y-%m-%d_%H:%M ')
                +background_init_time.strftime('%Y-%m-%d_%H:%M ')
-               +first_guess,
-               depends_on=[prev_id])
+               +prior_expdir,
+               depends_on=[id])
 
-    s = my_Slurm("Assim", cfg_update=dict(time="50", mem="200G"))
+    # generate observations
+    s = my_Slurm("gensynthobs", cfg_update=dict(ntasks="48", time="10"))
+    id = s.run(cluster.python+' '+cluster.scriptsdir+'/gen_synth_obs.py '
+               +time.strftime('%Y-%m-%d_%H:%M'),
+               depends_on=[id])
+ 
+    # actuall assimilation step
+    s = my_Slurm("Assim", cfg_update=dict(ntasks="48", time="50", mem="200G"))
     cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter; rm obs_seq_all.out'
-    id2 = s.run(cmd, depends_on=[id])
+    id = s.run(cmd, depends_on=[id])
 
     s = my_Slurm("archiveAssim", cfg_update=dict(time="10"))
-    id3 = s.run(cluster.python+' '+cluster.scriptsdir+'/archive_assim.py '
-               + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id2])
+    id = s.run(cluster.python+' '+cluster.scriptsdir+'/archive_assim.py '
+               + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
 
-    s = my_Slurm("updateIC", cfg_update=dict(time="3"))
-    id4 = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_filteroutput.py '
-                +assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id3])
-    return id4
+    s = my_Slurm("updateIC", cfg_update=dict(time="8"))
+    id = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_filteroutput.py '
+                +assim_time.strftime('%Y-%m-%d_%H:%M ')
+                +background_init_time.strftime('%Y-%m-%d_%H:%M ')
+                +prior_expdir, depends_on=[id])
+    return id
+
+
+def create_satimages(depends_on=None):
+    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "20"})
+    s.run(cluster.python+' /home/fs71386/lkugler/RTTOV-WRF/loop.py '+exp.expname,
+          depends_on=[depends_on])
 
 def mailme(depends_on=None):
-    id = depends_on
-    if id:
+    if depends_on:
         s = my_Slurm("AllFinished", cfg_update={"time": "1", "mail-type": "BEGIN"})
-        s.run('sleep 1', depends_on=[id])
+        s.run('sleep 1', depends_on=[depends_on])
 
 
 ################################
 print('starting osse')
 
+timedelta_integrate = dt.timedelta(minutes=30)
+timedelta_btw_assim = dt.timedelta(minutes=30)
 
-clear_logs(backup_existing_to_archive=False)
+clear_logs(backup_existing_to_archive=True)
 
 is_new_run = False
 if is_new_run:
@@ -188,38 +235,35 @@ if is_new_run:
                 end=integration_end_time,
                 depends_on=id)
     time = integration_end_time
+    first_guess = False
 else:
-    #id = prepare_wrfinput()  # create initial conditions
+    # id = prepare_wrfinput()  # create initial conditions
     id = None
     # get initial conditions from archive
-    background_init_time = dt.datetime(2008, 7, 30, 10, 45)
-    time = dt.datetime(2008, 7, 30, 11, 0)
+    background_init_time = dt.datetime(2008, 7, 30, 10)
+    time = dt.datetime(2008, 7, 30, 10,30)
     exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
-    first_guess = exppath_arch
+    first_guess = False #exppath_arch
     #id = update_wrfinput_from_archive(time, background_init_time, exppath_arch,
     #                                  depends_on=id)
 
-# now, start the ensemble data assimilation cycles
-timedelta_integrate = dt.timedelta(minutes=15)
-timedelta_btw_assim = dt.timedelta(minutes=15)
-
-while time < dt.datetime(2008, 7, 30, 16, 15):
+while time <= dt.datetime(2008, 7, 30, 16):
 
      assim_time = time
-     id = gen_synth_obs(assim_time, depends_on=id)
+     #id = gen_synth_obs(assim_time, depends_on=id)
      id = assimilate(assim_time,
                      background_init_time,
-                     first_guess=first_guess,
+                     prior_from_different_exp=first_guess,
                      depends_on=id)
-
-     first_guess = None
+     first_guess = False
 
      background_init_time = assim_time  # start integration from here
      integration_end_time = assim_time + timedelta_integrate
      id = run_ENS(begin=background_init_time,
                   end=integration_end_time,
                   depends_on=id)
-
      time += timedelta_btw_assim
+
+     create_satimages(depends_on=id)
 
 mailme(id)
