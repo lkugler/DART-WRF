@@ -4,7 +4,7 @@ This code runs an Ensemble Data Assimilation system with the software packages D
 
 - Why should I use it?
   - It's pythonic: see what it does at first glance, modular, flexible
-  - It handles dependencies using SLURM without '`sleep`ing loops in the main script'. 
+  - It handles dependencies using SLURM without '`sleep` loops in the bash script'. 
 Functions return a SLURM ID which can be used to trigger the start of another function (interface by [brentp/slurmpy](https://github.com/brentp/slurmpy)).
 
 - Can I use it for real weather?
