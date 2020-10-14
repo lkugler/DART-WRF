@@ -16,7 +16,8 @@ cycle_vars = ['U', 'V', 'P', 'PH', 'T', 'MU', 'QVAPOR', 'QCLOUD', 'QRAIN', 'QICE
               'QGRAUP', 'QNICE', 'QNRAIN', 'U10', 'V10', 'T2', 'Q2', 'PSFC', 'TSLB',
               'SMOIS', 'TSK']
 
-update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC', 'TSK']
+update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC', 'TSK', 'CLDFRA']
+# note: CLDFRA is just diagnostic, but maybe it helps that RTTOV can simulate clouds at initialization time
 
 # variables which are updated need not to be cycled
 for var in update_vars:
