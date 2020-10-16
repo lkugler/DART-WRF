@@ -91,81 +91,81 @@ def set_input_nml(sat_channel=False, just_prior_values=False):
 if __name__ == "__main__":
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
-    print(dt.datetime.now())
 
-    # error_var = (5.)**2
-    # kind = 'RADAR'
+    # remove any existing observation files
+    os.system('rm -f 'cluster.dartrundir+'/obs_seq_*.out')
 
-    # error_var = (0.5)**2
-    # kind = 'RASO_T'
+    for i_obs, obscfg in enumerate(exp.observations):
 
-    #obs.generic_obs(kind, time, exp.n_obs, exp.radar_err**2, exp.distance_between_obs_meters,
-    #                output_path=cluster.dartrundir,
-    #                fpath_obs_locations=cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M')
-    #                +'/obs_coords.pkl')
+        n_obs = obscfg['n_obs']
+        error_var = (obscfg['err_std'])**2
+        distance_between_obs_meters = obscfg['distance_between_obs_meters']
 
-
-    for channel_id in exp.sat_channels:
-
-        n_obs = 100
-        channel_id = 6
-        distance_between_obs_meters = 10000
-
-        error_var = (1.)**2
-        create_obsseq.sat(time, channel_id, n_obs, error_var, 
-                          distance_between_obs_meters,
-                          output_path=cluster.dartrundir, 
-                          fpath_obs_locations='./domain.pkl')
-        print(dt.datetime.now())
+        # generate obs_seq.in
+        if not obscfg['sat']:
+            create_obsseq.generic_obs(obscfg['kind'], time, n_obs, error_var, 
+                        distance_between_obs_meters,
+                        output_path=cluster.dartrundir,
+                        fpath_obs_locations=cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M')
+                                            +'/obs_coords.pkl')
+        else:
+            create_obsseq.sat(time, obscfg['channel'], n_obs, error_var, 
+                            distance_between_obs_meters,
+                            output_path=cluster.dartrundir, 
+                            fpath_obs_locations='./domain.pkl')
 
         if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
             raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
 
-        # generate observations
+        # generate observations (obs_seq.out)
         set_input_nml(sat_channel=channel_id, just_prior_values=True)
         os.chdir(cluster.dartrundir)
         t = dt.datetime.now()
         os.system('mpirun -np 12 ./perfect_model_obs')
         print('1st perfect_model_obs', (dt.datetime.now()-t).total_seconds())
 
-        if channel_id == 6:
-            # run ./filter to have prior observation estimates from model state
-            set_input_nml(sat_channel=channel_id, just_prior_values=True)
-            t = dt.datetime.now()
-            os.system('mv obs_seq.out obs_seq_all.out; mpirun -np 20 ./filter')
-            print('1st filter', (dt.datetime.now()-t).total_seconds())
+        # cloud dependent observation error
+        if obscfg['sat']:
+            if obscfg['channel'] == 6:
+                # run ./filter to have prior observation estimates from model state
+                set_input_nml(sat_channel=obscfg['channel'], just_prior_values=True)
+                t = dt.datetime.now()
+                os.system('mv obs_seq.out obs_seq_all.out; mpirun -np 20 ./filter')
+                print('1st filter', (dt.datetime.now()-t).total_seconds())
 
-            # find the observation error for a pair of (H(x_nature), H(x_background))
-            f_obs_prior = cluster.dartrundir+'/obs_seq.final'
-            OBSs = read_prior_obs(f_obs_prior)
+                # find the observation error for a pair of (H(x_nature), H(x_background))
+                f_obs_prior = cluster.dartrundir+'/obs_seq.final'
+                OBSs = read_prior_obs(f_obs_prior)
 
-            # compute the observation error necessary
-            # to achieve a certain operational FGD distribution
-            OEs = []
-            for obs in OBSs:
-                bt_y = obs['truth']
-                bt_x_ens = obs['prior_ens']
-                CIs = [cloudimpact_73(bt_x, bt_y) for bt_x in bt_x_ens]
+                # compute the observation error necessary
+                # to achieve a certain operational FGD distribution
+                OEs = []
+                for obs in OBSs:
+                    bt_y = obs['truth']
+                    bt_x_ens = obs['prior_ens']
+                    CIs = [cloudimpact_73(bt_x, bt_y) for bt_x in bt_x_ens]
 
-                oe_nature = oe_73(np.mean(CIs))
-                OEs.append(oe_nature)
+                    oe_nature = oe_73(np.mean(CIs))
+                    OEs.append(oe_nature)
 
-            # write obs_seq.out
-            fpath_obsseqout = cluster.dartrundir+'/obs_seq.in'
-            edit_obserr_in_obsseq(fpath_obsseqout, OEs)
-            print('after editing oe', dt.datetime.now())
+                # write obs_seq.out
+                fpath_obsseqout = cluster.dartrundir+'/obs_seq.in'
+                edit_obserr_in_obsseq(fpath_obsseqout, OEs)
 
-            # generate actual observations (with correct error)
-            os.chdir(cluster.dartrundir)
-            t = dt.datetime.now()
-            os.system('mpirun -np 12 ./perfect_model_obs')
-            print('real obs gen', (dt.datetime.now()-t).total_seconds())
+                # generate actual observations (with correct error)
+                os.chdir(cluster.dartrundir)
+                t = dt.datetime.now()
+                os.system('mpirun -np 12 ./perfect_model_obs')
+                print('real obs gen', (dt.datetime.now()-t).total_seconds())
 
-        # correct input.nml for actual assimilation later on
-        set_input_nml(sat_channel=channel_id, just_prior_values=False)
+                # correct input.nml for actual assimilation later on
+                set_input_nml(sat_channel=obscfg['channel'], just_prior_values=False)
 
-    # FIXME: missing is the concatenation of
+        # rename according to i_obs
+        os.rename(cluster.dartrundir+'/obs_seq.out', cluster.dartrundir+'/obs_seq_'+str(i_obs)+'.out')
+
+    # concatenate the created obs_seq_*.out files
     os.chdir(cluster.dartrundir)
-    os.system('cat obs_seq.out >> obs_seq_all.out')
+    os.system('cat obs_seq_*.out >> obs_seq_all.out')
+
     print(dt.datetime.now())
-    # FIXME: what if different channels in one obs_seq.out -> need different input.nml for different channels
