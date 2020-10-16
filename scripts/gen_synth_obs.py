@@ -93,8 +93,9 @@ if __name__ == "__main__":
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 
     # remove any existing observation files
-    os.system('rm -f 'cluster.dartrundir+'/obs_seq_*.out')
+    os.system('rm -f '+cluster.dartrundir+'/obs_seq_*.out')
 
+    # loop over observation types
     for i_obs, obscfg in enumerate(exp.observations):
 
         n_obs = obscfg['n_obs']
@@ -108,17 +109,23 @@ if __name__ == "__main__":
                         output_path=cluster.dartrundir,
                         fpath_obs_locations=cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M')
                                             +'/obs_coords.pkl')
+            set_input_nml()
         else:
             create_obsseq.sat(time, obscfg['channel'], n_obs, error_var,
                                 distance_between_obs_meters,
                                 output_path=cluster.dartrundir, 
                                 fpath_obs_locations='./domain.pkl')
+            
+            if obscfg['channel'] == 6:
+                # for cloud dependent error
+                set_input_nml(sat_channel=obscfg['channel'], just_prior_values=True)
+            else:
+                set_input_nml(sat_channel=obscfg['channel'])
 
         if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
             raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
 
         # generate observations (obs_seq.out)
-        set_input_nml(sat_channel=channel_id, just_prior_values=True)
         os.chdir(cluster.dartrundir)
         t = dt.datetime.now()
         os.system('mpirun -np 12 ./perfect_model_obs')
