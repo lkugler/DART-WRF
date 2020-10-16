@@ -17,26 +17,33 @@ def run(folder_obs_seq_final):
             f.write(fin)
             f.write('\n')
 
+    for obserr_iszero in ['.true.', '.false.']:
+        print('ensure correct input.nml')
+        copy(cluster.scriptsdir+'/../templates/input.nml',
+             rundir_program+'/input.nml')
+        sed_inplace(rundir_program+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
+        sed_inplace(rundir_program+'/input.nml', '<zero_error_obs>', obserr_iszero)
+        append_file(rundir_program+'/input.nml', cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml')
 
-    print('ensure correct input.nml')
-    copy(cluster.scriptsdir+'/../templates/input.nml',
-         rundir_program+'/input.nml') #cluster.dartrundir+'/input.nml')
-    sed_inplace(rundir_program+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
-    append_file(rundir_program+'/input.nml', cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml')
+        # run obs_diag
+        print('running obs_diag program')
+        os.chdir(rundir_program)
+        symlink(cluster.dart_srcdir+'/obs_diag', rundir_program+'/obs_diag')
+        try:
+            os.remove(rundir_program+'/obs_seq_to_netcdf')
+        except:
+            pass
+        os.system('./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
 
-    # run obs_diag
-    print('running obs_diag program')
-    os.chdir(rundir_program)
-    symlink(cluster.dart_srcdir+'/obs_diag', rundir_program+'/obs_diag')
-    try:
-        os.remove(rundir_program+'/obs_seq_to_netcdf')
-    except:
-        pass
-    os.system('./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
+        # move output to archive
+        outdir = '/'.join(folder_obs_seq_final.split('/')[:-1])
+        if obserr_iszero == '.true.':
+            fout = '/obs_diag_wrt_truth.nc'   
+        elif obserr_iszero == '.false.':
+            fout = '/obs_diag_wrt_obs.nc'
+        print('moving output to', outdir+fout)
+        copy(rundir_program+'/obs_diag_output.nc', outdir+fout)
 
-    outdir = '/'.join(folder_obs_seq_final.split('/')[:-1])
-    print('moving output to', outdir+'/obs_diag_output.nc')
-    copy(rundir_program+'/obs_diag_output.nc', outdir+'/obs_diag_output.nc')
 
     print('running obs_seq_to_netcdf program')
     shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', cluster.dart_srcdir+'/obs_seq_to_netcdf')
