@@ -33,13 +33,18 @@ def get_dart_date(time_dt):
     secs_thatday = str(int((time_dt - round_to_day(time_dt)).total_seconds()))
     return dart_date_day, secs_thatday
 
-def calc_obs_locations(n_obs, distance_between_obs_meters,
-                       coords_from_domaincenter=True, fpath_obs_locations=False):
+def calc_obs_locations(n_obs, coords_from_domaincenter=True,
+                       distance_between_obs_km=9999, fpath_obs_locations=False):
     """Calculate coordinate pairs for locations
 
     Args:
         n_obs (int):
             number of observations (must be a square of an integer: 4, 9, 1000, ...)
+        coords_from_domaincenter (bool):
+            if False: spread observations evenly
+            if True: spread from domaincenter, `distance_between_obs_km` apart
+        distance_between_obs_km (int):
+            only used when coords_from_domaincenter=True
         fpath_obs_locations (False or str):
             write an obs_coords.pkl, can be used to check observation locations
             if str, write to file
@@ -60,6 +65,7 @@ def calc_obs_locations(n_obs, distance_between_obs_meters,
         nx, ny = int(np.sqrt(n_obs)), int(np.sqrt(n_obs))
 
         m_per_degree = 2*np.pi*radius_earth_meters/360
+        distance_between_obs_meters = distance_between_obs_km*1000.
         dy_4km_in_degree = distance_between_obs_meters/m_per_degree
 
         for iy in range(int(-ny/2), int(ny/2+1)):
@@ -84,8 +90,8 @@ def calc_obs_locations(n_obs, distance_between_obs_meters,
 
         for i in range(n_obs_x):
             for j in range(n_obs_x):
-                coords.append((lats[skip+i*dx,skip+j*dx],
-                               lons[skip+i*dx,skip+j*dx]))
+                coords.append((lats[skip+i*dx, skip+j*dx],
+                               lons[skip+i*dx, skip+j*dx]))
 
     try:
         if fpath_obs_locations:
@@ -157,27 +163,22 @@ kind
         f.write(msg)
         print(fpath, 'saved.')
 
-def sat(time_dt, channel_id, n_obs, error_var, distance_between_obs_meters,
-        output_path='./', fpath_obs_locations=False):
+def sat(time_dt, channel_id, coords, error_var, output_path='./'):
     """Create obs_seq.in
 
     Args:
         time_dt (dt.datetime): time of observation
         channel_id (int): SEVIRI channel number
             see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
-        n_obs (int):
-            number of observations squared (must be a square of an integer: 4, 9, 1000, ...)
+        coords (list of 2-tuples with (lat,lon))
         error_var (float):
             gaussian error with this variance is added to the truth at observation time
         output_path (str): directory where `obs_seq.in` will be saved
-        fpath_obs_locations (False or str):
-            write an obs_coords.pkl, can be used to check observation locations
-            if str, write to file
     """
     # time_dt = add_timezone_UTC(time_dt)
     # time_dt = dt.datetime(2008, 7, 30, 15, 30, tzinfo=dt.timezone.utc)
-    assert n_obs == int(n_obs)
     error_var = str(error_var)
+    n_obs = len(coords)
 
     # Brightness temperature or Reflectance?
     channel_id = int(channel_id)
@@ -188,10 +189,6 @@ def sat(time_dt, channel_id, n_obs, error_var, distance_between_obs_meters,
         line_obstypedef = '         255 MSG_4_SEVIRI_TB'
         code = '255'
     channel_id = str(channel_id)
-
-    coords = calc_obs_locations(n_obs, distance_between_obs_meters,
-                                coords_from_domaincenter=False,
-                                fpath_obs_locations=fpath_obs_locations)
 
     time_dt = add_timezone_UTC(time_dt)
     sun_az = str(get_azimuth(lat0, lon0, time_dt))
@@ -269,13 +266,7 @@ kind
         print(fpath, 'saved.')
 
 
-def gen_coords(n_obs, distance_between_obs_meters, heights,
-               coords_from_domaincenter=True, fpath_obs_locations=False):
-
-    coords = calc_obs_locations(n_obs, distance_between_obs_meters,
-                coords_from_domaincenter=coords_from_domaincenter,
-                fpath_obs_locations=fpath_obs_locations)
-
+def calc_obs_locations_3d(coords, heights):
     # append height
     coords2 = []
     for i in range(len(coords)):
@@ -283,23 +274,19 @@ def gen_coords(n_obs, distance_between_obs_meters, heights,
             coords2.append(coords[i] + (hgt_m,))
 
     n_obs = len(coords2)
-    print('effective number of observations (with vertical levels):', n_obs, 
+    print('effective number of observations (with vertical levels):', n_obs,
           ' on each level:', len(coords))
     return coords2
 
 
-def generic_obs(obs_type, time_dt, n_obs, error_var, distance_between_obs_meters,
-                output_path='./', fpath_obs_locations=False):
+def generic_obs(obs_type, time_dt, coords, error_var, output_path='./'):
 
     obs_codes = {'RASO_T': {'name': 'RADIOSONDE_TEMPERATURE', 'nr': '5'},
                  'RADAR': {'name': 'RADAR_REFLECTIVITY', 'nr': '37'}
                  }
 
     heights = np.arange(1000, 15001, 1000)
-
-    coords = gen_coords(n_obs, distance_between_obs_meters, heights,
-                        coords_from_domaincenter=False, 
-                        fpath_obs_locations=fpath_obs_locations)
+    coords = calc_obs_locations_3d(coords, heights)
 
     dart_date_day, secs_thatday = get_dart_date(time_dt)
     print('secs, days:', secs_thatday, dart_date_day)
