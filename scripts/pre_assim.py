@@ -49,5 +49,3 @@ os.system('rm -rf '+cluster.dartrundir+'/output_mean*')
 os.system('rm -rf '+cluster.dartrundir+'/output_sd*')
 os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
 
-#print('replace measurement error with obs error for assimilation')  # not needed anymore
-#sed_inplace(cluster.dartrundir+'/obs_seq.out', '9.000000000000000E-004', '0.04')
