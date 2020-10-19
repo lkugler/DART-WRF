@@ -107,7 +107,7 @@ if __name__ == "__main__":
         n_obs = obscfg['n_obs']
         error_var = (obscfg['err_std'])**2
         sat_channel = obscfg.get('channel', False)
-        cov_loc = obscfg.get['cov_loc_radius_km']
+        cov_loc = obscfg['cov_loc_radius_km']
         dist_obs = obscfg.get('distance_between_obs_km', False)
 
         # generate obs_seq.in

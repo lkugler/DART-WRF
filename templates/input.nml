@@ -277,7 +277,7 @@
 # This can greatly improve the performance in IO if
 # tasks_per_node is set to match your hardware
 &ensemble_manager_nml
-   layout = 2,
+   layout = 1,
    tasks_per_node = 48
    communication_configuration = 1
    debug                       = .true.
