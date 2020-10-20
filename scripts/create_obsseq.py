@@ -104,11 +104,27 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
     assert len(coords) == n_obs, (len(coords), n_obs)
     return coords
 
+
 def write_generic_obsseq(obs_name, obs_kind_nr, error_var, coords,
-                         dart_date_day, secs_thatday, output_path):
+                         dart_date_day, secs_thatday, output_path,
+                         vert_coord_sfc=False):
+    """
+    Args:
+        dart_date_day (str): DART internal time formatted date
+        secs_thatday (str): DART internal time of day (seconds since 0 UTC)
+        vert_coord_sfc (bool):
+            if True, then vertical coordinate is height above ground, i.e. "surface observation"
+            if False, then vertical is hgt_AMSL
+    """
+
+    vert_coord_sys = 3  # meters AMSL
+    if vert_coord_sfc:
+        vert_coord_sys = -1
+
     n_obs_str = str(int(n_obs))
     error_var = str(error_var)
     line_obstypedef = obs_kind_nr+' '+obs_name
+    vert_coord_sys = str(vert_coord_sys)
 
     msg = """
  obs_sequence
@@ -135,7 +151,7 @@ obs_kind_definitions
           -1           """+str(i_obs+1)+"""          -1
 obdef
 loc3d
-     """+lon_rad+"""        """+lat_rad+"""        """+hgt_m+"""     3
+     """+lon_rad+"        "+lat_rad+"        "+hgt_m+"     "+vert_coord_sys+"""
 kind
          """+obs_kind_nr+"""
  """+secs_thatday+"""     """+dart_date_day+"""
@@ -147,7 +163,7 @@ kind
           """+str(i_obs-1)+"""           -1          -1
 obdef
 loc3d
-     """+lon_rad+"""        """+lat_rad+"""        """+hgt_m+"""     3
+     """+lon_rad+"        "+lat_rad+"        "+hgt_m+"     "+vert_coord_sys+"""
 kind
          """+obs_kind_nr+"""
  """+secs_thatday+"""     """+dart_date_day+"""
@@ -162,6 +178,7 @@ kind
     with open(fpath, 'w') as f:
         f.write(msg)
         print(fpath, 'saved.')
+
 
 def sat(time_dt, channel_id, coords, error_var, output_path='./'):
     """Create obs_seq.in

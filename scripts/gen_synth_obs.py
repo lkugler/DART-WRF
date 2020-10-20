@@ -72,17 +72,31 @@ def edit_obserr_in_obsseq(fpath_obsseqin, OEs):
         for line in obsseq_new:
             f.write(line)
 
+
 def set_input_nml(sat_channel=False, just_prior_values=False,
-                  cov_loc_radius_km=32):
+                  cov_loc_radius_km=32, cov_loc_vert_km=False):
     """descr"""
+    cov_loc_radian = cov_loc_radius_km/earth_radius_km
+    
     if just_prior_values:
         template = cluster.scriptsdir+'/../templates/input.prioronly.nml'
     else:
         template = cluster.scriptsdir+'/../templates/input.nml'
     copy(template, cluster.dartrundir+'/input.nml')
-    sed_inplace(cluster.dartrundir+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
-    cov_loc_radian = cov_loc_radius_km/earth_radius_km
-    sed_inplace(cluster.dartrundir+'/input.nml', '<cov_loc_radian>', str(cov_loc_radian))
+
+    options = {'<n_ens>': str(int(exp.n_ens)),
+               '<cov_loc_radian>': str(cov_loc_radian)}
+
+    if cov_loc_vert_km:
+        cov_loc_vert_rad = cov_loc_vert_km/cov_loc_radian
+        options['<horiz_dist_only>'] = '.false.'
+        options['<vert_norm_hgt>'] = str(cov_loc_vert_rad)
+    else:
+        options['<horiz_dist_only>'] = '.true.'
+        options['<vert_norm_hgt>'] = '50000.0'  # dummy value
+
+    for key, value in options.items():
+        sed_inplace(cluster.dartrundir+'/input.nml', key, value)
 
     # input.nml for RTTOV
     if sat_channel > 0:
@@ -109,6 +123,7 @@ if __name__ == "__main__":
         sat_channel = obscfg.get('channel', False)
         cov_loc = obscfg['cov_loc_radius_km']
         dist_obs = obscfg.get('distance_between_obs_km', False)
+        cov_loc_vert_km = obscfg.get('cov_loc_vert_km', False)
 
         # generate obs_seq.in
         obs_coords = osq.calc_obs_locations(n_obs, coords_from_domaincenter=False, 
@@ -126,7 +141,9 @@ if __name__ == "__main__":
             raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
 
         # generate observations (obs_seq.out)
-        set_input_nml(sat_channel=sat_channel, cov_loc_radius_km=cov_loc)
+        set_input_nml(sat_channel=sat_channel,
+                      cov_loc_radius_km=cov_loc,
+                      cov_loc_vert_km=cov_loc_vert_km)
         os.chdir(cluster.dartrundir)
         t = dt.datetime.now()
         os.system('mpirun -np 12 ./perfect_model_obs')
@@ -136,7 +153,8 @@ if __name__ == "__main__":
         if obscfg['sat']:
             if sat_channel == 6:
                 # run ./filter to have prior observation estimates from model state
-                set_input_nml(sat_channel=sat_channel, just_prior_values=True)
+                set_input_nml(sat_channel=sat_channel,
+                              just_prior_values=True)
                 t = dt.datetime.now()
                 os.system('mv obs_seq.out obs_seq_all.out; mpirun -np 20 ./filter')
                 print('1st filter', (dt.datetime.now()-t).total_seconds())
@@ -168,7 +186,8 @@ if __name__ == "__main__":
 
                 # correct input.nml for actual assimilation later on
                 set_input_nml(sat_channel=sat_channel,
-                              cov_loc_radius_km=cov_loc)
+                              cov_loc_radius_km=cov_loc,
+                              cov_loc_vert_km=cov_loc_vert_km)
 
         # rename according to i_obs
         os.rename(cluster.dartrundir+'/obs_seq.out', 

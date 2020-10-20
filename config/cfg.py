@@ -20,7 +20,7 @@ n_obs = 64  # radar: n_obs for each observation height level
 vis = dict(sat=True, channel=1, n_obs=n_obs, err_std=0.03,
            cov_loc_radius_km=10)
 radar = dict(sat=False, kind='radar', n_obs=n_obs, err_std=5.,
-             cov_loc_radius_km=10)
+             cov_loc_radius_km=10, cov_loc_vert_km=5)
 
 exp.observations = [vis, ]
 

@@ -159,7 +159,8 @@
 				'RADAR_REFLECTIVITY',
                                 'MSG_4_SEVIRI_RADIANCE',
 				'MSG_4_SEVIRI_TB',
-				'MSG_4_SEVIRI_BDRF'
+				'MSG_4_SEVIRI_BDRF',
+                                'LAND_SFC_PRESSURE'
    evaluate_these_obs_types   = 'RADIOSONDE_SPECIFIC_HUMIDITY',
    /
 
@@ -244,9 +245,9 @@
 # an internal structure that speeds up searches.  don't change it
 # based on your grid size.  nlon must be an odd number.
 &location_nml
-   horiz_dist_only             = .true.,
+   horiz_dist_only             = <horiz_dist_only>,
    vert_normalization_pressure = 6666666.7,
-   vert_normalization_height   = 5000000.0,
+   vert_normalization_height   = <vert_norm_hgt>,
    vert_normalization_level    = 2666.7,
    vert_normalization_scale_height = 10.0,
    approximate_distance        = .false.,
