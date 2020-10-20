@@ -121,7 +121,8 @@ def write_generic_obsseq(obs_name, obs_kind_nr, error_var, coords,
     if vert_coord_sfc:
         vert_coord_sys = -1
 
-    n_obs_str = str(int(n_obs))
+    n_obs = len(coords)
+    n_obs_str = str(n_obs)
     error_var = str(error_var)
     line_obstypedef = obs_kind_nr+' '+obs_name
     vert_coord_sys = str(vert_coord_sys)
@@ -299,13 +300,13 @@ def calc_obs_locations_3d(coords, heights):
 def generic_obs(obs_type, time_dt, coords, error_var, output_path='./'):
 
     obs_codes = {'RASO_T': {'name': 'RADIOSONDE_TEMPERATURE', 'nr': '5'},
-                 'RADAR': {'name': 'RADAR_REFLECTIVITY', 'nr': '37'}
-                 }
+                 'RADAR': {'name': 'RADAR_REFLECTIVITY', 'nr': '37'},
+                 'PSFC': {'name': 'LAND_SFC_PRESSURE', 'nr': '29'},}
 
-    heights = np.arange(1000, 15001, 1000)
+    heights = [5000., ] #np.arange(5000, 15001, 1000)
     coords = calc_obs_locations_3d(coords, heights)
 
-    dart_date_day, secs_thatday = get_dart_date(time_dt)
+    dart_date_day, secs_thatday = get_dart_date(add_timezone_UTC(time_dt))
     print('secs, days:', secs_thatday, dart_date_day)
 
     obs_name = obs_codes[obs_type]['name']
