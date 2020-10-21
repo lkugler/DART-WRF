@@ -9,11 +9,11 @@ class ExperimentConfiguration(object):
 
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.12_LMU_radar_vertloc1km"
+exp.expname = "exp_v1.12_LMU_so_radar_vertloc1km"
 exp.model_dx = 2000
 exp.timestep = 10
-exp.n_ens = 40
-exp.n_nodes = 10
+exp.n_ens = 20
+exp.n_nodes = 5
 
 n_obs = 64  # radar: n_obs for each observation height level
 

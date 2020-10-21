@@ -88,7 +88,7 @@ def set_input_nml(sat_channel=False, just_prior_values=False,
                '<cov_loc_radian>': str(cov_loc_radian)}
 
     if cov_loc_vert_km:
-        cov_loc_vert_rad = cov_loc_vert_km/cov_loc_radian
+        cov_loc_vert_rad = cov_loc_vert_km*1000/cov_loc_radian
         options['<horiz_dist_only>'] = '.false.'
         options['<vert_norm_hgt>'] = str(cov_loc_vert_rad)
     else:
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     fpath_obs_coords = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/obs_coords.pkl')
 
     # remove any existing observation files
-    os.system('rm -f '+cluster.dartrundir+'/obs_seq_*.out')
+    os.chdir(cluster.dartrundir); os.system('rm -f obs_seq_*.out obs_seq.in obs_seq.final')
 
     # loop over observation types
     for i_obs, obscfg in enumerate(exp.observations):

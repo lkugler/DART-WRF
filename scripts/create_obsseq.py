@@ -140,7 +140,7 @@ obs_kind_definitions
 
         lon = coords[i_obs-1][1]
         lat = coords[i_obs-1][0]
-        hgt_m = str(coords[i_obs-1][2])+'.000'
+        hgt_m = str(coords[i_obs-1][2])
 
         lon_rad = str(degr_to_rad(lon))
         lat_rad = str(degr_to_rad(lat))

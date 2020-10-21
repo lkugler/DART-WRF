@@ -19,7 +19,7 @@ def run(folder_obs_seq_final):
 
     for obserr_iszero in ['.true.', '.false.']:
         print('ensure correct input.nml')
-        copy(cluster.scriptsdir+'/../templates/input.nml',
+        copy(cluster.scriptsdir+'/../templates/input.prioronly.nml',
              rundir_program+'/input.nml')
         sed_inplace(rundir_program+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
         sed_inplace(rundir_program+'/input.nml', '<zero_error_obs>', obserr_iszero)
