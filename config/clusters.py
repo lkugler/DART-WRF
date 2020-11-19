@@ -25,11 +25,11 @@ vsc.dart_srcdir = '/home/fs71386/lkugler/DART/DART_WRF_RTTOV_early_access/models
 vsc.dartrundir = '/home/fs71386/lkugler/run_DART'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts'
 
-vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.11_LMU_nature/2008-07-30_06:00/2/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.12_LMU_nature/2008-07-30_06:00/2/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 vsc.input_profile = '/home/fs71386/lkugler/wrf_sounding/data/wrf/ens/from_LMU/raso.raso.<iens>.wrfprof'
 
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.1_v1.11.exe'
-vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.2.1_v1.11.exe'
+vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.2.1_v1.12.exe'
 vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
 vsc.run_WRF = '/gpfs/data/fs71386/lkugler/DART-WRF/scripts/osse/run_ens.vsc.sh'
 

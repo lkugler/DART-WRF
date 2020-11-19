@@ -9,11 +9,11 @@ class ExperimentConfiguration(object):
 
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.12_LMU_so_radar_vertloc1km"
+exp.expname = "exp_v1.12_LMU_so_VIS2"
 exp.model_dx = 2000
 exp.timestep = 10
-exp.n_ens = 20
-exp.n_nodes = 5
+exp.n_ens = 40
+exp.n_nodes = 10
 
 n_obs = 64  # radar: n_obs for each observation height level
 
@@ -27,7 +27,7 @@ radar = dict(sat=False, kind='RADAR', n_obs=n_obs, err_std=5.,
 psfc = dict(sat=False, kind='PSFC', n_obs=n_obs, err_std=50.,
              cov_loc_radius_km=10)
 
-exp.observations = [radar, ]
+exp.observations = [vis, ]
 
 # directory paths depend on the name of the experiment
 cluster.expname = exp.expname

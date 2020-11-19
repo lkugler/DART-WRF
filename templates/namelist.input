@@ -11,7 +11,7 @@
  end_hour                            = <HH2>,   00,   00,
  end_minute                          = <MM2>,  120,  120,
  end_second                          = 0,   00,   00,
- history_interval                    = 15,   15,   15,
+ history_interval                    = <hist_interval>,   15,   15,
  frames_per_outfile                  = 1, 1, 1,
  history_outname 		     = '<archivedir>/wrfout_d<domain>_<date>'
  restart                             = .false.,

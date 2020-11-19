@@ -5,13 +5,14 @@ sys.path.append(os.getcwd())
 from config.cfg import exp, cluster
 from utils import sed_inplace, copy, symlink, mkdir
 
-def run(cluster, iens, begin, end):
+def run(cluster, iens, begin, end, hist_interval=5):
     rundir = cluster.wrf_rundir(iens)
     print(rundir)
     copy(cluster.namelist, rundir+'/namelist.input')
 
     sed_inplace(rundir+'/namelist.input', '<dx>', str(int(exp.model_dx)))
     sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
+    sed_inplace(rundir+'/namelist.input', '<hist_interval>', str(int(hist_interval)))
 
     archdir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/')
     print('namelist for run from', begin, end, 'output to', archdir)
@@ -41,7 +42,8 @@ def run(cluster, iens, begin, end):
 if __name__ == '__main__':
     begin = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
     end = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
+    hist_interval = int(sys.argv[3])
 
     print('prepare namelists for all ens members')
     for iens in range(1, exp.n_ens+1):
-        run(cluster, iens, begin, end)
+        run(cluster, iens, begin, end, hist_interval)
