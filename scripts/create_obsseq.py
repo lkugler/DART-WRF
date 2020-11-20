@@ -317,19 +317,20 @@ def generic_obs(obs_type, time_dt, coords, error_var, output_path='./'):
 
 
 if __name__ == '__main__':
-    time_dt = dt.datetime(2008, 7, 30, 15, 30)
+    time_dt = dt.datetime(2008, 7, 30, 16, 31)
     n_obs = 100
-    channel_id = 1
+    sat_channel = 1
 
     distance_between_obs_meters = 10000
+    error_var = 0.001
+    obs_coords = calc_obs_locations(n_obs, coords_from_domaincenter=False, 
+                                            distance_between_obs_km=distance_between_obs_meters, 
+                                            fpath_obs_locations=None)
+    sat(time_dt, sat_channel, obs_coords, error_var, output_path='./')
 
-    # error_var = 0.001
-    # sat(time_dt, channel_id, n_obs, error_var, distance_between_obs_meters,
-    #        output_path='./', fpath_obs_locations='./domain.pkl')
-
-    error_var = (5.)**2
-    generic_obs('RADAR', time_dt, n_obs, error_var, distance_between_obs_meters,
-                output_path='./', fpath_obs_locations='./domain.pkl')
+    # error_var = (5.)**2
+    # generic_obs('RADAR', time_dt, n_obs, error_var, distance_between_obs_meters,
+    #             output_path='./', fpath_obs_locations='./domain.pkl')
 
     # error_var = (0.5)**2
     # generic_obs('RASO_T', time_dt, n_obs, error_var, distance_between_obs_meters,
