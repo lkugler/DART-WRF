@@ -38,15 +38,24 @@ class Cmdline(object):
         os.system(cmd)
 
 def backup_scripts():
+    current = cluster.scriptsdir
+    main_a = cluster.archivedir()+'/DART-WRF/'
+    old_a = main_a+'/old/'
+
     os.makedirs(cluster.archivedir(), exist_ok=True)
-    dir_backup_scripts = cluster.archivedir()+'/DART-WRF/'
-    os.makedirs(dir_backup_scripts, exist_ok=True)
-    os.makedirs(dir_backup_scripts+'/old/', exist_ok=True)
-    os.system('mv '+dir_backup_scripts+'/* '+dir_backup_scripts+'/old/')  # move old logs
-    shutil.copy(cluster.scriptsdir+'/../scheduler.py', dir_backup_scripts+'/scheduler.py')
-    shutil.copy(cluster.scriptsdir+'/../config/clusters.py', dir_backup_scripts+'/clusters.py')
-    shutil.copy(cluster.scriptsdir+'/../config/cfg.py', dir_backup_scripts+'/cfg.py')
-    os.system('cp -r '+cluster.scriptsdir+' '+dir_backup_scripts+'/')
+    os.makedirs main_a, exist_ok=True)
+    os.makedirs , exist_ok=True)
+
+    # archive existing files
+    for f in os.listdir(main_a):
+        shutil.move(os.path.join(main_a, f), old_a+'/')
+
+    # reproducibility
+    for f in ['scheduler.py', 'config/clusters.py', 'config/cfg.py']:
+        shutil.copy(current+'/../'+f,  main_a+'/scheduler.py')
+        
+    for f in os.listdir(current):
+        shutil.copy(os.path.join(current, f), main_a+'/')
 
 def prepare_wrfinput():
     """Create WRF/run directories and wrfinput files
@@ -230,33 +239,43 @@ if is_new_run:
     first_guess = False
     
 elif start_from_existing_state:
-    #id = prepare_wrfinput()  # create initial conditions
+    id = prepare_wrfinput()  # create initial conditions
     
     # get initial conditions from archive
-    background_init_time = dt.datetime(2008, 7, 30, 11, 30)
-    time = dt.datetime(2008, 7, 30, 12)
-    exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.12_LMU_so_VIS'
-    first_guess = exppath_arch
-    #id = update_wrfinput_from_archive(time, background_init_time, exppath_arch, depends_on=id)
+    init_time = dt.datetime(2008, 7, 30, 6)
+    valid_time = dt.datetime(2008, 7, 30, 10)
+    exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
+    
+    id = update_wrfinput_from_archive(valid_time, init_time, exppath_arch, depends_on=id)
 
-while time <= dt.datetime(2008, 7, 30, 14):
-    assim_time = time
-    prev_forecast_init = assim_time - timedelta_btw_assim
+# values for assimilation
+assim_time = valid_time
+prior_init_time = init_time
+prior_path_exp = exppath_arch
+
+while time <= dt.datetime(2008, 7, 30, 18):
+
+    id = assimilate(assim_time,
+                    prior_init_time,
+                    prior_path_exp=prior_path_exp,
+                    depends_on=id)
+    prior_path_exp = False  # use own exp path
+
+    # integration
     this_forecast_init = assim_time  # start integration from here
     this_forecast_end = assim_time + timedelta_integrate
 
-    id = assimilate(assim_time,
-                    prev_forecast_init,
-                    prior_path_exp=first_guess,
-                    depends_on=id)
-    #first_guess = False
-
-    #id = update_wrfinput_from_archive(this_forecast_init, this_forecast_init, cluster.archivedir(), depends_on=id)
-
     id = run_ENS(begin=this_forecast_init,
-                 end=this_forecast_init+dt.timedelta(minutes=10),
+                 end=this_forecast_end,
                  depends_on=id)
+
+    # increment time
     time += timedelta_btw_assim
-    #create_satimages(depends_on=id)
+
+    # values for next iteration
+    assim_time = time
+    prior_init_time = assim_time - timedelta_btw_assim
+    
+    create_satimages(depends_on=id)
 
 mailme(id)
