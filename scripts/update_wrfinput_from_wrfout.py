@@ -18,7 +18,7 @@ for iens in range(1, exp.n_ens+1):
     wrfin = cluster.wrf_rundir(iens)+'/wrfinput_d01'
 
     print('updating', wrfin, 'to state in', wrfout)
-    assert os.path.isfile(wrfout)
+    assert os.path.isfile(wrfout), wrfout
 
     # overwrite variables in wrfinput file
     os.system(cluster.ncks+' -A -v '+vars+' '+wrfout+' '+wrfin)

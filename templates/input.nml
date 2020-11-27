@@ -71,7 +71,7 @@
 
 &quality_control_nml
    input_qc_threshold          = 3.0,
-   outlier_threshold           = 3.0,
+   outlier_threshold           = -1.0,
    enable_special_outlier_code = .false.
    /
 
@@ -281,7 +281,7 @@
    layout = 1,
    tasks_per_node = 48
    communication_configuration = 1
-   debug                       = .true.
+   debug                       = .false.
    /
 
 &obs_def_gps_nml

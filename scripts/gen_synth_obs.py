@@ -2,9 +2,11 @@ import os, sys, shutil
 import datetime as dt
 import numpy as np
 from scipy.interpolate import interp1d
+
 from config.cfg import exp, cluster
 from utils import symlink, copy, sed_inplace, append_file
 import create_obsseq as osq
+import wrfout_add_geo
 
 earth_radius_km = 6370
 
@@ -50,6 +52,19 @@ def read_prior_obs(f_obs_prior):
 
             OBSs.append(dict(observed=observed, truth=truth, prior_ens=np.array(prior_ens)))
     return OBSs
+
+def read_obsseqout(f):
+    obsseq = open(f, 'r').readlines()
+    true = []
+    obs = []
+    # read observations from obs_seq.out
+    for i, line in enumerate(obsseq):
+        if ' OBS ' in line:
+            observed = float(obsseq[i+1].strip())
+            truth = float(obsseq[i+2].strip())
+            true.append(truth)
+            obs.append(observed)
+    return true, obs
 
 def edit_obserr_in_obsseq(fpath_obsseqin, OEs):
     """
@@ -107,6 +122,41 @@ def set_input_nml(sat_channel=False, just_prior_values=False,
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
 
+def obs_operator_ensemble():
+    os.chdir(cluster.dartrundir)
+
+    if sat_channel:
+        list_ensemble_truths = []
+
+        for iens in range(1, exp.n_ens+1):
+            print('observation operator for ens #'+str(iens))
+            # ens members are already linked to advance_temp<i>/wrfout_d01
+            copy(cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01',
+                 cluster.dartrundir+'/wrfout_d01')
+            
+            t = dt.datetime.now()
+            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+            print((dt.datetime.now()-t).total_seconds(), 'secs for adding geodata')
+
+            # DART may need a wrfinput file as well, which serves as a template for dimension sizes
+            symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+
+            # run perfect_model obs (forward operator)
+            os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
+
+            # truth values in obs_seq.out are H(x) values
+            vals, _ = read_obsseqout(cluster.dartrundir+'/obs_seq.out')
+            list_ensemble_truths.append(vals)
+        
+        n_obs = len(list_ensemble_truths[0])
+        np_array = np.full((exp.n_ens, n_obs), np.nan)
+        for i in range(exp.n_ens):
+            np_array[i, :] = list_ensemble_truths[i]
+        return np_array
+    else:
+        raise NotImplementedError()
+
+
 if __name__ == "__main__":
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
@@ -115,79 +165,100 @@ if __name__ == "__main__":
     # remove any existing observation files
     os.chdir(cluster.dartrundir); os.system('rm -f obs_seq_*.out obs_seq.in obs_seq.final')
 
+    def prepare_nature_dart():
+        # get wrfout_d01 from nature run
+        shutil.copy(time.strftime(cluster.nature_wrfout),
+                    cluster.dartrundir+'/wrfout_d01')
+
+        wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+
+        # DART may need a wrfinput file as well, which serves as a template for dimension sizes
+        symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+
+    prepare_nature_dart()
+
     # loop over observation types
     for i_obs, obscfg in enumerate(exp.observations):
 
         n_obs = obscfg['n_obs']
         error_var = (obscfg['err_std'])**2
-        sat_channel = obscfg.get('channel', False)
+        sat_channel = obscfg.get('sat_channel', False)
         cov_loc = obscfg['cov_loc_radius_km']
         dist_obs = obscfg.get('distance_between_obs_km', False)
         cov_loc_vert_km = obscfg.get('cov_loc_vert_km', False)
+        heights = obscfg.get('heights', False)
 
         # generate obs_seq.in
         obs_coords = osq.calc_obs_locations(n_obs, coords_from_domaincenter=False, 
                                             distance_between_obs_km=dist_obs, 
                                             fpath_obs_locations=fpath_obs_coords)
 
-        if obscfg['sat']:
+        if sat_channel:
             osq.sat(time, sat_channel, obs_coords, error_var,
                     output_path=cluster.dartrundir)
         else:
             osq.generic_obs(obscfg['kind'], time, obs_coords, error_var,
+                            heights=heights, 
                             output_path=cluster.dartrundir)
 
         if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
             raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
 
-        # generate observations (obs_seq.out)
-        set_input_nml(sat_channel=sat_channel,
-                      cov_loc_radius_km=cov_loc,
-                      cov_loc_vert_km=cov_loc_vert_km)
         os.chdir(cluster.dartrundir)
-        t = dt.datetime.now()
+        if sat_channel == 6:
+            """cloud dependent observation error
+
+            # methodologically:
+            1) gen H(x_nature)
+            2) gen H(x_prior)
+            3) find the observation error for a pair of (H(x_nature), H(x_background))
+            4) generate actual observation 
+                with the observation error as function of H(x_nature) and H(x_background)
+
+            # technically:
+            4) the file 'obs_seq.in' needs to be edited to show corrected observation errors
+            """
+            # 1) gen H(x_nature)
+            set_input_nml(sat_channel=sat_channel,
+                            cov_loc_radius_km=cov_loc,
+                            cov_loc_vert_km=cov_loc_vert_km)
+            os.system('mpirun -np 12 ./perfect_model_obs')
+            Hx_nature, _ = read_obsseqout(cluster.dartrundir+'/obs_seq.out')
+
+            # 2) gen H(x_prior) for the whole ensemble 
+            Hx_prior = obs_operator_ensemble()  # files are already linked to DART directory
+
+            # 3) find the observation error for a pair of (H(x_nature), H(x_background))
+            # necessary to achieve a certain FGD distribution which is near to operational
+            n_obs = len(Hx_nature)
+            OEs = []
+            for iobs in range(n_obs):
+
+                bt_y = Hx_nature[iobs]
+                bt_x_ens = Hx_prior[:,iobs]
+                CIs = [cloudimpact_73(bt_x, bt_y) for bt_x in bt_x_ens]
+                mean_CI = np.mean(CIs)
+
+                oe_nature = oe_73(mean_CI)
+                print('oe_nature=', oe_nature, ' K')
+                OEs.append(oe_nature)
+
+            # correct obs_err in obs_seq.in (to produce actual observations later on)
+            fpath_obsseqout = cluster.dartrundir+'/obs_seq.in'
+            edit_obserr_in_obsseq(fpath_obsseqout, OEs)
+
+            # ensure correct nature file linked 
+            # nature should be the real nature again (was changed in the meantime)
+            prepare_nature_dart()   
+                
+        # correct input.nml for actual assimilation later on
+        set_input_nml(sat_channel=sat_channel,
+                        cov_loc_radius_km=cov_loc,
+                        cov_loc_vert_km=cov_loc_vert_km)
+
+        # 4) generate actual observations (with correct error)
+        os.chdir(cluster.dartrundir)
         os.system('mpirun -np 12 ./perfect_model_obs')
-        print('1st perfect_model_obs', (dt.datetime.now()-t).total_seconds())
-
-        # cloud dependent observation error
-        if obscfg['sat']:
-            if sat_channel == 6:
-                # run ./filter to have prior observation estimates from model state
-                set_input_nml(sat_channel=sat_channel,
-                              just_prior_values=True)
-                t = dt.datetime.now()
-                os.system('mv obs_seq.out obs_seq_all.out; mpirun -np 20 ./filter')
-                print('1st filter', (dt.datetime.now()-t).total_seconds())
-
-                # find the observation error for a pair of (H(x_nature), H(x_background))
-                f_obs_prior = cluster.dartrundir+'/obs_seq.final'
-                OBSs = read_prior_obs(f_obs_prior)
-
-                # compute the observation error necessary
-                # to achieve a certain operational FGD distribution
-                OEs = []
-                for obs in OBSs:
-                    bt_y = obs['truth']
-                    bt_x_ens = obs['prior_ens']
-                    CIs = [cloudimpact_73(bt_x, bt_y) for bt_x in bt_x_ens]
-
-                    oe_nature = oe_73(np.mean(CIs))
-                    OEs.append(oe_nature)
-
-                # write obs_seq.out
-                fpath_obsseqout = cluster.dartrundir+'/obs_seq.in'
-                edit_obserr_in_obsseq(fpath_obsseqout, OEs)
-
-                # generate actual observations (with correct error)
-                os.chdir(cluster.dartrundir)
-                t = dt.datetime.now()
-                os.system('mpirun -np 12 ./perfect_model_obs')
-                print('real obs gen', (dt.datetime.now()-t).total_seconds())
-
-                # correct input.nml for actual assimilation later on
-                set_input_nml(sat_channel=sat_channel,
-                              cov_loc_radius_km=cov_loc,
-                              cov_loc_vert_km=cov_loc_vert_km)
 
         # rename according to i_obs
         os.rename(cluster.dartrundir+'/obs_seq.out', 

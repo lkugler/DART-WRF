@@ -297,23 +297,32 @@ def calc_obs_locations_3d(coords, heights):
     return coords2
 
 
-def generic_obs(obs_type, time_dt, coords, error_var, output_path='./'):
+def generic_obs(obs_kind, time_dt, coords, error_var, heights=False, output_path='./'):
 
-    obs_codes = {'RASO_T': {'name': 'RADIOSONDE_TEMPERATURE', 'nr': '5'},
-                 'RADAR': {'name': 'RADAR_REFLECTIVITY', 'nr': '37'},
-                 'PSFC': {'name': 'LAND_SFC_PRESSURE', 'nr': '29'},}
+    obs_kind_nrs = {'RADIOSONDE_TEMPERATURE': '5',
+                    'RADAR_REFLECTIVITY': '37',
+                    'SYNOP_SURFACE_PRESSURE': '94',
+                    'SYNOP_SPECIFIC_HUMIDITY': '95',
+                    'SYNOP_TEMPERATURE': '96',
+                    }
 
-    heights = [5000., ] #np.arange(5000, 15001, 1000)
+    if 'SYNOP' in obs_kind:
+        is_sfc_obs = True
+        heights = [2,]
+    else:
+        is_sfc_obs = False
+
+    if not heights:
+        heights = [5000., ]
     coords = calc_obs_locations_3d(coords, heights)
 
     dart_date_day, secs_thatday = get_dart_date(add_timezone_UTC(time_dt))
     print('secs, days:', secs_thatday, dart_date_day)
 
-    obs_name = obs_codes[obs_type]['name']
-    obs_kind_nr = obs_codes[obs_type]['nr']
-
-    write_generic_obsseq(obs_name, obs_kind_nr, error_var, coords,
-                         dart_date_day, secs_thatday, output_path)
+    obs_kind_nr = obs_kind_nrs[obs_kind]
+    write_generic_obsseq(obs_kind, obs_kind_nr, error_var, coords,
+                         dart_date_day, secs_thatday, output_path,
+                         vert_coord_sfc=is_sfc_obs)
 
 
 if __name__ == '__main__':

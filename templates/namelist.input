@@ -52,7 +52,7 @@
  mp_physics                          = 8,     1,     1,
  ra_lw_physics                       = 4,     0,     0,
  ra_sw_physics                       = 4,     0,     0,
- radt                                = 5,    30,    30,
+ radt                                = <radt>,    30,    30,
  sf_sfclay_physics                   = 5,     0,     0,
  sf_surface_physics                  = 2,     0,     0,
  bl_pbl_physics                      = 5,     0,     0,

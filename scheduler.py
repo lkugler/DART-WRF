@@ -16,12 +16,18 @@ from scripts.utils import script_to_str, symlink
 # allow scripts to access the configuration
 symlink(cluster.scriptsdir+'/../config', cluster.scriptsdir+'/config')
 
+log_dir = cluster.archivedir()+'/logs/'
+slurm_scripts_dir = cluster.archivedir()+'/slurm-scripts/'
+print('logging to', log_dir)
+print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
+
 def my_Slurm(*args, cfg_update=dict(), **kwargs):
-    """Shortcut to slurmpy's class; keep default kwargs
-    and only update according to `cfg_update`
+    """Shortcut to slurmpy's class; keep certain default kwargs
+    and only update some with kwarg `cfg_update`
     see https://github.com/brentp/slurmpy
     """
-    return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), **kwargs)
+    return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), 
+                 log_dir=log_dir, scripts_dir=slurm_scripts_dir, **kwargs)
 
 class Cmdline(object):
     def __init__(self, name, cfg_update):
@@ -31,18 +37,16 @@ class Cmdline(object):
         print('running', self.name, 'without SLURM')
         os.system(cmd)
 
-def clear_logs(backup_existing_to_archive=True):
-    dirs = ['/logs/', '/slurm-scripts/']
-    for d in dirs:
-        archdir = cluster.archivedir()+d
-        if backup_existing_to_archive:
-            os.makedirs(archdir, exist_ok=True)
-        dir = cluster.scriptsdir+'/../'+d
-        for f in os.listdir(dir):
-            if backup_existing_to_archive:
-                shutil.move(dir+f, archdir+f)
-            else:
-                os.remove(dir+f)
+def backup_scripts():
+    os.makedirs(cluster.archivedir(), exist_ok=True)
+    dir_backup_scripts = cluster.archivedir()+'/DART-WRF/'
+    os.makedirs(dir_backup_scripts, exist_ok=True)
+    os.makedirs(dir_backup_scripts+'/old/', exist_ok=True)
+    os.system('mv '+dir_backup_scripts+'/* '+dir_backup_scripts+'/old/')  # move old logs
+    shutil.copy(cluster.scriptsdir+'/../scheduler.py', dir_backup_scripts+'/scheduler.py')
+    shutil.copy(cluster.scriptsdir+'/../config/clusters.py', dir_backup_scripts+'/clusters.py')
+    shutil.copy(cluster.scriptsdir+'/../config/cfg.py', dir_backup_scripts+'/cfg.py')
+    os.system('cp -r '+cluster.scriptsdir+' '+dir_backup_scripts+'/')
 
 def prepare_wrfinput():
     """Create WRF/run directories and wrfinput files
@@ -71,7 +75,7 @@ done
     id = s.run(cmd, depends_on=[id])
     return id
 
-def update_wrfinput_from_archive(time, background_init_time, exppath, depends_on=None):
+def update_wrfinput_from_archive(valid_time, background_init_time, exppath, depends_on=None):
     """Given that directories with wrfinput files exist,
     update these wrfinput files according to wrfout files
     """
@@ -79,7 +83,7 @@ def update_wrfinput_from_archive(time, background_init_time, exppath, depends_on
 
     # path of initial conditions, <iens> is replaced by member index
     IC_path = exppath + background_init_time.strftime('/%Y-%m-%d_%H:%M/')  \
-              +'*iens*/'+time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
+              +'*iens*/'+valid_time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_wrfout.py '
                 +IC_path, depends_on=[depends_on])
     return id
@@ -92,12 +96,14 @@ def run_ENS(begin, end, depends_on=None):
 
     # first minute forecast (needed for validating an assimilation)
     hist_interval = 1
+    radt = 1  # calc CFRAC also in first minute
     begin_plus1 = begin+dt.timedelta(minutes=1)
     s = my_Slurm("preWRF1", cfg_update=dict(time="2"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_namelist.py '
-            + begin.strftime('%Y-%m-%d_%H:%M')+' '
-            + begin_plus1.strftime('%Y-%m-%d_%H:%M')+' '
-            + str(hist_interval), 
+    id = s.run(' '.join([cluster.python,
+               cluster.scriptsdir+'/prepare_namelist.py',
+               begin.strftime('%Y-%m-%d_%H:%M'),
+               begin_plus1.strftime('%Y-%m-%d_%H:%M'),
+               str(hist_interval), str(radt),]) 
             depends_on=[id])
 
     s = my_Slurm("runWRF1", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
@@ -114,11 +120,13 @@ def run_ENS(begin, end, depends_on=None):
 
     # whole forecast timespan
     hist_interval = 5
+    radt = 5
     s = my_Slurm("preWRF2", cfg_update=dict(time="2"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_namelist.py '
-            + begin.strftime('%Y-%m-%d_%H:%M')+' '
-            + end.strftime('%Y-%m-%d_%H:%M')+' '
-            + str(hist_interval), 
+    id = s.run(' '.join([cluster.python,
+               cluster.scriptsdir+'/prepare_namelist.py',
+               begin.strftime('%Y-%m-%d_%H:%M'),
+               begin_plus1.strftime('%Y-%m-%d_%H:%M'),
+               str(hist_interval), str(radt),])
             depends_on=[id])
 
     time_in_simulation_hours = (end-begin).total_seconds()/3600
@@ -134,43 +142,40 @@ def run_ENS(begin, end, depends_on=None):
     #           + begin.strftime('%Y-%m-%d_%H:%M'), depends_on=[id2])
     return id
 
-def assimilate(assim_time, background_init_time,
-               prior_from_different_exp=False, depends_on=None):
+def assimilate(assim_time, prior_init_time,
+               prior_path_exp=False, depends_on=None):
     """Creates observations from a nature run and assimilates them.
 
     Args:
         assim_time (dt.datetime): timestamp of prior wrfout files
-        background_init_time (dt.datetime): 
+        prior_init_time (dt.datetime): 
             timestamp to find the directory where the prior wrfout files are
-        prior_from_different_exp (bool or str):
+        prior_path_exp (bool or str):
             put a `str` to take the prior from a different experiment
             if False: use `archivedir` (defined in config) to get prior state
             if str: use this directory to get prior state
     """
-    id = depends_on
-
-    if prior_from_different_exp:
-        prior_expdir = prior_from_different_exp
-    else:
+    if prior_path_exp == False:
         prior_expdir = cluster.archivedir()
+    elif not isinstance(prior_path_exp, str):
+        raise TypeError('prior_path_exp either str or False, is '+str(type(prior_path_exp)))
 
     # prepare state of nature run, from which observation is sampled
-    s = my_Slurm("prepNature", cfg_update=dict(time="2"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
-               +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[depends_on])
+    #s = my_Slurm("prepNature", cfg_update=dict(time="2"))
+    #id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
+    #           +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[depends_on])
 
     # prepare prior model state
     s = my_Slurm("preAssim", cfg_update=dict(time="2"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_assim.py '
                +assim_time.strftime('%Y-%m-%d_%H:%M ')
-               +background_init_time.strftime('%Y-%m-%d_%H:%M ')
-               +prior_expdir, depends_on=[id])
+               +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
+               +prior_path_exp, depends_on=[depends_on])
 
-    # generate observations
-    s = my_Slurm("genSynthObs", cfg_update=dict(ntasks="48", time="10"))
+    # prepare nature run, generate observations
+    s = my_Slurm("genSynthObs", cfg_update=dict(ntasks="48", time="12"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/gen_synth_obs.py '
-               +time.strftime('%Y-%m-%d_%H:%M'),
-               depends_on=[id])
+               +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
  
     # actuall assimilation step
     s = my_Slurm("Assim", cfg_update=dict(ntasks="48", time="50", mem="200G"))
@@ -184,8 +189,8 @@ def assimilate(assim_time, background_init_time,
     s = my_Slurm("updateIC", cfg_update=dict(time="8"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_filteroutput.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M ')
-                +background_init_time.strftime('%Y-%m-%d_%H:%M ')
-                +prior_expdir, depends_on=[id])
+                +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
+                +prior_path_exp, depends_on=[id])
     return id
 
 
@@ -206,7 +211,7 @@ print('starting osse')
 timedelta_integrate = dt.timedelta(minutes=45)
 timedelta_btw_assim = dt.timedelta(minutes=30)
 
-clear_logs(backup_existing_to_archive=False)
+backup_scripts()
 id = None
 
 start_from_existing_state = True
@@ -225,32 +230,33 @@ if is_new_run:
     first_guess = False
     
 elif start_from_existing_state:
-    id = prepare_wrfinput()  # create initial conditions
+    #id = prepare_wrfinput()  # create initial conditions
     
     # get initial conditions from archive
     background_init_time = dt.datetime(2008, 7, 30, 11, 30)
     time = dt.datetime(2008, 7, 30, 12)
-    exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.12_LMU_so_VIS2'
+    exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.12_LMU_so_VIS'
     first_guess = exppath_arch
-    id = update_wrfinput_from_archive(time, background_init_time, exppath_arch, depends_on=id)
+    #id = update_wrfinput_from_archive(time, background_init_time, exppath_arch, depends_on=id)
 
-while time <= dt.datetime(2008, 7, 30, 15):
+while time <= dt.datetime(2008, 7, 30, 14):
     assim_time = time
-     id = assimilate(assim_time,
-                     background_init_time,
-                     prior_from_different_exp=first_guess,
-                     depends_on=id)
-    first_guess = False
-
     prev_forecast_init = assim_time - timedelta_btw_assim
     this_forecast_init = assim_time  # start integration from here
-    this_forecast_end = assim_time + timedelta_btw_assim
+    this_forecast_end = assim_time + timedelta_integrate
+
+    id = assimilate(assim_time,
+                    prev_forecast_init,
+                    prior_path_exp=first_guess,
+                    depends_on=id)
+    #first_guess = False
+
+    #id = update_wrfinput_from_archive(this_forecast_init, this_forecast_init, cluster.archivedir(), depends_on=id)
 
     id = run_ENS(begin=this_forecast_init,
-                end=this_forecast_end,
-                depends_on=id)
+                 end=this_forecast_init+dt.timedelta(minutes=10),
+                 depends_on=id)
     time += timedelta_btw_assim
-
-    create_satimages(depends_on=id)
+    #create_satimages(depends_on=id)
 
 mailme(id)

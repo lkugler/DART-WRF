@@ -5,11 +5,6 @@ from utils import symlink, copy, link_contents
 
 import prepare_namelist
 
-# archive configuration
-os.makedirs(cluster.archivedir(), exist_ok=True)
-shutil.copy(cluster.scriptsdir+'/../config/clusters.py', cluster.archivedir()+'/clusters.py')
-shutil.copy(cluster.scriptsdir+'/../config/cfg.py', cluster.archivedir()+'/cfg.py')
-
 for iens in range(1, exp.n_ens+1):
     print('preparing ens', iens)
     input_prof = (cluster.input_profile).replace('<iens>', str(iens).zfill(3))
