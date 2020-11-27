@@ -43,19 +43,25 @@ def backup_scripts():
     old_a = main_a+'/old/'
 
     os.makedirs(cluster.archivedir(), exist_ok=True)
-    os.makedirs main_a, exist_ok=True)
-    os.makedirs , exist_ok=True)
+    os.makedirs(main_a, exist_ok=True)
+    os.makedirs(old_a, exist_ok=True)
+
+    def func(a, b, method): # call method if not link or directory
+        if os.path.islink(a) or os.path.isdir(a):
+            pass
+        else:
+            method(a, b)
 
     # archive existing files
     for f in os.listdir(main_a):
-        shutil.move(os.path.join(main_a, f), old_a+'/')
+        func(os.path.join(main_a, f), old_a+'/'+f, shutil.move)
 
     # reproducibility
     for f in ['scheduler.py', 'config/clusters.py', 'config/cfg.py']:
-        shutil.copy(current+'/../'+f,  main_a+'/scheduler.py')
+        func(current+'/../'+f,  main_a+'/scheduler.py', shutil.copy)
         
     for f in os.listdir(current):
-        shutil.copy(os.path.join(current, f), main_a+'/')
+        func(os.path.join(current, f), main_a+'/', shutil.copy)
 
 def prepare_wrfinput():
     """Create WRF/run directories and wrfinput files
@@ -112,8 +118,8 @@ def run_ENS(begin, end, depends_on=None):
                cluster.scriptsdir+'/prepare_namelist.py',
                begin.strftime('%Y-%m-%d_%H:%M'),
                begin_plus1.strftime('%Y-%m-%d_%H:%M'),
-               str(hist_interval), str(radt),]) 
-            depends_on=[id])
+               str(hist_interval), str(radt),]), 
+             depends_on=[id])
 
     s = my_Slurm("runWRF1", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
                 "time": "2", "mem-per-cpu": "2G"})
@@ -135,7 +141,7 @@ def run_ENS(begin, end, depends_on=None):
                cluster.scriptsdir+'/prepare_namelist.py',
                begin.strftime('%Y-%m-%d_%H:%M'),
                begin_plus1.strftime('%Y-%m-%d_%H:%M'),
-               str(hist_interval), str(radt),])
+               str(hist_interval), str(radt),]), 
             depends_on=[id])
 
     time_in_simulation_hours = (end-begin).total_seconds()/3600
@@ -164,8 +170,8 @@ def assimilate(assim_time, prior_init_time,
             if False: use `archivedir` (defined in config) to get prior state
             if str: use this directory to get prior state
     """
-    if prior_path_exp == False:
-        prior_expdir = cluster.archivedir()
+    if not prior_path_exp:
+        prior_path_exp = cluster.archivedir()
     elif not isinstance(prior_path_exp, str):
         raise TypeError('prior_path_exp either str or False, is '+str(type(prior_path_exp)))
 
@@ -173,7 +179,7 @@ def assimilate(assim_time, prior_init_time,
     #s = my_Slurm("prepNature", cfg_update=dict(time="2"))
     #id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_nature.py '
     #           +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[depends_on])
-
+    
     # prepare prior model state
     s = my_Slurm("preAssim", cfg_update=dict(time="2"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/pre_assim.py '
@@ -243,13 +249,13 @@ elif start_from_existing_state:
     
     # get initial conditions from archive
     init_time = dt.datetime(2008, 7, 30, 6)
-    valid_time = dt.datetime(2008, 7, 30, 10)
+    time = dt.datetime(2008, 7, 30, 10)
     exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
     
-    id = update_wrfinput_from_archive(valid_time, init_time, exppath_arch, depends_on=id)
+    id = update_wrfinput_from_archive(time, init_time, exppath_arch, depends_on=id)
 
 # values for assimilation
-assim_time = valid_time
+assim_time = time
 prior_init_time = init_time
 prior_path_exp = exppath_arch
 

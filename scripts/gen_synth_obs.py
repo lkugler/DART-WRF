@@ -115,12 +115,15 @@ def set_input_nml(sat_channel=False, just_prior_values=False,
 
     # input.nml for RTTOV
     if sat_channel > 0:
-        if sat_channel in [1, 2, 3, 12]:
+        if sat_channel in [1, 2, 3, 12]:  # VIS channels
             rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml'
-        else:
+        else:  # IR channels
             rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
-
+    else:
+        # append any rttov segment, needs to exist anyway
+        rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
+        append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
 def obs_operator_ensemble():
     os.chdir(cluster.dartrundir)
@@ -162,8 +165,9 @@ if __name__ == "__main__":
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
     fpath_obs_coords = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/obs_coords.pkl')
 
-    # remove any existing observation files
-    os.chdir(cluster.dartrundir); os.system('rm -f obs_seq_*.out obs_seq.in obs_seq.final')
+    
+    os.chdir(cluster.dartrundir)
+    os.system('rm -f obs_seq_*.out obs_seq.in obs_seq.final')  # remove any existing observation files
 
     def prepare_nature_dart():
         # get wrfout_d01 from nature run

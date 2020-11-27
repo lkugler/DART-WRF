@@ -1,4 +1,4 @@
-
+import numpy as np
 from . import clusters
 cluster = clusters.vsc  # change cluster configuration here
 
@@ -31,7 +31,7 @@ radar = dict(kind='RADAR', n_obs=n_obs, err_std=5.,
 t2m = dict(kind='SYNOP_TEMPERATURE', n_obs=n_obs, err_std=1.0, 
            cov_loc_radius_km=32, cov_loc_vert_km=1)
 psfc = dict(kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs, err_std=50.,
-           cov_loc_radius_km=32)
+           cov_loc_radius_km=32, cov_loc_vert_km=5)
            
 
 exp.observations = [t2m, psfc, ]

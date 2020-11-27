@@ -9,23 +9,22 @@ import create_obsseq as osq
 from gen_synth_obs import read_prior_obs, set_input_nml
 import pre_assim
 
-def run_operator(time):
+def run_operator(obscfg, time):
     """
     time_for_dart (dt.datetime) : needs to be consistent with wrfout files!
     """
-
-    # assume only 1 obstype for now
-    obscfg = exp.observations[0]
 
     # get observation file (obs not important, but their locations)
     # this should correspond to configuration to have same locations as in real assim
     obs_seq_all_out = cluster.dartrundir + '/obs_seq_all.out'
     os.chdir(cluster.dartrundir)
+
     n_obs = obscfg['n_obs']
     error_var = (obscfg['err_std'])**2
     sat_channel = obscfg.get('channel', False)
     cov_loc = obscfg['cov_loc_radius_km']
     dist_obs = obscfg.get('distance_between_obs_km', False)
+
     obs_coords = osq.calc_obs_locations(n_obs, coords_from_domaincenter=False, 
                                         distance_between_obs_km=dist_obs, 
                                         fpath_obs_locations=None)
@@ -55,8 +54,10 @@ def run_operator(time):
     # copy output to archive
     savedir = cluster.archivedir()+'/obs_seq_final_1min/'
     mkdir(savedir)
-    copy(cluster.dartrundir+'/obs_seq.final', 
-         savedir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final'))
+    obsname = obscfg.get('kind', 'satch'+str(obscfg['sat_channel']))
+    fout = time.strftime('/%Y-%m-%d_%H:%M_'+obsname+'_obs_seq.final')
+    copy(cluster.dartrundir+'/obs_seq.final', savedir+fout)
+    print('output of observation operator saved to', fout)
 
 
 if __name__ == '__main__':
@@ -69,4 +70,5 @@ if __name__ == '__main__':
     pre_assim.run(time_to_run_fw_op, prev_forecast_init, exppath_firstguess)
 
     # run fwd operator, save to archive
-    run_operator(time_to_run_fw_op)
+    for i_obs, obscfg in enumerate(exp.observations):
+        run_operator(obscfg, time_to_run_fw_op)
