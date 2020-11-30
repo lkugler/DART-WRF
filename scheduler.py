@@ -85,7 +85,7 @@ do
     mv $rundir/rsl.out.0000 $rundir/rsl.out.input
 done
 """
-    s = my_Slurm("ideal", cfg_update={"ntasks": str(exp.n_ens),
+    s = my_Slurm("ideal", cfg_update={"ntasks": str(exp.n_ens), "nodes": "1",
                                       "time": "10", "mem-per-cpu": "2G"})
     id = s.run(cmd, depends_on=[id])
     return id
@@ -188,18 +188,18 @@ def assimilate(assim_time, prior_init_time,
                +prior_path_exp, depends_on=[depends_on])
 
     # prepare nature run, generate observations
-    s = my_Slurm("genSynthObs", cfg_update=dict(ntasks="48", time="12"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/gen_synth_obs.py '
+    s = my_Slurm("Assim", cfg_update=dict(nodes="1", ntasks="48", time="50", mem="200G"))
+    id = s.run(cluster.python+' '+cluster.scriptsdir+'/assim_synth_obs.py '
                +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
  
-    # actuall assimilation step
-    s = my_Slurm("Assim", cfg_update=dict(ntasks="48", time="50", mem="200G"))
-    cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter; rm obs_seq_all.out'
-    id = s.run(cmd, depends_on=[id])
+    # # actuall assimilation step
+    # s = my_Slurm("Assim", cfg_update=dict(nodes="1", ntasks="48", time="50", mem="200G"))
+    # cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter; rm obs_seq_all.out'
+    # id = s.run(cmd, depends_on=[id])
 
-    s = my_Slurm("archiveAssim", cfg_update=dict(time="10"))
-    id = s.run(cluster.python+' '+cluster.scriptsdir+'/archive_assim.py '
-               + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
+    # s = my_Slurm("archiveAssim", cfg_update=dict(time="10"))
+    # id = s.run(cluster.python+' '+cluster.scriptsdir+'/archive_assim.py '
+    #            + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
 
     s = my_Slurm("updateIC", cfg_update=dict(time="8"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/update_wrfinput_from_filteroutput.py '
@@ -245,27 +245,28 @@ if is_new_run:
     first_guess = False
     
 elif start_from_existing_state:
-    id = prepare_wrfinput()  # create initial conditions
+    #id = prepare_wrfinput()  # create initial conditions
     
     # get initial conditions from archive
     init_time = dt.datetime(2008, 7, 30, 6)
     time = dt.datetime(2008, 7, 30, 10)
     exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
     
-    id = update_wrfinput_from_archive(time, init_time, exppath_arch, depends_on=id)
+    #id = update_wrfinput_from_archive(time, init_time, exppath_arch, depends_on=id)
 
 # values for assimilation
 assim_time = time
 prior_init_time = init_time
-prior_path_exp = exppath_arch
+prior_path_exp = False  # use own exp path
 
-while time <= dt.datetime(2008, 7, 30, 18):
+
+while time <= dt.datetime(2008, 7, 30, 10):
 
     id = assimilate(assim_time,
                     prior_init_time,
                     prior_path_exp=prior_path_exp,
                     depends_on=id)
-    prior_path_exp = False  # use own exp path
+    #prior_path_exp = False  # use own exp path
 
     # integration
     this_forecast_init = assim_time  # start integration from here
@@ -282,6 +283,6 @@ while time <= dt.datetime(2008, 7, 30, 18):
     assim_time = time
     prior_init_time = assim_time - timedelta_btw_assim
     
-    create_satimages(depends_on=id)
+    #create_satimages(depends_on=id)
 
 mailme(id)

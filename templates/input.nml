@@ -31,7 +31,7 @@
    async                    = 0,
    adv_ens_command          = "../shell_scripts/advance_model.csh",
    ens_size                 = <n_ens>,
-   obs_sequence_in_name     = "obs_seq_all.out",
+   obs_sequence_in_name     = "obs_seq.out",
    obs_sequence_out_name    = "obs_seq.final",
    input_state_file_list    = "input_list.txt"
    output_state_file_list   = "output_list.txt"
@@ -160,7 +160,10 @@
                                 'MSG_4_SEVIRI_RADIANCE',
 				'MSG_4_SEVIRI_TB',
 				'MSG_4_SEVIRI_BDRF',
-                                'LAND_SFC_PRESSURE'
+                                'LAND_SFC_PRESSURE',
+                                'SYNOP_SURFACE_PRESSURE',
+                                'SYNOP_TEMPERATURE',
+                                'SYNOP_SPECIFIC_HUMIDITY'
    evaluate_these_obs_types   = 'RADIOSONDE_SPECIFIC_HUMIDITY',
    /
 

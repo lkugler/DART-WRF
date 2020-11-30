@@ -34,8 +34,7 @@ vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
 vsc.run_WRF = '/gpfs/data/fs71386/lkugler/DART-WRF/scripts/osse/run_ens.vsc.sh'
 
 vsc.slurm_cfg = {"account": "p71386", "partition": "mem_0384", "qos": "p71386_0384",
-                 "nodes": "1", "ntasks": "1",
-                 "ntasks-per-node": "48", "ntasks-per-core": 1,
+                 "ntasks": "1", "nodes": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
 

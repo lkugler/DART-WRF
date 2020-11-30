@@ -34,7 +34,7 @@ def get_dart_date(time_dt):
     return dart_date_day, secs_thatday
 
 def calc_obs_locations(n_obs, coords_from_domaincenter=True,
-                       distance_between_obs_km=9999, fpath_obs_locations=False):
+                       distance_between_obs_km=9999, folder_obs_coords=False):
     """Calculate coordinate pairs for locations
 
     Args:
@@ -104,6 +104,27 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
     assert len(coords) == n_obs, (len(coords), n_obs)
     return coords
 
+def main_obspart(obs, last=False):
+    """
+    Args:
+    obs (object)
+    last (bool): True if this is the last observation in the obs_seq file
+    """
+    if last:
+        line_link = "          "+str(obs.i-1)+"           -1          -1"
+    else:
+        line_link = "        -1           "+str(obs.i+1)+"          -1"
+    
+    return """
+ OBS            """+str(obs.i)+"""
+"""+line_link+"""
+obdef
+loc3d
+     """+obs.lon_rad+"        "+obs.lat_rad+"        "+obs.vert+"     "+obs.vert_coord_sys+"""
+kind
+         """+obs.kind_nr+"""
+ """+obs.secs_thatday+"""     """+obs.dart_date_day+"""
+  """+obs.error_var
 
 def write_generic_obsseq(obs_name, obs_kind_nr, error_var, coords,
                          dart_date_day, secs_thatday, output_path,
@@ -324,23 +345,95 @@ def generic_obs(obs_kind, time_dt, coords, error_var, heights=False, output_path
                          dart_date_day, secs_thatday, output_path,
                          vert_coord_sfc=is_sfc_obs)
 
+def obskind_read():
+    raw_obskind_dart = """
+                    5 RADIOSONDE_TEMPERATURE
+                    6 RADIOSONDE_SPECIFIC_HUMIDITY
+                    12 AIRCRAFT_U_WIND_COMPONENT
+                    13 AIRCRAFT_V_WIND_COMPONENT
+                    14 AIRCRAFT_TEMPERATURE
+                    16 ACARS_U_WIND_COMPONENT
+                    17 ACARS_V_WIND_COMPONENT
+                    18 ACARS_TEMPERATURE
+                    29 LAND_SFC_PRESSURE
+                    30 SAT_U_WIND_COMPONENT
+                    31 SAT_V_WIND_COMPONENT
+                    36 DOPPLER_RADIAL_VELOCITY
+                    37 RADAR_REFLECTIVITY
+                    83 GPSRO_REFRACTIVITY
+                    94 SYNOP_SURFACE_PRESSURE
+                    95 SYNOP_SPECIFIC_HUMIDITY
+                    96 SYNOP_TEMPERATURE
+                254 MSG_4_SEVIRI_RADIANCE
+                255 MSG_4_SEVIRI_TB
+                256 MSG_4_SEVIRI_BDRF"""
+
+    # lookup table for kind nr
+    alist = raw_obskind_dart.split()
+    assert len(alist) % 2 == 0, alist
+    obskind_nrs = {}
+    for i in range(0, len(alist)-1, 2):
+        obskind_nrs[alist[i+1]] = alist[i]
+    return obskind_nrs
+
+obskind_nrs = obskind_read()
+
+
+def create_obsseq_in(obscfg, obserr_var):
+    """
+    Args:
+    obserr_var (np.array): observation error variance
+        shape (n_obs,), one value for each observation, 
+    """
+
+    self.coords = osq.calc_obs_locations(obscfg['n_obs'], 
+                        coords_from_domaincenter=False, 
+                        distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
+                        fpath_obs_locations=folder_obs_coords+'/obs_coords_'+obscfg['kind']+'.pkl')
+
+    #     for i_obs in obscfg['n_obs']:
+
+    #         instruction = dict(kind_nr = obskind_nrs[obscfg['kind']],
+    #                            sat_channel = obscfg.get('sat_channel', False),
+    #                            heights = obscfg.get('heights', False),
+                             
+    # obs_kinds, time_dt, coords, error_var, heights=False, output_path='./'):
+
+    if 'SYNOP' in obs_kind:
+        is_sfc_obs = True
+        heights = [2,]
+    else:
+        is_sfc_obs = False
+
+    if not heights:
+        heights = [5000., ]
+    coords = calc_obs_locations_3d(coords, heights)
+
+    dart_date_day, secs_thatday = get_dart_date(add_timezone_UTC(time_dt))
+    print('secs, days:', secs_thatday, dart_date_day)
+
+    obs_kind_nr = obs_kind_nrs[obs_kind]
+
+    for obs_kind in obs_kinds:
+
+        write_generic_obsseq2(obs_kind, obs_kind_nr, error_var, coords,
+                            dart_date_day, secs_thatday, output_path,
+                            vert_coord_sfc=is_sfc_obs)
 
 if __name__ == '__main__':
-    time_dt = dt.datetime(2008, 7, 30, 16, 31)
-    n_obs = 100
+    time_dt = dt.datetime(2008, 7, 30, 10, 0)
+    n_obs = 64
     sat_channel = 1
 
     distance_between_obs_meters = 10000
-    error_var = 0.001
+    #error_var = 0.001
     obs_coords = calc_obs_locations(n_obs, coords_from_domaincenter=False, 
                                             distance_between_obs_km=distance_between_obs_meters, 
                                             fpath_obs_locations=None)
-    sat(time_dt, sat_channel, obs_coords, error_var, output_path='./')
+    #sat(time_dt, sat_channel, obs_coords, error_var, output_path='./')
 
     # error_var = (5.)**2
-    # generic_obs('RADAR', time_dt, n_obs, error_var, distance_between_obs_meters,
-    #             output_path='./', fpath_obs_locations='./domain.pkl')
+    # generic_obs('RADAR_REFLECTIVITY', time_dt, obs_coords, error_var, heights=[5000.,], output_path='./')
 
-    # error_var = (0.5)**2
-    # generic_obs('RASO_T', time_dt, n_obs, error_var, distance_between_obs_meters,
-    #                 output
+    error_var = (0.5)**2
+    generic_obs('RADIOSONDE_TEMPERATURE', time_dt, obs_coords, error_var, heights=[5000.,])
