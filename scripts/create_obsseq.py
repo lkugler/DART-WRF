@@ -4,7 +4,44 @@
 import os, sys, warnings
 import numpy as np
 import datetime as dt
+from config.cfg import exp, cluster
 from pysolar.solar import get_altitude, get_azimuth
+
+
+def obskind_read():
+    raw_obskind_dart = """
+                    5 RADIOSONDE_TEMPERATURE
+                    6 RADIOSONDE_SPECIFIC_HUMIDITY
+                    12 AIRCRAFT_U_WIND_COMPONENT
+                    13 AIRCRAFT_V_WIND_COMPONENT
+                    14 AIRCRAFT_TEMPERATURE
+                    16 ACARS_U_WIND_COMPONENT
+                    17 ACARS_V_WIND_COMPONENT
+                    18 ACARS_TEMPERATURE
+                    29 LAND_SFC_PRESSURE
+                    30 SAT_U_WIND_COMPONENT
+                    31 SAT_V_WIND_COMPONENT
+                    36 DOPPLER_RADIAL_VELOCITY
+                    37 RADAR_REFLECTIVITY
+                    83 GPSRO_REFRACTIVITY
+                    94 SYNOP_SURFACE_PRESSURE
+                    95 SYNOP_SPECIFIC_HUMIDITY
+                    96 SYNOP_TEMPERATURE
+                254 MSG_4_SEVIRI_RADIANCE
+                255 MSG_4_SEVIRI_TB
+                256 MSG_4_SEVIRI_BDRF"""
+
+    # lookup table for kind nr
+    alist = raw_obskind_dart.split()
+    assert len(alist) % 2 == 0, alist
+    obskind_nrs = {}
+    for i in range(0, len(alist)-1, 2):
+        obskind_nrs[alist[i+1]] = alist[i]
+    return obskind_nrs
+
+
+#####################
+# Global variables
 
 # position on earth to calculate solar angles
 lat0 = 45.
@@ -13,17 +50,23 @@ lon0 = 0.
 sat_az = "180.0"
 sat_zen = "45.0"
 
+obs_kind_nrs = obskind_read()
+
+
 def degr_to_rad(degr):
     """Convert to DART convention = radians"""
     if degr < 0:
         degr += 360
     return degr/360*2*np.pi
 
+
 def round_to_day(dtobj):
     return dtobj.replace(second=0, minute=0, hour=0)
 
+
 def add_timezone_UTC(t):
     return dt.datetime(t.year, t.month, t.day, t.hour, t.minute, tzinfo=dt.timezone.utc)
+
 
 def get_dart_date(time_dt):
     # assumes input is UTC!
@@ -33,8 +76,9 @@ def get_dart_date(time_dt):
     secs_thatday = str(int((time_dt - round_to_day(time_dt)).total_seconds()))
     return dart_date_day, secs_thatday
 
+
 def calc_obs_locations(n_obs, coords_from_domaincenter=True,
-                       distance_between_obs_km=9999, folder_obs_coords=False):
+                       distance_between_obs_km=9999, fpath_coords=False):
     """Calculate coordinate pairs for locations
 
     Args:
@@ -94,219 +138,30 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
                                lons[skip+i*dx, skip+j*dx]))
 
     try:
-        if fpath_obs_locations:
+        if fpath_coords:
             import pickle
-            os.makedirs(os.path.dirname(fpath_obs_locations), exist_ok=True)
-            with open(fpath_obs_locations, 'wb') as f:
-                pickle.dump(coords, f); print(fpath_obs_locations, 'saved.')
+            os.makedirs(os.path.dirname(fpath_coords), exist_ok=True)
+            with open(fpath_coords, 'wb') as f:
+                pickle.dump(coords, f)
+                print(fpath_coords, 'saved.')
     except Exception as e:
         warnings.warn(str(e))
     assert len(coords) == n_obs, (len(coords), n_obs)
     return coords
 
-def main_obspart(obs, last=False):
-    """
-    Args:
-    obs (object)
-    last (bool): True if this is the last observation in the obs_seq file
-    """
-    if last:
-        line_link = "          "+str(obs.i-1)+"           -1          -1"
-    else:
-        line_link = "        -1           "+str(obs.i+1)+"          -1"
-    
-    return """
- OBS            """+str(obs.i)+"""
-"""+line_link+"""
-obdef
-loc3d
-     """+obs.lon_rad+"        "+obs.lat_rad+"        "+obs.vert+"     "+obs.vert_coord_sys+"""
-kind
-         """+obs.kind_nr+"""
- """+obs.secs_thatday+"""     """+obs.dart_date_day+"""
-  """+obs.error_var
 
-def write_generic_obsseq(obs_name, obs_kind_nr, error_var, coords,
-                         dart_date_day, secs_thatday, output_path,
-                         vert_coord_sfc=False):
-    """
-    Args:
-        dart_date_day (str): DART internal time formatted date
-        secs_thatday (str): DART internal time of day (seconds since 0 UTC)
-        vert_coord_sfc (bool):
-            if True, then vertical coordinate is height above ground, i.e. "surface observation"
-            if False, then vertical is hgt_AMSL
-    """
-
-    vert_coord_sys = 3  # meters AMSL
-    if vert_coord_sfc:
-        vert_coord_sys = -1
-
-    n_obs = len(coords)
-    n_obs_str = str(n_obs)
-    error_var = str(error_var)
-    line_obstypedef = obs_kind_nr+' '+obs_name
-    vert_coord_sys = str(vert_coord_sys)
-
-    msg = """
- obs_sequence
-obs_kind_definitions
-           1
-         """+line_obstypedef+"""
-  num_copies:            0  num_qc:            0
-  num_obs:            """+n_obs_str+"  max_num_obs:            "+n_obs_str+"""
-  first:            1  last:            """+n_obs_str
-
-    for i_obs in range(1, int(n_obs)+1):
-
-        lon = coords[i_obs-1][1]
-        lat = coords[i_obs-1][0]
-        hgt_m = str(coords[i_obs-1][2])
-
-        lon_rad = str(degr_to_rad(lon))
-        lat_rad = str(degr_to_rad(lat))
-
-        # compile text
-        if i_obs < int(n_obs):
-            msg += """
- OBS            """+str(i_obs)+"""
-          -1           """+str(i_obs+1)+"""          -1
-obdef
-loc3d
-     """+lon_rad+"        "+lat_rad+"        "+hgt_m+"     "+vert_coord_sys+"""
-kind
-         """+obs_kind_nr+"""
- """+secs_thatday+"""     """+dart_date_day+"""
-  """+error_var
-        if i_obs == int(n_obs):  # last_observation
-            # compile text
-            msg += """
- OBS            """+str(i_obs)+"""
-          """+str(i_obs-1)+"""           -1          -1
-obdef
-loc3d
-     """+lon_rad+"        "+lat_rad+"        "+hgt_m+"     "+vert_coord_sys+"""
-kind
-         """+obs_kind_nr+"""
- """+secs_thatday+"""     """+dart_date_day+"""
-  """+error_var
-
-    fpath = output_path+'/obs_seq.in'
+def write_file(msg, output_path='./'):
     try:
-        os.remove(fpath)
+        os.remove(output_path)
     except OSError:
         pass
 
-    with open(fpath, 'w') as f:
+    with open(output_path, 'w') as f:
         f.write(msg)
-        print(fpath, 'saved.')
+        print(output_path, 'saved.')
 
 
-def sat(time_dt, channel_id, coords, error_var, output_path='./'):
-    """Create obs_seq.in
-
-    Args:
-        time_dt (dt.datetime): time of observation
-        channel_id (int): SEVIRI channel number
-            see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
-        coords (list of 2-tuples with (lat,lon))
-        error_var (float):
-            gaussian error with this variance is added to the truth at observation time
-        output_path (str): directory where `obs_seq.in` will be saved
-    """
-    # time_dt = add_timezone_UTC(time_dt)
-    # time_dt = dt.datetime(2008, 7, 30, 15, 30, tzinfo=dt.timezone.utc)
-    error_var = str(error_var)
-    n_obs = len(coords)
-
-    # Brightness temperature or Reflectance?
-    channel_id = int(channel_id)
-    if channel_id in [1, 2, 3, 12]:
-        line_obstypedef = '         256 MSG_4_SEVIRI_BDRF'
-        code = '256'
-    else:
-        line_obstypedef = '         255 MSG_4_SEVIRI_TB'
-        code = '255'
-    channel_id = str(channel_id)
-
-    time_dt = add_timezone_UTC(time_dt)
-    sun_az = str(get_azimuth(lat0, lon0, time_dt))
-    sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
-    print('sunzen', sun_zen, 'sunazi', sun_az)
-
-    dart_date_day, secs_thatday = get_dart_date(time_dt)
-    print('secs, days:', secs_thatday, dart_date_day)
-
-    n_obs_str = str(int(n_obs))
-    error_var = str(error_var)
-
-    msg = """
- obs_sequence
-obs_kind_definitions
-           1
-"""+line_obstypedef+"""
-  num_copies:            0  num_qc:            0
-  num_obs:            """+n_obs_str+"  max_num_obs:            "+n_obs_str+"""
-  first:            1  last:            """+n_obs_str
-
-    for i_obs in range(1, int(n_obs)+1):
-
-        lon = coords[i_obs-1][1]
-        lat = coords[i_obs-1][0]
-
-        lon_rad = str(degr_to_rad(lon))
-        lat_rad = str(degr_to_rad(lat))
-
-        # compile text
-        if i_obs < int(n_obs):
-            msg += """
- OBS            """+str(i_obs)+"""
-          -1           """+str(i_obs+1)+"""          -1
-obdef
-loc3d
-     """+lon_rad+"""        """+lat_rad+"""        -888888.0000000000     -2
-kind
-         """+code+"""
- visir
-   """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
-   """+sun_zen+"""
-          12           4          21           """+channel_id+"""
-  -888888.000000000
-           1
- """+secs_thatday+"""     """+dart_date_day+"""
-  """+error_var
-        if i_obs == int(n_obs):  # last_observation
-            # compile text
-            msg += """
- OBS            """+str(i_obs)+"""
-          """+str(i_obs-1)+"""           -1          -1
-obdef
-loc3d
-     """+lon_rad+"""        """+lat_rad+"""        -888888.0000000000     -2
-kind
-         """+code+"""
- visir
-   """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
-   """+sun_zen+"""
-          12           4          21           """+channel_id+"""
-  -888888.000000000
-           1
- """+secs_thatday+"""     """+dart_date_day+"""
-  """+error_var
-
-    fpath = output_path+'/obs_seq.in'
-    try:
-        os.remove(fpath)
-    except OSError:
-        pass
-
-    with open(fpath, 'w') as f:
-        f.write(msg)
-        print(fpath, 'saved.')
-
-
-def calc_obs_locations_3d(coords, heights):
-    # append height
+def append_hgt_to_coords(coords, heights):
     coords2 = []
     for i in range(len(coords)):
         for hgt_m in heights:
@@ -318,122 +173,155 @@ def calc_obs_locations_3d(coords, heights):
     return coords2
 
 
-def generic_obs(obs_kind, time_dt, coords, error_var, heights=False, output_path='./'):
-
-    obs_kind_nrs = {'RADIOSONDE_TEMPERATURE': '5',
-                    'RADAR_REFLECTIVITY': '37',
-                    'SYNOP_SURFACE_PRESSURE': '94',
-                    'SYNOP_SPECIFIC_HUMIDITY': '95',
-                    'SYNOP_TEMPERATURE': '96',
-                    }
-
-    if 'SYNOP' in obs_kind:
-        is_sfc_obs = True
-        heights = [2,]
-    else:
-        is_sfc_obs = False
-
-    if not heights:
-        heights = [5000., ]
-    coords = calc_obs_locations_3d(coords, heights)
-
-    dart_date_day, secs_thatday = get_dart_date(add_timezone_UTC(time_dt))
-    print('secs, days:', secs_thatday, dart_date_day)
-
-    obs_kind_nr = obs_kind_nrs[obs_kind]
-    write_generic_obsseq(obs_kind, obs_kind_nr, error_var, coords,
-                         dart_date_day, secs_thatday, output_path,
-                         vert_coord_sfc=is_sfc_obs)
-
-def obskind_read():
-    raw_obskind_dart = """
-                    5 RADIOSONDE_TEMPERATURE
-                    6 RADIOSONDE_SPECIFIC_HUMIDITY
-                    12 AIRCRAFT_U_WIND_COMPONENT
-                    13 AIRCRAFT_V_WIND_COMPONENT
-                    14 AIRCRAFT_TEMPERATURE
-                    16 ACARS_U_WIND_COMPONENT
-                    17 ACARS_V_WIND_COMPONENT
-                    18 ACARS_TEMPERATURE
-                    29 LAND_SFC_PRESSURE
-                    30 SAT_U_WIND_COMPONENT
-                    31 SAT_V_WIND_COMPONENT
-                    36 DOPPLER_RADIAL_VELOCITY
-                    37 RADAR_REFLECTIVITY
-                    83 GPSRO_REFRACTIVITY
-                    94 SYNOP_SURFACE_PRESSURE
-                    95 SYNOP_SPECIFIC_HUMIDITY
-                    96 SYNOP_TEMPERATURE
-                254 MSG_4_SEVIRI_RADIANCE
-                255 MSG_4_SEVIRI_TB
-                256 MSG_4_SEVIRI_BDRF"""
-
-    # lookup table for kind nr
-    alist = raw_obskind_dart.split()
-    assert len(alist) % 2 == 0, alist
-    obskind_nrs = {}
-    for i in range(0, len(alist)-1, 2):
-        obskind_nrs[alist[i+1]] = alist[i]
-    return obskind_nrs
-
-obskind_nrs = obskind_read()
+def preamble(n_obs, line_obstypedef):
+    n_obs_str = str(n_obs)
+    return """ obs_sequence
+obs_kind_definitions
+           1
+"""+line_obstypedef+"""
+  num_copies:            0  num_qc:            0
+  num_obs:            """+n_obs_str+"  max_num_obs:            "+n_obs_str+"""
+  first:            1  last:            """+n_obs_str
 
 
-def create_obsseq_in(obscfg, obserr_var):
+def write_section(obs, last=False):
     """
     Args:
-    obserr_var (np.array): observation error variance
-        shape (n_obs,), one value for each observation, 
+    obs (object)
+    last (bool): True if this is the last observation in the obs_seq file
+    """
+    lon_rad = str(degr_to_rad(obs['lon']))
+    lat_rad = str(degr_to_rad(obs['lat']))
+
+    if last:
+        line_link = "          "+str(obs['i']-1)+"           -1          -1"
+    else:
+        line_link = "        -1           "+str(obs['i']+1)+"          -1"
+    
+    return """
+ OBS            """+str(obs['i'])+"""
+"""+line_link+"""
+obdef
+loc3d
+     """+lon_rad+"        "+lat_rad+"        "+str(obs['vert_coord'])+"     "+obs['vert_coord_sys']+"""
+kind
+         """+obs['kind_nr']+"""
+"""+obs['appendix']+"""
+"""+obs['secs_thatday']+"""     """+obs['dart_date_day']+"""
+"""+str(obs['obserr_var'])
+
+
+def create_obsseq_in(time_dt, obscfg, zero_error=False,
+                     archive_obs_coords=False):
+    """Create obs_seq.in
+
+    Args:
+        time_dt (dt.datetime): time of observation
+        obscfg (dict)
+        archive_obs_coords (str, False): path to folder
+
+    channel_id (int): SEVIRI channel number
+        see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
+        
+    coords (list of 2-tuples with (lat,lon))
+    obserr_std (np.array): shape (n_obs,), one value for each observation, 
+        gaussian error with this std-dev is added to the truth at observation time
+    output_path (str): directory where `obs_seq.in` will be saved 
     """
 
-    self.coords = osq.calc_obs_locations(obscfg['n_obs'], 
-                        coords_from_domaincenter=False, 
-                        distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
-                        fpath_obs_locations=folder_obs_coords+'/obs_coords_'+obscfg['kind']+'.pkl')
+    n_obs = obscfg['n_obs']
+    coords = calc_obs_locations(n_obs, 
+                coords_from_domaincenter=False, 
+                distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
+                fpath_coords=archive_obs_coords)
 
-    #     for i_obs in obscfg['n_obs']:
+    kind = obscfg['kind']
+    sat_channel = obscfg.get('sat_channel', False)
 
-    #         instruction = dict(kind_nr = obskind_nrs[obscfg['kind']],
-    #                            sat_channel = obscfg.get('sat_channel', False),
-    #                            heights = obscfg.get('heights', False),
-                             
-    # obs_kinds, time_dt, coords, error_var, heights=False, output_path='./'):
+    # obs error has to be len(n_obs)
+    obserr_std = np.zeros(n_obs) if zero_error else obscfg['err_std']
+    try:
+        assert len(obserr_std) == n_obs  # fails for scalars
+    except TypeError:
+        obserr_std = np.ones(n_obs) * obserr_std
 
-    if 'SYNOP' in obs_kind:
-        is_sfc_obs = True
-        heights = [2,]
+    # determine vertical coordinates
+    if not sat_channel:
+        if 'SYNOP' in kind:
+            vert_coord_sys = "-1"  # meters AGL
+            vert_coords = [2, ]
+        else:
+            vert_coord_sys = "3"  # meters AMSL
+            vert_coords = obscfg['heights']
     else:
-        is_sfc_obs = False
+        vert_coord_sys = "-2"  # undefined height
+        vert_coords = ["-888888.0000000000", ]
 
-    if not heights:
-        heights = [5000., ]
-    coords = calc_obs_locations_3d(coords, heights)
+    coords = append_hgt_to_coords(coords, vert_coords)
+    obs_kind_nr = obs_kind_nrs[kind]
+    line_obstypedef = '         '+obs_kind_nr+' '+kind
 
-    dart_date_day, secs_thatday = get_dart_date(add_timezone_UTC(time_dt))
+    time_dt = add_timezone_UTC(time_dt)
+    dart_date_day, secs_thatday = get_dart_date(time_dt)
     print('secs, days:', secs_thatday, dart_date_day)
 
-    obs_kind_nr = obs_kind_nrs[obs_kind]
+    if sat_channel:
+        sun_az = str(get_azimuth(lat0, lon0, time_dt))
+        sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
+        print('sunzen', sun_zen, 'sunazi', sun_az)
 
-    for obs_kind in obs_kinds:
+        appendix = """visir
+   """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
+   """+sun_zen+"""
+          12           4          21           """+str(sat_channel)+"""
+  -888888.000000000
+           1"""
+    else:
+        appendix = ''
 
-        write_generic_obsseq2(obs_kind, obs_kind_nr, error_var, coords,
-                            dart_date_day, secs_thatday, output_path,
-                            vert_coord_sfc=is_sfc_obs)
+    txt = preamble(n_obs, line_obstypedef)
+
+    for i_obs in range(int(n_obs)):
+        last = False
+        if i_obs == int(n_obs)-1:
+            last = True  # last_observation
+
+        txt += write_section(dict(i=i_obs+1,
+                                  kind_nr=obs_kind_nr,
+                                  dart_date_day=dart_date_day,
+                                  secs_thatday=secs_thatday,
+                                  lon=coords[i_obs][1],
+                                  lat=coords[i_obs][0],
+                                  vert_coord=coords[i_obs][2],
+                                  vert_coord_sys=vert_coord_sys,
+                                  obserr_var=obserr_std[i_obs]**2,
+                                  appendix=appendix),
+                             last=last)
+
+    write_file(txt, output_path=cluster.dartrundir+'/obs_seq.in')
+
 
 if __name__ == '__main__':
     time_dt = dt.datetime(2008, 7, 30, 10, 0)
-    n_obs = 64
-    sat_channel = 1
+    n_obs = 64  # radar: n_obs for each observation height level
 
-    distance_between_obs_meters = 10000
-    #error_var = 0.001
-    obs_coords = calc_obs_locations(n_obs, coords_from_domaincenter=False, 
-                                            distance_between_obs_km=distance_between_obs_meters, 
-                                            fpath_obs_locations=None)
-    #sat(time_dt, sat_channel, obs_coords, error_var, output_path='./')
+    vis = dict(kind='MSG_4_SEVIRI_BDRF',
+            sat_channel=1, n_obs=n_obs, err_std=0.03,
+            cov_loc_radius_km=10)
+    wv = dict(kind='MSG_4_SEVIRI_TB',
+            sat_channel=6, n_obs=n_obs, err_std=False,
+            cov_loc_radius_km=10)
+    ir108 = dict(kind='MSG_4_SEVIRI_TB',
+                sat_channel=9, n_obs=n_obs, err_std=5.,
+                cov_loc_radius_km=10)
 
-    # error_var = (5.)**2
-    # generic_obs('RADAR_REFLECTIVITY', time_dt, obs_coords, error_var, heights=[5000.,], output_path='./')
+    radar = dict(kind='RADAR', n_obs=n_obs, err_std=5.,
+                heights=np.arange(1000, 15001, 1000),
+                cov_loc_radius_km=10, cov_loc_vert_km=2)
 
-    error_var = (0.5)**2
-    generic_obs('RADIOSONDE_TEMPERATURE', time_dt, obs_coords, error_var, heights=[5000.,])
+    t2m = dict(kind='SYNOP_TEMPERATURE', n_obs=n_obs, err_std=1.0, 
+            cov_loc_radius_km=32, cov_loc_vert_km=1)
+    psfc = dict(kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs, err_std=50.,
+            cov_loc_radius_km=32, cov_loc_vert_km=5)
+
+    create_obsseq_in(time_dt, vis, archive_obs_coords='./coords_stage1.pkl')

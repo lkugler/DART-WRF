@@ -88,17 +88,14 @@ def edit_obserr_in_obsseq(fpath_obsseqin, OEs):
             f.write(line)
 
 
-def set_input_nml(sat_channel=False, just_prior_values=False,
-                  cov_loc_radius_km=32, cov_loc_vert_km=False):
+def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False):
     """descr"""
     cov_loc_radian = cov_loc_radius_km/earth_radius_km
     
-    if just_prior_values:
-        template = cluster.scriptsdir+'/../templates/input.prioronly.nml'
-    else:
-        template = cluster.scriptsdir+'/../templates/input.nml'
-    copy(template, cluster.dartrundir+'/input.nml')
+    copy(cluster.scriptsdir+'/../templates/input.nml', 
+         cluster.dartrundir+'/input.nml')
 
+    # options are overwritten with settings
     options = {'<n_ens>': str(int(exp.n_ens)),
                '<cov_loc_radian>': str(cov_loc_radian)}
 
@@ -160,7 +157,6 @@ def obs_operator_ensemble():
 def obs_operator_nature():
     prepare_nature_dart()
 
-    set_input_nml(sat_channel=sat_channel)
     os.chdir(cluster.dartrundir)
     os.remove(cluster.dartrundir+'/obs_seq.out')
     os.system('mpirun -np 12 ./perfect_model_obs')
@@ -194,18 +190,13 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
         OEs[iobs] = oe_nature
     return OEs
 
-
 def generate_observations():
-    set_input_nml(sat_channel=sat_channel, cov_loc_radius_km=cov_loc,
-                  cov_loc_vert_km=cov_loc_vert_km)
-
     # generate actual observations (with correct error)
     os.chdir(cluster.dartrundir)
     os.remove(cluster.dartrundir+'/obs_seq.out')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
         raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
     os.system('mpirun -np 12 ./perfect_model_obs')
-
 
 def assimilate():
     os.chdir(cluster.dartrundir)
@@ -214,17 +205,14 @@ def assimilate():
         raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir)
     os.system('mpirun -np 48 ./filter')
 
-def archive_diagnostics(time):
+def archive_diagnostics(archive_stage):
     print('archive obs space diagnostics')
-    savedir = cluster.archivedir()+'/obs_seq_final/'
-    mkdir(savedir)
-    copy(cluster.dartrundir+'/obs_seq.final', savedir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final'))
+    mkdir(archive_stage)
+    copy(cluster.dartrundir+'/obs_seq.final', archive_stage+'/obs_seq.final')
 
     try:
         print('archive regression diagnostics')
-        savedir = cluster.archivedir()+'/reg_factor/'
-        mkdir(savedir)
-        copy(cluster.dartrundir+'/reg_diagnostics', savedir+time.strftime('/%Y-%m-%d_%H:%M_reg_diagnostics'))
+        copy(cluster.dartrundir+'/reg_diagnostics', archive_stage+'/reg_diagnostics')
     except Exception as e:
         warnings.warn(str(e))
 
@@ -233,27 +221,20 @@ def recycle_output():
     for iens in range(1, exp.n_ens+1):
         os.rename(cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4),
                   cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
-    
 
-def archive_output_mean(time, istage):
-    istage = str(istage)
-
-    print('copy prior posterior members to archive')
+def archive_output_mean(archive_stage):
     for iens in range(1, exp.n_ens+1):
-        savedir = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
+        savedir = archive_stage+'/'+str(iens)
         mkdir(savedir)
 
-        copy(cluster.dartrundir+'/input.nml',
-             cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/input '+istage+'.nml'))
+        copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
 
         # filter_in = cluster.dartrundir+'/preassim_member_'+str(iens).zfill(4)+'.nc'
         # filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
 
     # copy mean and sd to archive
-    print('copy preassim, postassim mean and sd')
     for f in ['output_mean.nc', 'output_sd.nc']:
-        copy(cluster.dartrundir+'/'+f,
-             cluster.archivedir()+'/'+f[:-3]+time.strftime('_'+istage+'_%Y-%m-%d_%H:%M:%S'))
+        copy(cluster.dartrundir+'/'+f, archive_stage+'/'+f)
 
 
 if __name__ == "__main__":
@@ -279,20 +260,19 @@ if __name__ == "__main__":
     """
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
-    folder_obs_coords = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/')
+    archive_time = cluster.archivedir()+time.strftime('/%Y-%m-%d_%H:%M/')
 
     os.chdir(cluster.dartrundir)
-    os.system('rm -f obs_seq.out obs_seq.in obs_seq.final')  # remove any existing observation files
+    os.system('rm -f obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
 
     n_stages = len(exp.observations)
     for istage, obscfg in enumerate(exp.observations):
 
+        kind = obscfg['kind']
+        archive_stage = archive_time + '/stage'+str(istage)+'_'+kind
         n_obs = obscfg['n_obs']
         sat_channel = obscfg.get('sat_channel', False)
-        obs_coords = osq.calc_obs_locations(n_obs, 
-                            coords_from_domaincenter=False, 
-                            distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
-                            folder_obs_coords=folder_obs_coords)
+        obscfg['folder_obs_coords'] = archive_stage+'/obs_coords.pkl'
 
         set_DART_nml(sat_channel=sat_channel, 
                      cov_loc=obscfg['cov_loc_radius_km'],
@@ -303,25 +283,25 @@ if __name__ == "__main__":
             if sat_channel != 6:
                 raise NotImplementedError('sat channel '+str(sat_channel))
 
-            osq.create_obsseq_in(obscfg, np.zeros(n_obs))
+            osq.create_obsseq_in(time, obscfg, zero_error=True)  # zero error to get truth vals
 
             Hx_nat = obs_operator_nature() 
             Hx_prior = obs_operator_ensemble()  # files are already linked to DART directory
             
-            obserr_var = calc_obserr_WV73(Hx_nat, Hx_prior)
+            obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
         else:
-            obserr_var = np.ones(n_obs) * obscfg['err_std']**2
+            obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']
 
-        osq.create_obsseq_in(obscfg, obserr_var)  # now with correct errors
+        osq.create_obsseq_in(time, obscfg)  # now with correct errors
         generate_observations()
 
         assimilate()
-        archive_diagnostics(time)
+        archive_diagnostics(archive_stage)
 
         if istage < n_stages-1:
             # recirculation: filter output -> input
             recycle_output()
-            archive_output_mean(time, istage)
+            archive_output_mean(archive_stage)
 
         elif istage == n_stages-1:
             # last assimilation, continue integration now
