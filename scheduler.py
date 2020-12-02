@@ -127,7 +127,7 @@ def run_ENS(begin, end, depends_on=None):
     id = s.run(cmd, depends_on=[id])
 
     # apply forward operator (DART filter without assimilation)
-    s = my_Slurm("fwOP-1m", cfg_update=dict(time="2"))
+    s = my_Slurm("fwOP-1m", cfg_update=dict(time="10"))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/apply_obs_op_dart.py '
                + begin.strftime('%Y-%m-%d_%H:%M')+' '
                + begin_plus1.strftime('%Y-%m-%d_%H:%M'),
@@ -140,7 +140,7 @@ def run_ENS(begin, end, depends_on=None):
     id = s.run(' '.join([cluster.python,
                cluster.scriptsdir+'/prepare_namelist.py',
                begin.strftime('%Y-%m-%d_%H:%M'),
-               begin_plus1.strftime('%Y-%m-%d_%H:%M'),
+               end.strftime('%Y-%m-%d_%H:%M'),
                str(hist_interval), str(radt),]), 
             depends_on=[id])
 
@@ -257,16 +257,15 @@ elif start_from_existing_state:
 # values for assimilation
 assim_time = time
 prior_init_time = init_time
-prior_path_exp = False  # use own exp path
+prior_path_exp = exppath_arch
 
-
-while time <= dt.datetime(2008, 7, 30, 10):
+while time <= dt.datetime(2008, 7, 30, 16):
 
     id = assimilate(assim_time,
                     prior_init_time,
                     prior_path_exp=prior_path_exp,
                     depends_on=id)
-    #prior_path_exp = False  # use own exp path
+    prior_path_exp = False  # use own exp path
 
     # integration
     this_forecast_init = assim_time  # start integration from here

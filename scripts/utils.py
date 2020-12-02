@@ -1,5 +1,9 @@
 import os, sys, shutil, glob
+import builtins as __builtin__
 #copy = shutil.copy
+
+def print(*args):
+    __builtin__.print(*args, flush=True)
 
 def copy(src, dst):
     try:
@@ -7,6 +11,12 @@ def copy(src, dst):
     except:
         pass
     shutil.copy(src, dst)
+
+def try_remove(f):
+    try:
+        os.remove(f)
+    except:
+        pass
 
 def mkdir(path):
     os.system('mkdir -p '+path)
