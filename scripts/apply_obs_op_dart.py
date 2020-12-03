@@ -50,7 +50,7 @@ if __name__ == '__main__':
         wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc',
                            cluster.dartrundir+'/wrfout_d01')
         aso.run_perfect_model_obs()
-        aso.assimilate()
+        aso.assimilate(nproc=48)
 
         archive_stage = savedir+kind
         # only the prior state values are of interest in this file

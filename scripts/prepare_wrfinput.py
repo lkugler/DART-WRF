@@ -16,8 +16,8 @@ for iens in range(1, exp.n_ens+1):
     symlink(cluster.ideal, rundir+'/ideal.exe')
     symlink(cluster.wrfexe, rundir+'/wrf.exe')
 
-    prepare_namelist.run(cluster, iens, begin=dt.datetime(2008, 7, 30, 6, 0),
-                                        end=dt.datetime(2008, 7, 30, 6, 30)) # not necessary
+    prepare_namelist.run(iens, begin=dt.datetime(2008, 7, 30, 6, 0),
+                         end=dt.datetime(2008, 7, 30, 6, 30)) # not necessary
 
     symlink(input_prof, rundir+'/input_sounding')
 print('finished.')

@@ -184,13 +184,13 @@ def run_perfect_model_obs():
         raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
     os.system('mpirun -np 12 ./perfect_model_obs')
 
-def assimilate():
+def assimilate(nproc=96):
     print('running filter')
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir+'/obs_seq.final')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.out'):
         raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir)
-    os.system('mpirun -np 48 ./filter')
+    os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter')
 
 def archive_diagnostics(archive_dir, time):
     print('archive obs space diagnostics')
@@ -210,7 +210,12 @@ def recycle_output():
         os.rename(cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4),
                   cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
 
-def archive_output_mean(archive_stage):
+def archive_output(archive_stage):
+    print('archiving output')
+    mkdir(archive_stage)
+    copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
+
+    # single members
     # for iens in range(1, exp.n_ens+1):
     #     savedir = archive_stage+'/'+str(iens)
     #     mkdir(savedir)
@@ -288,13 +293,11 @@ if __name__ == "__main__":
         if istage < n_stages-1:
             # recirculation: filter output -> input
             recycle_output()
-            copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
-            archive_output_mean(archive_stage)
+            archive_output(archive_stage)
 
         elif istage == n_stages-1:
             # last assimilation, continue integration now
-            copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
-            archive_output_mean(archive_stage)
+            archive_output(archive_stage)
 
         else:
             RuntimeError('this should never occur?!')

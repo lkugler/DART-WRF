@@ -282,9 +282,9 @@
 # tasks_per_node is set to match your hardware
 &ensemble_manager_nml
    layout = 1,
-   tasks_per_node = 48
+   tasks_per_node = 96
    communication_configuration = 1
-   debug                       = .false.
+   debug                       = .true.
    /
 
 &obs_def_gps_nml

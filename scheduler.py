@@ -127,7 +127,7 @@ def run_ENS(begin, end, depends_on=None):
     id = s.run(cmd, depends_on=[id])
 
     # apply forward operator (DART filter without assimilation)
-    s = my_Slurm("fwOP-1m", cfg_update=dict(time="10"))
+    s = my_Slurm("fwOP-1m", cfg_update=dict(time="10", ntasks=48))
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/apply_obs_op_dart.py '
                + begin.strftime('%Y-%m-%d_%H:%M')+' '
                + begin_plus1.strftime('%Y-%m-%d_%H:%M'),
@@ -188,7 +188,8 @@ def assimilate(assim_time, prior_init_time,
                +prior_path_exp, depends_on=[depends_on])
 
     # prepare nature run, generate observations
-    s = my_Slurm("Assim", cfg_update=dict(nodes="1", ntasks="48", time="50", mem="200G"))
+    s = my_Slurm("Assim", cfg_update={"nodes": "1", "ntasks": "96", "time": "30",
+                             "mem": "300G", "ntasks-per-node": "96", "ntasks-per-core": "2"})
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/assim_synth_obs.py '
                +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
  
@@ -245,21 +246,20 @@ if is_new_run:
     first_guess = False
     
 elif start_from_existing_state:
-    #id = prepare_wrfinput()  # create initial conditions
+    id = prepare_wrfinput()  # create initial conditions
     
     # get initial conditions from archive
     init_time = dt.datetime(2008, 7, 30, 6)
     time = dt.datetime(2008, 7, 30, 10)
     exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.11_LMU_filter'
-    
-    #id = update_wrfinput_from_archive(time, init_time, exppath_arch, depends_on=id)
+    id = update_wrfinput_from_archive(time, init_time, exppath_arch, depends_on=id)
 
 # values for assimilation
 assim_time = time
 prior_init_time = init_time
 prior_path_exp = exppath_arch
 
-while time <= dt.datetime(2008, 7, 30, 16):
+while time <= dt.datetime(2008, 7, 30, 17):
 
     id = assimilate(assim_time,
                     prior_init_time,
@@ -282,6 +282,6 @@ while time <= dt.datetime(2008, 7, 30, 16):
     assim_time = time
     prior_init_time = assim_time - timedelta_btw_assim
     
-    #create_satimages(depends_on=id)
+    create_satimages(depends_on=id)
 
 mailme(id)
