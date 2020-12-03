@@ -71,7 +71,7 @@
 
 &quality_control_nml
    input_qc_threshold          = 3.0,
-   outlier_threshold           = 3.0,
+   outlier_threshold           = -1.0,
    enable_special_outlier_code = .false.
    /
 
@@ -104,10 +104,10 @@
 # to ~half at 300 km, and ~0 at the edges of the area.
 &assim_tools_nml
    filter_kind                     = 1,
-   cutoff                          = 0.0001,
+   cutoff                          = <cov_loc_radian>,
    sort_obs_inc                    = .false.,
    spread_restoration              = .false.,
-   sampling_error_correction       = .false.,
+   sampling_error_correction       = .true.,
    adaptive_localization_threshold = -1,
    output_localization_diagnostics = .false.,
    localization_diagnostics_file   = 'localization_diagnostics',
@@ -143,7 +143,6 @@
    /
 
 &obs_kind_nml
-   assimilate_these_obs_types = ,
    evaluate_these_obs_types   = 'RADIOSONDE_TEMPERATURE',
                                 'RADIOSONDE_U_WIND_COMPONENT',
                                 'RADIOSONDE_V_WIND_COMPONENT',
@@ -157,10 +156,15 @@
                                 'ACARS_TEMPERATURE',
                                 'GPSRO_REFRACTIVITY',
                                 'DOPPLER_RADIAL_VELOCITY',
-                                'RADAR_REFLECTIVITY',
+				'RADAR_REFLECTIVITY',
                                 'MSG_4_SEVIRI_RADIANCE',
-                                'MSG_4_SEVIRI_TB',
-                                'MSG_4_SEVIRI_BDRF'
+				'MSG_4_SEVIRI_TB',
+				'MSG_4_SEVIRI_BDRF',
+                                'LAND_SFC_PRESSURE',
+                                'SYNOP_SURFACE_PRESSURE',
+                                'SYNOP_TEMPERATURE',
+                                'SYNOP_SPECIFIC_HUMIDITY'
+   assimilate_these_obs_types   = 'RADIOSONDE_SPECIFIC_HUMIDITY',
    /
 
 # Notes for obs_def_radar_mod_nml:
@@ -244,9 +248,9 @@
 # an internal structure that speeds up searches.  don't change it
 # based on your grid size.  nlon must be an odd number.
 &location_nml
-   horiz_dist_only             = .false.,
+   horiz_dist_only             = <horiz_dist_only>,
    vert_normalization_pressure = 6666666.7,
-   vert_normalization_height   = 500.0,
+   vert_normalization_height   = <vert_norm_hgt>,
    vert_normalization_level    = 2666.7,
    vert_normalization_scale_height = 10.0,
    approximate_distance        = .false.,
@@ -277,8 +281,10 @@
 # This can greatly improve the performance in IO if
 # tasks_per_node is set to match your hardware
 &ensemble_manager_nml
-   layout = 2,
+   layout = 1,
    tasks_per_node = 48
+   communication_configuration = 1
+   debug                       = .false.
    /
 
 &obs_def_gps_nml
@@ -302,8 +308,8 @@
    obs_sequence_list  = 'obsdiag_inputlist.txt',
    first_bin_center   =  2008, 7,30,10, 0, 0 ,
    last_bin_center    =  2008, 7,30,18, 0, 0 ,
-   bin_separation     =     0, 0, 0, 0,30, 0 ,
-   bin_width          =     0, 0, 0, 0,30, 0 ,
+   bin_separation     =     0, 0, 0, 0, 1, 0 ,
+   bin_width          =     0, 0, 0, 0, 1, 0 ,
    time_to_skip       =     0, 0, 0, 0, 0, 0 ,
    max_num_bins       = 1000,
    trusted_obs        = 'null',
@@ -316,7 +322,7 @@
    print_mismatched_locs = .false.,
    create_rank_histogram = .true.,
    outliers_in_histogram = .true.,
-   use_zero_error_obs    = .true.,
+   use_zero_error_obs    = <zero_error_obs>,
    verbose               = .false.
    /
 
@@ -570,4 +576,3 @@
    interp_test_vertcoord = 'VERTISHEIGHT'
    verbose               = .false.
    /
-

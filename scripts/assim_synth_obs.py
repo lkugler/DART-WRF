@@ -67,27 +67,6 @@ def read_obsseqout(f):
             obs.append(observed)
     return true, obs
 
-# def edit_obserr_in_obsseq(fpath_obsseqin, OEs):
-#     """
-#     overwrite observation errors in a obs_seq.out file
-#     according to the values in OEs
-#     """
-#     # write to txt (write whole obs_seq.out again)
-#     obsseq = open(fpath_obsseqin, 'r').readlines()
-#     obsseq_new = obsseq.copy()
-#     i_obs = 0
-#     for i, line in enumerate(obsseq):
-#         if 'kind\n' in line:
-#             i_line_oe = i+9  # 9 for satellite obs
-#             obsseq_new[i_line_oe] = ' '+str(OEs[i_obs])+'   \n'
-#             i_obs += 1
-
-#     os.rename(fpath_obsseqin, fpath_obsseqin+'-bak')  # backup
-#     # write cloud dependent errors (actually whole file)
-#     with open(fpath_obsseqin, 'w') as f:
-#         for line in obsseq_new:
-#             f.write(line)
-
 
 def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
                  just_prior_values=False):
@@ -95,7 +74,7 @@ def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
     cov_loc_radian = cov_loc_radius_km/earth_radius_km
     
     if just_prior_values:
-        template = cluster.scriptsdir+'/../templates/input.prioronly.nml'
+        template = cluster.scriptsdir+'/../templates/input.eval.nml'
     else:
         template = cluster.scriptsdir+'/../templates/input.nml'
     copy(template, cluster.dartrundir+'/input.nml')
@@ -128,6 +107,7 @@ def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
 def obs_operator_ensemble():
+    # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
     print('running obs operator on ensemble forecast')
     os.chdir(cluster.dartrundir)
 
@@ -139,11 +119,11 @@ def obs_operator_ensemble():
             # ens members are already linked to advance_temp<i>/wrfout_d01
             copy(cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01',
                  cluster.dartrundir+'/wrfout_d01')
-            
-            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
-
             # DART may need a wrfinput file as well, which serves as a template for dimension sizes
             symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+            
+            # add geodata
+            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
 
             # run perfect_model obs (forward operator)
             os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
@@ -160,25 +140,26 @@ def obs_operator_ensemble():
     else:
         raise NotImplementedError()
 
-def obs_operator_nature():
+def obs_operator_nature(time):
     print('running obs operator on nature run')
-    prepare_nature_dart()
-
-    os.chdir(cluster.dartrundir)
-    os.remove(cluster.dartrundir+'/obs_seq.out')
-    os.system('mpirun -np 12 ./perfect_model_obs')
+    prepare_nature_dart(time)
+    run_perfect_model_obs()
     true, _ = read_obsseqout(cluster.dartrundir+'/obs_seq.out')
     return true
 
-def prepare_nature_dart():
+
+def link_nature_to_dart_truth(time):
     # get wrfout_d01 from nature run
     shutil.copy(time.strftime(cluster.nature_wrfout),
                 cluster.dartrundir+'/wrfout_d01')
-
-    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
-
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
     symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+
+
+def prepare_nature_dart(time):
+    link_nature_to_dart_truth(time)
+    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
 
@@ -196,8 +177,7 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
         OEs[iobs] = oe_nature
     return OEs
 
-def generate_observations():
-    print('generate actual observations')
+def run_perfect_model_obs():
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir+'/obs_seq.out')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
@@ -212,16 +192,17 @@ def assimilate():
         raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir)
     os.system('mpirun -np 48 ./filter')
 
-def archive_diagnostics(archive_stage, fname_final):
+def archive_diagnostics(archive_dir, time):
     print('archive obs space diagnostics')
-    mkdir(archive_stage)
-    copy(cluster.dartrundir+'/obs_seq.final', archive_stage+'/'+fname_final)
+    mkdir(archive_dir)
+    copy(cluster.dartrundir+'/obs_seq.final', 
+         archive_dir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final'))
 
-    try:
-        print('archive regression diagnostics')
-        copy(cluster.dartrundir+'/reg_diagnostics', archive_stage+'/reg_diagnostics')
-    except Exception as e:
-        warnings.warn(str(e))
+    # try:  # what are regression diagnostics?!
+    #     print('archive regression diagnostics')
+    #     copy(cluster.dartrundir+'/reg_diagnostics', archive_dir+'/reg_diagnostics')
+    # except Exception as e:
+    #     warnings.warn(str(e))
 
 def recycle_output():
     print('move output to input')
@@ -289,7 +270,7 @@ if __name__ == "__main__":
 
             osq.create_obsseq_in(time, obscfg, zero_error=True)  # zero error to get truth vals
 
-            Hx_nat = obs_operator_nature() 
+            Hx_nat = obs_operator_nature(time) 
             Hx_prior = obs_operator_ensemble()  # files are already linked to DART directory
             
             obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
@@ -297,10 +278,12 @@ if __name__ == "__main__":
             obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']
 
         osq.create_obsseq_in(time, obscfg)  # now with correct errors
-        generate_observations()
+        prepare_nature_dart(time)
+        run_perfect_model_obs()
 
         assimilate()
-        archive_diagnostics(archive_stage, '/obs_seq.final')
+        dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)+'_'+kind
+        archive_diagnostics(dir_obsseq, time)
 
         if istage < n_stages-1:
             # recirculation: filter output -> input
@@ -311,7 +294,7 @@ if __name__ == "__main__":
         elif istage == n_stages-1:
             # last assimilation, continue integration now
             copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
-            pass  # call update wrfinput from filteroutput later
+            archive_output_mean(archive_stage)
 
         else:
             RuntimeError('this should never occur?!')
