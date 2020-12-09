@@ -284,7 +284,7 @@
    layout = 1,
    tasks_per_node = 96
    communication_configuration = 1
-   debug                       = .true.
+   debug                       = .false.
    /
 
 &obs_def_gps_nml

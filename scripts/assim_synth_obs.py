@@ -106,7 +106,7 @@ def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
         rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
-def obs_operator_ensemble():
+def obs_operator_ensemble(istage):
     # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
     print('running obs operator on ensemble forecast')
     os.chdir(cluster.dartrundir)
@@ -122,8 +122,9 @@ def obs_operator_ensemble():
             # DART may need a wrfinput file as well, which serves as a template for dimension sizes
             symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
             
-            # add geodata
-            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+            # add geodata, if istage>0, wrfout is DART output (has coords)
+            if istage == 0:
+                wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
 
             # run perfect_model obs (forward operator)
             os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
@@ -182,7 +183,7 @@ def run_perfect_model_obs():
     try_remove(cluster.dartrundir+'/obs_seq.out')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
         raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
-    os.system('mpirun -np 12 ./perfect_model_obs')
+    os.system('mpirun -np 12 ./perfect_model_obs > log.perfect_model_obs')
 
 def assimilate(nproc=96):
     print('running filter')
@@ -190,13 +191,14 @@ def assimilate(nproc=96):
     try_remove(cluster.dartrundir+'/obs_seq.final')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.out'):
         raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir)
-    os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter')
+    os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter > log.filter')
 
 def archive_diagnostics(archive_dir, time):
     print('archive obs space diagnostics')
     mkdir(archive_dir)
-    copy(cluster.dartrundir+'/obs_seq.final', 
-         archive_dir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final'))
+    fout = archive_dir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final')
+    copy(cluster.dartrundir+'/obs_seq.final', fout)
+    print(fout, 'saved.')
 
     # try:  # what are regression diagnostics?!
     #     print('archive regression diagnostics')
@@ -258,8 +260,7 @@ if __name__ == "__main__":
     n_stages = len(exp.observations)
     for istage, obscfg in enumerate(exp.observations):
 
-        kind = obscfg['kind']
-        archive_stage = archive_time + '/assim_stage'+str(istage)+'_'+kind
+        archive_stage = archive_time + '/assim_stage'+str(istage)
         n_obs = obscfg['n_obs']
         sat_channel = obscfg.get('sat_channel', False)
         obscfg['folder_obs_coords'] = archive_stage+'/obs_coords.pkl'
@@ -276,7 +277,7 @@ if __name__ == "__main__":
             osq.create_obsseq_in(time, obscfg, zero_error=True)  # zero error to get truth vals
 
             Hx_nat = obs_operator_nature(time) 
-            Hx_prior = obs_operator_ensemble()  # files are already linked to DART directory
+            Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             
             obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
         else:
@@ -287,7 +288,7 @@ if __name__ == "__main__":
         run_perfect_model_obs()
 
         assimilate()
-        dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)+'_'+kind
+        dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)
         archive_diagnostics(dir_obsseq, time)
 
         if istage < n_stages-1:

@@ -27,12 +27,10 @@ if __name__ == '__main__':
     pre_assim.run(time, prev_forecast_init, exppath_firstguess)
 
     savedir = cluster.archivedir()+'/obs_seq_final_1min/'
-    mkdir(savedir)
 
     n_stages = len(exp.observations)
     for istage, obscfg in enumerate(exp.observations):
 
-        kind = obscfg['kind']
         n_obs = obscfg['n_obs']
         sat_channel = obscfg.get('sat_channel', False)
         obscfg['folder_obs_coords'] = False
@@ -50,9 +48,10 @@ if __name__ == '__main__':
         wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc',
                            cluster.dartrundir+'/wrfout_d01')
         aso.run_perfect_model_obs()
-        aso.assimilate(nproc=48)
+        aso.assimilate(nproc=96)
 
-        archive_stage = savedir+kind
         # only the prior state values are of interest in this file
-        aso.archive_diagnostics(archive_stage, time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final'))
+        # observation and truth is wrong in this file (dummy)
+        archive_stage = savedir+'/assim_stage'+str(istage)
+        aso.archive_diagnostics(archive_stage, time)
 

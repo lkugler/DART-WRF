@@ -58,7 +58,7 @@ def backup_scripts():
 
     # reproducibility
     for f in ['scheduler.py', 'config/clusters.py', 'config/cfg.py']:
-        func(current+'/../'+f,  main_a+'/scheduler.py', shutil.copy)
+        func(current+'/../'+f,  main_a+f, shutil.copy)
         
     for f in os.listdir(current):
         func(os.path.join(current, f), main_a+'/', shutil.copy)
@@ -230,7 +230,7 @@ timedelta_btw_assim = dt.timedelta(minutes=30)
 backup_scripts()
 id = None
 
-start_from_existing_state = True
+start_from_existing_state = False
 is_new_run = not start_from_existing_state
 
 if is_new_run:

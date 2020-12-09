@@ -45,11 +45,11 @@ def run_obsdiag(filepaths, f_out='./obsdiag.nc'):
         os.system('./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
 
         # move output to archive
-        #outdir = outdir #'/'.join(folder_obs_seq_final.split('/')[:-1])
+        #outdir = os.path.dirname(f_out)  #'/'.join(folder_obs_seq_final.split('/')[:-1])
         if obserr_iszero == '.true.':
-            fout = outdir+'/'+f_out[:-3]+'_wrt_truth.nc'   
+            fout = f_out[:-3]+'_wrt_truth.nc'   
         elif obserr_iszero == '.false.':
-            fout = outdir+'/'+f_out[:-3]+'_wrt_obs.nc' 
+            fout = f_out[:-3]+'_wrt_obs.nc' 
         shutil.move(rundir_program+'/obs_diag_output.nc', fout)
         print(fout, 'saved.')
 
@@ -59,6 +59,7 @@ def run_obs_seq_to_netcdf(filepaths, f_out='./obs_epoch.nc'):
     write_input_filelist(filepaths)
     print('------ running obs_seq_to_netcdf program')
     shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', rundir_program+'/obs_seq_to_netcdf')
+    os.chdir(rundir_program)
     os.system('./obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')  # caution, overwrites its own binary?!
     shutil.move(rundir_program+'/obs_epoch_001.nc', f_out)
     print(f_out, 'saved.')

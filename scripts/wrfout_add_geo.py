@@ -23,9 +23,9 @@ def run(geo_data_file, wrfout_file):
 
     for old, new in zip(fields_old, fields_new):
         print('moving old field', old, 'into new field', new)
-        print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
+        #print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
         wrfinp_ds.variables[new][:] = geo_ds.variables[old][:]
-        print(wrfinp_ds.variables[new][:])
+        #print(wrfinp_ds.variables[new][:])
 
     wrfinp_ds.close()
     geo_ds.close()
