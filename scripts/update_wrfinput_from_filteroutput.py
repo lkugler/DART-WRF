@@ -9,22 +9,11 @@ time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 background_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
 exppath_firstguess = str(sys.argv[3])
 
-#if cluster.name != 'srvx8':
-#    copy = copy_scp_srvx8
-#    mkdir = mkdir_srvx8
-cycle_vars = ['U', 'V', 'P', 'PH', 'T', 'MU', 'QVAPOR', 'QCLOUD', 'QRAIN', 'QICE', 'QSNOW',
-              'QGRAUP', 'QNICE', 'QNRAIN', 'U10', 'V10', 'T2', 'Q2', 'PSFC', 'TSLB',
-              'SMOIS', 'TSK']
+"""
+# assumes T = THM (dry potential temperature as prognostic variable)
 
-update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC', 'TSK', 'CLDFRA']
-# note: CLDFRA is just diagnostic, but maybe it helps that RTTOV can simulate clouds at initialization time
-
-# variables which are updated need not to be cycled
-for var in update_vars:
-    if var in cycle_vars:
-        cycle_vars.remove(var)
-
-cycles = ','.join(cycle_vars)
+"""
+update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
 updates = ','.join(update_vars)
 
 print('move output to WRF dir as new initial conditions')
@@ -36,13 +25,14 @@ for iens in range(1, exp.n_ens+1):
     wrf_ic = cluster.wrf_rundir(iens) + '/wrfinput_d01'
 
     # cycles variables from wrfout (prior state)
-    print('cycling', cycles, 'into', wrf_ic, 'from', prior_wrf)
-    os.system(cluster.ncks+' -A -v '+cycles+' '+prior_wrf+' '+wrf_ic)
+    print('copy prior', prior_wrf, 'to wrfinput', wrf_ic)
+    # os.system(cluster.ncks+' -A -v '+cycles+' '+prior_wrf+' '+wrf_ic)
+    copy(prior_wrf, wrf_ic)
 
     print('updating', updates, 'in', wrf_ic, 'from', filter_out)
     os.system(cluster.ncks+' -A -v '+updates+' '+filter_out+' '+wrf_ic)
 
-    print('writing T into THM of wrfinput')
+    print('writing T into THM of wrfinput')  # assumes T = THM (dry potential temperature as prognostic variable)
     thm_in = nc.Dataset(filter_out, 'r').variables['T'][:]
     dsout = nc.Dataset(wrf_ic, 'r+')
     dsout.variables['THM'][:] = thm_in

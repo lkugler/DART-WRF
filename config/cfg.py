@@ -9,7 +9,7 @@ class ExperimentConfiguration(object):
 
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.12_IR-WV-VIS"
+exp.expname = "exp_v1.16_P0-4_IR-VIS-WV"
 exp.model_dx = 2000
 exp.timestep = 10
 exp.n_ens = 40
@@ -44,7 +44,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32, cov_loc_vert_km=5)
 
 
-exp.observations = [ir108, wv73, vis]
+exp.observations = [ir108, vis, wv73]  # ir108, wv73, vis]
 
 # directory paths depend on the name of the experiment
 cluster.expname = exp.expname
