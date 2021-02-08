@@ -56,7 +56,13 @@ if __name__ == '__main__':
     end = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
     intv = int(sys.argv[3])
     radt = int(sys.argv[4])
+    archive = True
+    try:
+        if sys.argv[5] == '1':
+            archive = False
+    except:
+        pass
 
     print('prepare namelists for all ens members')
     for iens in range(1, exp.n_ens+1):
-        run(iens, begin, end, hist_interval=intv, radt=radt)
+        run(iens, begin, end, hist_interval=intv, radt=radt, archive=archive)

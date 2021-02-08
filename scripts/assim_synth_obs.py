@@ -184,13 +184,14 @@ def run_perfect_model_obs():
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
         raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
     os.system('mpirun -np 12 ./perfect_model_obs > log.perfect_model_obs')
+    if not os.path.exists(cluster.dartrundir+'/obs_seq.out'):
+        raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir, 
+                           '\n look for '+cluster.dartrundir+'log.perfect_model_obs')
 
 def assimilate(nproc=96):
     print('running filter')
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir+'/obs_seq.final')
-    if not os.path.exists(cluster.dartrundir+'/obs_seq.out'):
-        raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir)
     os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter > log.filter')
 
 def archive_diagnostics(archive_dir, time):
@@ -281,7 +282,7 @@ if __name__ == "__main__":
             
             obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
         else:
-            obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']
+            obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']  # fixed stderr
 
         osq.create_obsseq_in(time, obscfg)  # now with correct errors
         prepare_nature_dart(time)
