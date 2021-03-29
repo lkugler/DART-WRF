@@ -21,6 +21,8 @@ for iens in range(1, exp.n_ens+1):
     print('updating', wrfin, 'to state in', wrfout)
     assert os.path.isfile(wrfout), wrfout
 
+    os.makedirs(os.path.dirname(wrfin), exist_ok=True)
+
     # overwrite variables in wrfinput file
     # os.system(cluster.ncks+' -A -v '+vars+' '+wrfout+' '+wrfin)
     copy(wrfout, wrfin) 

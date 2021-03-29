@@ -10,8 +10,10 @@ background_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
 exppath_firstguess = str(sys.argv[3])
 
 """
-# assumes T = THM (dry potential temperature as prognostic variable)
+sets initial condition data (wrfinput file) in run_WRF directories 
+from a DART output state (set of filter_restart files)
 
+# assumes T = THM (dry potential temperature as prognostic variable)
 """
 update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
 updates = ','.join(update_vars)
