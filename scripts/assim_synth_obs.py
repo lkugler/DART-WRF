@@ -1,5 +1,4 @@
-import os, sys, shutil
-import warnings
+import os, sys, shutil, warnings
 import datetime as dt
 import numpy as np
 from scipy.interpolate import interp1d
@@ -201,6 +200,11 @@ def archive_diagnostics(archive_dir, time):
     copy(cluster.dartrundir+'/obs_seq.final', fout)
     print(fout, 'saved.')
 
+    try:
+        copy(cluster.dartrundir+'/obs_coords.pkl', archive_stage+'/obs_coords.pkl')
+    except Exception as e:
+        warnings.warn(str(e)) 
+
     # try:  # what are regression diagnostics?!
     #     print('archive regression diagnostics')
     #     copy(cluster.dartrundir+'/reg_diagnostics', archive_dir+'/reg_diagnostics')
@@ -208,10 +212,27 @@ def archive_diagnostics(archive_dir, time):
     #     warnings.warn(str(e))
 
 def recycle_output():
-    print('move output to input')
+    update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QRAIN', 'U10', 'V10', 'T2', 'Q2', 'TSK', 'PSFC', 'CLDFRA']
+    updates = ','.join(update_vars)
+
+    print('recycle DART output to be used as input')
     for iens in range(1, exp.n_ens+1):
-        os.rename(cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4),
-                  cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
+        dart_output = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
+        dart_input = cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01'
+
+        #print('check for non-monotonic vertical pressure')
+
+        # convert link to file in order to be able to update the content
+        if os.path.islink(dart_input):
+            l = os.readlink(dart_input)
+            os.remove(dart_input)
+            copy(l, dart_input) 
+
+        # print('move DART output to input: '+dart_output+' -> '+dart_input)
+        # os.rename(dart_output, dart_input)  # probably doesnt work
+
+        print('updating', updates, 'in', dart_input, 'from', dart_output)
+        os.system(cluster.ncks+' -A -v '+updates+' '+dart_output+' '+dart_input)
 
 def archive_output(archive_stage):
     print('archiving output')
@@ -219,11 +240,12 @@ def archive_output(archive_stage):
     copy(cluster.dartrundir+'/input.nml', archive_stage+'/input.nml')
 
     # single members
-    # for iens in range(1, exp.n_ens+1):
-    #     savedir = archive_stage+'/'+str(iens)
-    #     mkdir(savedir)
-    #     filter_in = cluster.dartrundir+'/preassim_member_'+str(iens).zfill(4)+'.nc'
-    #     filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
+    for iens in range(1, exp.n_ens+1):
+        #savedir = archive_stage+'/'+str(iens)
+        #mkdir(savedir)
+        # filter_in = cluster.dartrundir+'/preassim_member_'+str(iens).zfill(4)+'.nc'
+        filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
+        copy(filter_out, archive_stage+'/filter_restart_d01.'+str(iens).zfill(4))
 
     # copy mean and sd to archive
     for f in ['output_mean.nc', 'output_sd.nc']:
@@ -260,11 +282,11 @@ if __name__ == "__main__":
 
     n_stages = len(exp.observations)
     for istage, obscfg in enumerate(exp.observations):
+        print('running observation stage', istage, obscfg)
 
-        archive_stage = archive_time + '/assim_stage'+str(istage)
+        archive_stage = archive_time + '/assim_stage'+str(istage)+'/'
         n_obs = obscfg['n_obs']
         sat_channel = obscfg.get('sat_channel', False)
-        obscfg['folder_obs_coords'] = archive_stage+'/obs_coords.pkl'
 
         set_DART_nml(sat_channel=sat_channel, 
                      cov_loc_radius_km=obscfg['cov_loc_radius_km'],
@@ -284,9 +306,10 @@ if __name__ == "__main__":
         else:
             obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']  # fixed stderr
 
-        osq.create_obsseq_in(time, obscfg)  # now with correct errors
-        prepare_nature_dart(time)
-        run_perfect_model_obs()
+        # create obs template file, now with correct errors
+        osq.create_obsseq_in(time, obscfg, archive_obs_coords=archive_stage+'/obs_coords.pkl')
+        prepare_nature_dart(time)  # link WRF files to DART directory
+        run_perfect_model_obs()  # actually create observations that are used to assimilate
 
         assimilate()
         dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)
@@ -294,8 +317,8 @@ if __name__ == "__main__":
 
         if istage < n_stages-1:
             # recirculation: filter output -> input
-            recycle_output()
             archive_output(archive_stage)
+            recycle_output()
 
         elif istage == n_stages-1:
             # last assimilation, continue integration now
