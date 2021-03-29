@@ -2,6 +2,7 @@ import os, sys, shutil
 import datetime as dt
 from config.cfg import exp, cluster
 from utils import symlink, copy_scp_srvx8, copy, sed_inplace
+import wrfout_add_geo
 
 def run(assim_time, background_init_time, exppath_firstguess):
     #if cluster.name != 'srvx8':
@@ -21,6 +22,9 @@ def run(assim_time, background_init_time, exppath_firstguess):
         print('linking', wrfout_run, 'to', wrfout_dart)
         symlink(wrfout_run, wrfout_dart)
         symlink(wrfout_dart, dart_ensdir+'/wrfinput_d01')
+
+        # this seems to be necessary (else wrong level selection)
+        wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', wrfout_dart) 
 
     fpath = cluster.dartrundir+'/input_list.txt'
     print('writing', fpath)
