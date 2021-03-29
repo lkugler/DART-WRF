@@ -226,7 +226,7 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
     coords (list of 2-tuples with (lat,lon))
     obserr_std (np.array): shape (n_obs,), one value for each observation, 
         gaussian error with this std-dev is added to the truth at observation time
-    output_path (str): directory where `obs_seq.in` will be saved 
+    archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
     """
 
     n_obs = obscfg['n_obs']
@@ -237,13 +237,6 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
 
     kind = obscfg['kind']
     sat_channel = obscfg.get('sat_channel', False)
-
-    # obs error has to be len(n_obs)
-    obserr_std = np.zeros(n_obs) if zero_error else obscfg['err_std']
-    try:
-        assert len(obserr_std) == n_obs  # fails for scalars
-    except TypeError:
-        obserr_std = np.ones(n_obs) * obserr_std
 
     # determine vertical coordinates
     if not sat_channel:
@@ -258,6 +251,14 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
         vert_coords = ["-888888.0000000000", ]
 
     coords = append_hgt_to_coords(coords, vert_coords)
+    n_obs_3d = len(coords)
+
+    # define obs error
+    obserr_std = np.zeros(n_obs_3d) 
+    if not zero_error:
+        obserr_std += obscfg['err_std']
+
+    # other stuff for obsseq.in
     obs_kind_nr = obs_kind_nrs[kind]
     line_obstypedef = '         '+obs_kind_nr+' '+kind
 
@@ -279,11 +280,11 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
     else:
         appendix = ''
 
-    txt = preamble(n_obs, line_obstypedef)
+    txt = preamble(n_obs_3d, line_obstypedef)
 
-    for i_obs in range(int(n_obs)):
+    for i_obs in range(n_obs_3d):
         last = False
-        if i_obs == int(n_obs)-1:
+        if i_obs == int(n_obs_3d)-1:
             last = True  # last_observation
 
         txt += write_section(dict(i=i_obs+1,
@@ -302,8 +303,9 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
 
 
 if __name__ == '__main__':
-    time_dt = dt.datetime(2008, 7, 30, 10, 0)
-    n_obs = 64  # radar: n_obs for each observation height level
+    # for testing
+    time_dt = dt.datetime(2008, 7, 30, 9, 0)
+    n_obs = 16  # radar: n_obs for each observation height level
 
     vis = dict(kind='MSG_4_SEVIRI_BDRF',
             sat_channel=1, n_obs=n_obs, err_std=0.03,
@@ -315,8 +317,8 @@ if __name__ == '__main__':
                 sat_channel=9, n_obs=n_obs, err_std=5.,
                 cov_loc_radius_km=10)
 
-    radar = dict(kind='RADAR', n_obs=n_obs, err_std=5.,
-                heights=np.arange(1000, 15001, 1000),
+    radar = dict(kind='RADAR_REFLECTIVITY', n_obs=n_obs, err_std=5.,
+                heights=np.arange(1000, 2001, 1000),
                 cov_loc_radius_km=10, cov_loc_vert_km=2)
 
     t2m = dict(kind='SYNOP_TEMPERATURE', n_obs=n_obs, err_std=1.0, 
@@ -324,4 +326,4 @@ if __name__ == '__main__':
     psfc = dict(kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs, err_std=50.,
             cov_loc_radius_km=32, cov_loc_vert_km=5)
 
-    create_obsseq_in(time_dt, vis, archive_obs_coords='./coords_stage1.pkl')
+    create_obsseq_in(time_dt, radar, archive_obs_coords='./coords_stage1.pkl')
