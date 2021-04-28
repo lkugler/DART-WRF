@@ -1,6 +1,6 @@
 import os, sys, shutil, glob
 from config.cfg import exp, cluster
-from utils import symlink, copy, sed_inplace, append_file
+from .utils import symlink, copy, sed_inplace, append_file
 
 rundir_program = '/home/fs71386/lkugler/data/DART-WRF/rundir/'
 
@@ -58,7 +58,7 @@ def run_obs_seq_to_netcdf(filepaths, f_out='./obs_epoch.nc'):
 
     write_input_filelist(filepaths)
     print('------ running obs_seq_to_netcdf program')
-    shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', rundir_program+'/obs_seq_to_netcdf')
+    #shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', rundir_program+'/obs_seq_to_netcdf')
     os.chdir(rundir_program)
     os.system('./obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')  # caution, overwrites its own binary?!
     shutil.move(rundir_program+'/obs_epoch_001.nc', f_out)
@@ -67,6 +67,7 @@ def run_obs_seq_to_netcdf(filepaths, f_out='./obs_epoch.nc'):
 
 if __name__ == '__main__':
     #folder_obs_seq_final = '/home/fs71386/lkugler/data/DART-WRF/rundir/test' 
+    print('python run_obs_diag.py ')
     folder_obs_seq_final = str(sys.argv[1])
     files = sorted(glob.glob(folder_obs_seq_final+'/*.final'))  # input for obs_diag program
     
