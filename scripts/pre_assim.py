@@ -5,8 +5,14 @@ from utils import symlink, copy_scp_srvx8, copy, sed_inplace
 import wrfout_add_geo
 
 def run(assim_time, background_init_time, exppath_firstguess):
-    #if cluster.name != 'srvx8':
-    #    copy = copy_scp_srvx8  # use scp
+    """Prepares DART files for running filter 
+    i.e.
+    - links first guess state to DART first guess filenames
+    - creates wrfinput_d01 files
+    - adds geo-reference (xlat,xlon) coords so that DART can deal with the files
+    - writes txt files so DART knows what input and output is
+    - removes probably pre-existing files which could lead to problems
+    """
 
     print('prepare prior state estimate')
     for iens in range(1, exp.n_ens+1):
