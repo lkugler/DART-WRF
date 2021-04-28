@@ -13,6 +13,11 @@ import wrfout_add_geo
 """Apply observation operator to some ensemble state
 i.e. wrfout files in an archive directory
 
+output: saves obs_seq.final files
+these contain the Hx values
+usually applied to 1 min forecasts to assess the posterior analysis quality
+(analysis+1minute = 'posterior') 
+
 """
 
 
