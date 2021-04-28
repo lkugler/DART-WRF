@@ -303,13 +303,14 @@ if __name__ == "__main__":
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             
             obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
-        else:
-            obscfg['err_std'] = np.ones(n_obs) * obscfg['err_std']  # fixed stderr
 
         # create obs template file, now with correct errors
         osq.create_obsseq_in(time, obscfg, archive_obs_coords=archive_stage+'/obs_coords.pkl')
         prepare_nature_dart(time)  # link WRF files to DART directory
         run_perfect_model_obs()  # actually create observations that are used to assimilate
+
+        #for iens in range(1,41):
+        #    os.system('ncks -A -v Times '+cluster.dartrundir+'/wrfout_d01 '+cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
 
         assimilate()
         dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)

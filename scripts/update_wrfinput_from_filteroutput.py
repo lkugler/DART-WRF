@@ -27,11 +27,11 @@ for iens in range(1, exp.n_ens+1):
     wrf_ic = cluster.wrf_rundir(iens) + '/wrfinput_d01'
 
     # cycles variables from wrfout (prior state)
-    print('copy prior', prior_wrf, 'to wrfinput', wrf_ic)
+    print('cycle some variables (copy from last init) => copy prior', prior_wrf, 'to wrfinput', wrf_ic)
     # os.system(cluster.ncks+' -A -v '+cycles+' '+prior_wrf+' '+wrf_ic)
     copy(prior_wrf, wrf_ic)
 
-    print('updating', updates, 'in', wrf_ic, 'from', filter_out)
+    print('update assimilated variables => overwrite', updates, 'in', wrf_ic, 'from', filter_out)
     os.system(cluster.ncks+' -A -v '+updates+' '+filter_out+' '+wrf_ic)
 
     print('writing T into THM of wrfinput')  # assumes T = THM (dry potential temperature as prognostic variable)
