@@ -36,11 +36,16 @@ def clean_wrfdir(dir):
             os.remove(f)
 
 def symlink(src, dst):
+    # Create a symbolic link pointing to src named dst.
     try:
         os.symlink(src, dst)
     except FileExistsError:
-        os.remove(dst)
-        os.symlink(src, dst)
+        # print('file exists')
+        if os.path.realpath(dst) == src:
+            pass  # print('link is correct')
+        else:
+            os.remove(dst)
+            os.symlink(src, dst)
     except Exception as e:
         raise e
 

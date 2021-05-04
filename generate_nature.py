@@ -206,7 +206,7 @@ id = None
 id = prepare_wrfinput()  # create initial conditions
 
 begin = dt.datetime(2008, 7, 30, 6, 0)
-end = dt.datetime(2008, 7, 30, 20, 0)
+end = dt.datetime(2008, 7, 30, 21, 0)
 
 # whole forecast timespan
 hist_interval = 5
