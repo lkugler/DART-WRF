@@ -37,10 +37,12 @@ def clean_wrfdir(dir):
 
 def symlink(src, dst):
     try:
+        os.symlink(src, dst)
+    except FileExistsError:
         os.remove(dst)
+        os.symlink(src, dst)
     except Exception as e:
-        pass
-    os.symlink(src, dst)
+        raise e
 
 def link_contents(src, dst):
     for f in os.listdir(src):

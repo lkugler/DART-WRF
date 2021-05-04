@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     for dir_name in listdir_dirs(ddir):
         files = sorted(glob.glob(ddir+'/'+dir_name+'/*.final'))  
-        #rod.run_obsdiag(files, f_out=ddir+'/obsdiag_'+dir_name+'.nc') 
+        # rod.run_obsdiag(files, f_out=ddir+'/obsdiag_'+dir_name+'.nc')
         rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch-'+dir_name+'.nc') 
 
     ddir = datadir+exp.expname+'/obs_seq_final_1min/'

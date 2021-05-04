@@ -3,7 +3,7 @@ import datetime as dt
 import netCDF4 as nc
 
 from config.cfg import exp, cluster
-from utils import symlink, copy_scp_srvx8, copy, mkdir, mkdir_srvx8, clean_wrfdir
+from utils import symlink, copy, mkdir, clean_wrfdir
 
 time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 background_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')

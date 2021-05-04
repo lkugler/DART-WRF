@@ -83,9 +83,9 @@ def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
                '<cov_loc_radian>': str(cov_loc_radian)}
 
     if cov_loc_vert_km:
-        cov_loc_vert_rad = cov_loc_vert_km*1000/cov_loc_radian
+        vert_norm_rad = earth_radius_km*cov_loc_vert_km/cov_loc_radius_km*1000
         options['<horiz_dist_only>'] = '.false.'
-        options['<vert_norm_hgt>'] = str(cov_loc_vert_rad)
+        options['<vert_norm_hgt>'] = str(vert_norm_rad)
     else:
         options['<horiz_dist_only>'] = '.true.'
         options['<vert_norm_hgt>'] = '50000.0'  # dummy value
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         prepare_nature_dart(time)  # link WRF files to DART directory
         run_perfect_model_obs()  # actually create observations that are used to assimilate
 
-        #for iens in range(1,41):
+        # for iens in range(1,41):
         #    os.system('ncks -A -v Times '+cluster.dartrundir+'/wrfout_d01 '+cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
 
         assimilate()

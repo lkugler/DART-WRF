@@ -26,9 +26,9 @@ vsc.dart_srcdir = '/home/fs71386/lkugler/DART/DART-9.9.0/models/wrf/work'
 vsc.dartrundir = '/home/fs71386/lkugler/run_DART'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts'
 
-vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.16_P0_nature/2008-07-30_06:00/4/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#vsc.input_profile = '/home/fs71386/lkugler/wrf_sounding/data/wrf/ens/from_LMU/raso.nat.<iens>.wrfprof'
-vsc.input_profile = '/home/fs71386/lkugler/wrf_sounding/data/wrf/ens/from_LMU/raso.raso.<iens>.wrfprof'
+vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.16_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+#vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/from_LMU/raso.nat.<iens>.wrfprof'
+vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.fc.<iens>.wrfprof'
 
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.2_v1.16.exe'
 vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.2.2_v1.16.exe'

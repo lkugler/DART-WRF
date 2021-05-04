@@ -3,24 +3,24 @@
 high level control script
 submitting jobs into SLURM queue
 """
-import os, sys, shutil
+import os, sys, shutil, glob
 import datetime as dt
 from slurmpy import Slurm
 
 from config.cfg import exp, cluster
 from scripts.utils import script_to_str, symlink
 
-if __name__ == "__main__":
-    # necessary to find modules in folder, since SLURM runs the script elsewhere
-    sys.path.append(os.getcwd())
 
-    # allow scripts to access the configuration
-    symlink(cluster.scriptsdir+'/../config', cluster.scriptsdir+'/config')
+# necessary to find modules in folder, since SLURM runs the script elsewhere
+sys.path.append(os.getcwd())
 
-    log_dir = cluster.archivedir()+'/logs/'
-    slurm_scripts_dir = cluster.archivedir()+'/slurm-scripts/'
-    print('logging to', log_dir)
-    print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
+# allow scripts to access the configuration
+symlink(cluster.scriptsdir+'/../config', cluster.scriptsdir+'/config')
+
+log_dir = cluster.archivedir()+'/logs/'
+slurm_scripts_dir = cluster.archivedir()+'/slurm-scripts/'
+print('logging to', log_dir)
+print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
 def my_Slurm(*args, cfg_update=dict(), **kwargs):
     """Shortcut to slurmpy's class; keep certain default kwargs
@@ -68,7 +68,7 @@ def backup_scripts():
 def prepare_wrfinput():
     """Create WRF/run directories and wrfinput files
     """
-    s = my_Slurm("prep_wrfinput", cfg_update={"time": "5", "mail-type": "BEGIN"})
+    s = my_Slurm("prep_wrfinput", cfg_update={"time": "10", "mail-type": "BEGIN"})
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/prepare_wrfinput.py')
 
     cmd = """# run ideal.exe in parallel, then add geodata
@@ -148,7 +148,7 @@ def run_ENS(begin, end, depends_on=None, first_minute=True):
             depends_on=[id])
 
     time_in_simulation_hours = (end-begin).total_seconds()/3600
-    runtime_wallclock_mins_expected = int(6+time_in_simulation_hours*10)  # usually below 8 min/hour
+    runtime_wallclock_mins_expected = int(6+time_in_simulation_hours*10)  # usually below 9 min/hour
     s = my_Slurm("runWRF2", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
                 "time": str(runtime_wallclock_mins_expected), "mem-per-cpu": "2G"})
     cmd = script_to_str(cluster.run_WRF).replace('<expname>', exp.expname)
@@ -194,7 +194,7 @@ def assimilate(assim_time, prior_init_time,
     s = my_Slurm("Assim", cfg_update={"nodes": "1", "ntasks": "96", "time": "30",
                              "mem": "300G", "ntasks-per-node": "96", "ntasks-per-core": "2"})
     id = s.run(cluster.python+' '+cluster.scriptsdir+'/assim_synth_obs.py '
-               +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
+               +assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
  
     # # actuall assimilation step
     # s = my_Slurm("Assim", cfg_update=dict(nodes="1", ntasks="48", time="50", mem="200G"))
@@ -224,18 +224,22 @@ def mailme(depends_on=None):
         s = my_Slurm("AllFinished", cfg_update={"time": "1", "mail-type": "BEGIN"})
         s.run('sleep 1', depends_on=[depends_on])
 
+def gen_obsseq(depends_on=None):
+    s = my_Slurm("obsseq_netcdf", cfg_update={"time": "10", "mail-type": "FAIL,END"})
+    s.run(cluster.python+' '+cluster.scriptsdir+'/obsseq_to_netcdf.py',
+          depends_on=[depends_on])
 
 ################################
 if __name__ == "__main__":
     print('starting osse')
 
-    timedelta_integrate = dt.timedelta(minutes=45)
-    timedelta_btw_assim = dt.timedelta(minutes=30)
+    timedelta_integrate = dt.timedelta(minutes=75)
+    timedelta_btw_assim = dt.timedelta(minutes=60)
 
     backup_scripts()
     id = None
 
-    start_from_existing_state = True
+    start_from_existing_state = False
     is_new_run = not start_from_existing_state
 
     if is_new_run:
@@ -265,7 +269,7 @@ if __name__ == "__main__":
     assim_time = integration_end_time
     prior_init_time = init_time
 
-    while time <= dt.datetime(2008, 7, 30, 15):
+    while time <= dt.datetime(2008, 7, 30, 20):
 
         id = assimilate(assim_time,
                         prior_init_time,
@@ -290,4 +294,4 @@ if __name__ == "__main__":
         assim_time = time
         prior_init_time = time - timedelta_btw_assim
 
-    mailme(id)
+    gen_obsseq(id)   # mailme(id)
