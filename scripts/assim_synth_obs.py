@@ -103,7 +103,7 @@ def replace_errors_obsseqout(f, new_errors):
     with open(f, 'w') as file:
         for line in obsseq:
             file.write(line)
-        print(f, 'saved.')
+    print('replaced obs errors in', f)
 
 
 def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
@@ -358,12 +358,7 @@ if __name__ == "__main__":
 
         if error_assimilate is not False:
             # overwrite error values in obs_seq.out
-
-            if isinstance(error_assimilate, int):
-                error_assimilate = np.zeros(n_obs_3d) + error_assimilate
-            else:
-                assert len(error_assimilate) == n_obs_3d
-
+            error_assimilate = np.zeros(n_obs_3d) + error_assimilate  # ensure shape
             replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
 
         assimilate()
