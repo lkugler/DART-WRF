@@ -211,13 +211,15 @@ kind
 """+str(obs['obserr_var'])
 
 
-def create_obsseq_in(time_dt, obscfg, zero_error=False,
+def create_obsseq_in(time_dt, obscfg, obs_errors=False,
                      archive_obs_coords=False):
     """Create obs_seq.in
 
     Args:
         time_dt (dt.datetime): time of observation
         obscfg (dict)
+        obs_errors (int, np.array) : values of observation errors (standard deviations)
+            e.g. 0 = use zero error
         archive_obs_coords (str, False): path to folder
 
     channel_id (int): SEVIRI channel number
@@ -255,8 +257,8 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
 
     # define obs error
     obserr_std = np.zeros(n_obs_3d) 
-    if not zero_error:
-        obserr_std += obscfg['err_std']
+    if obs_errors:
+        obserr_std += obs_errors
 
     # other stuff for obsseq.in
     obs_kind_nr = obs_kind_nrs[kind]
@@ -305,25 +307,44 @@ def create_obsseq_in(time_dt, obscfg, zero_error=False,
 if __name__ == '__main__':
     # for testing
     time_dt = dt.datetime(2008, 7, 30, 9, 0)
-    n_obs = 16  # radar: n_obs for each observation height level
+    n_obs = 1600  # radar: n_obs for each observation height level
 
-    vis = dict(kind='MSG_4_SEVIRI_BDRF',
-            sat_channel=1, n_obs=n_obs, err_std=0.03,
-            cov_loc_radius_km=10)
-    wv = dict(kind='MSG_4_SEVIRI_TB',
-            sat_channel=6, n_obs=n_obs, err_std=False,
-            cov_loc_radius_km=10)
-    ir108 = dict(kind='MSG_4_SEVIRI_TB',
-                sat_channel=9, n_obs=n_obs, err_std=5.,
-                cov_loc_radius_km=10)
+    vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
+            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
+            err_std=0.03,
+            error_generate=0.03, error_assimilate=0.06,
+            cov_loc_radius_km=32)
 
-    radar = dict(kind='RADAR_REFLECTIVITY', n_obs=n_obs, err_std=5.,
-                heights=np.arange(1000, 2001, 1000),
-                cov_loc_radius_km=10, cov_loc_vert_km=2)
+    wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
+                kind='MSG_4_SEVIRI_TB', sat_channel=6, n_obs=n_obs, 
+                err_std=False,
+                error_generate=False, error_assimilate=False,
+                cov_loc_radius_km=32)
 
-    t2m = dict(kind='SYNOP_TEMPERATURE', n_obs=n_obs, err_std=1.0, 
-            cov_loc_radius_km=32, cov_loc_vert_km=1)
-    psfc = dict(kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs, err_std=50.,
-            cov_loc_radius_km=32, cov_loc_vert_km=5)
+    ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
+                kind='MSG_4_SEVIRI_TB', sat_channel=9, n_obs=n_obs, 
+                err_std=5.,
+                error_generate=5., error_assimilate=10.,
+                cov_loc_radius_km=32)
 
-    create_obsseq_in(time_dt, radar, archive_obs_coords='./coords_stage1.pkl')
+    radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
+                kind='RADAR_REFLECTIVITY', n_obs=n_obs, 
+                error_generate=2.5, error_assimilate=5.,
+                heights=np.arange(1000, 15001, 1000),
+                cov_loc_radius_km=30, cov_loc_vert_km=4)
+
+    t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
+            kind='SYNOP_TEMPERATURE', n_obs=n_obs, 
+            error_generate=0.1, error_assimilate=1.,
+            cov_loc_radius_km=20, cov_loc_vert_km=3)
+
+    psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
+                kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs, 
+                error_generate=50., error_assimilate=100.,
+                cov_loc_radius_km=32, cov_loc_vert_km=5)
+
+    #create_obsseq_in(time_dt, radar, archive_obs_coords=False) #'./coords_stage1.pkl')
+
+    error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
+    import assim_synth_obs as aso
+    aso.replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)

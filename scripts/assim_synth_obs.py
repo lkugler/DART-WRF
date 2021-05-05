@@ -53,7 +53,8 @@ def read_prior_obs(f_obs_prior):
             OBSs.append(dict(observed=observed, truth=truth, prior_ens=np.array(prior_ens)))
     return OBSs
 
-def read_obsseqout(f):
+def read_truth_obs_obsseq(f):
+    """Reads observed and true values from obs_seq.out/final files."""
     obsseq = open(f, 'r').readlines()
     true = []
     obs = []
@@ -65,6 +66,44 @@ def read_obsseqout(f):
             true.append(truth)
             obs.append(observed)
     return true, obs
+
+def replace_errors_obsseqout(f, new_errors):
+    """Replaces existing observation errors in obs_seq.final files
+    
+    new_errors (np.array) : standard deviation,
+                            shape must match the number of observations
+    """
+    obsseq = open(f, 'r').readlines()
+
+    # find number of lines between two ' OBS   ' lines:
+    first_obs = None
+    for i, line in enumerate(obsseq):
+        if ' OBS ' in line:
+            if first_obs is None:
+                first_obs = i
+            else:
+                second_obs = i
+                break
+    lines_between = second_obs - first_obs
+    lines_obserr_after_obsnr = lines_between - 1  # obserr line is one before ' OBS   ' line
+
+    # replace values in list obsseq
+    i_obs = 0
+    for i, line in enumerate(obsseq):
+        if ' OBS ' in line:
+            line_error_obs_i = i+lines_obserr_after_obsnr
+
+            previous_err_var = obsseq[line_error_obs_i]
+            new_err_obs_i = new_errors[i_obs]**2  # variance in obs_seq.out
+            #print('previous err var ', previous_err_var, 'new error', new_err_obs_i)
+            obsseq[line_error_obs_i] = ' '+str(new_err_obs_i)+' \n'
+
+            i_obs += 1  # next iteration
+
+    with open(f, 'w') as file:
+        for line in obsseq:
+            file.write(line)
+        print(f, 'saved.')
 
 
 def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
@@ -129,7 +168,7 @@ def obs_operator_ensemble(istage):
             os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
 
             # truth values in obs_seq.out are H(x) values
-            true, _ = read_obsseqout(cluster.dartrundir+'/obs_seq.out')
+            true, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
             list_ensemble_truths.append(true)
         
         n_obs = len(list_ensemble_truths[0])
@@ -144,7 +183,7 @@ def obs_operator_nature(time):
     print('running obs operator on nature run')
     prepare_nature_dart(time)
     run_perfect_model_obs()
-    true, _ = read_obsseqout(cluster.dartrundir+'/obs_seq.out')
+    true, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
     return true
 
 
@@ -286,31 +325,46 @@ if __name__ == "__main__":
 
         archive_stage = archive_time + '/assim_stage'+str(istage)+'/'
         n_obs = obscfg['n_obs']
+        n_obs_3d = n_obs * len(obscfg['heights'])
         sat_channel = obscfg.get('sat_channel', False)
+        error_generate = obscfg['error_generate']
+        error_assimilate = obscfg['error_assimilate']
 
         set_DART_nml(sat_channel=sat_channel, 
                      cov_loc_radius_km=obscfg['cov_loc_radius_km'],
                      cov_loc_vert_km=obscfg.get('cov_loc_vert_km', False))
 
-        use_error_parametrization = obscfg['err_std'] == False
+        use_error_parametrization = error_generate == False
         if use_error_parametrization:
+
             if sat_channel != 6:
                 raise NotImplementedError('sat channel '+str(sat_channel))
 
-            osq.create_obsseq_in(time, obscfg, zero_error=True)  # zero error to get truth vals
+            osq.create_obsseq_in(time, obscfg, obs_errors=0)  # zero error to get truth vals
 
             Hx_nat = obs_operator_nature(time) 
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
-            
-            obscfg['err_std'] = calc_obserr_WV73(Hx_nat, Hx_prior)
-
+            error_generate = calc_obserr_WV73(Hx_nat, Hx_prior)
+ 
         # create obs template file, now with correct errors
-        osq.create_obsseq_in(time, obscfg, archive_obs_coords=archive_stage+'/obs_coords.pkl')
+        osq.create_obsseq_in(time, obscfg, obs_errors=error_generate,
+                             archive_obs_coords=archive_stage+'/obs_coords.pkl')
         prepare_nature_dart(time)  # link WRF files to DART directory
         run_perfect_model_obs()  # actually create observations that are used to assimilate
 
+        # debug option: overwrite time in prior files
         # for iens in range(1,41):
         #    os.system('ncks -A -v Times '+cluster.dartrundir+'/wrfout_d01 '+cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
+
+        if error_assimilate is not False:
+            # overwrite error values in obs_seq.out
+
+            if isinstance(error_assimilate, int):
+                error_assimilate = np.zeros(n_obs_3d) + error_assimilate
+            else:
+                assert len(error_assimilate) == n_obs_3d
+
+            replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
 
         assimilate()
         dir_obsseq = cluster.archivedir()+'/obs_seq_final/assim_stage'+str(istage)
