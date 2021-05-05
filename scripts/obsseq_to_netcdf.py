@@ -1,14 +1,9 @@
 import os, sys, glob
-
-def listdir_dirs(path):
-    return [a for a in os.listdir(path) if os.path.isdir(os.path.join(path, a))]
-
-#sys.path.append('')
 from config.cfg import exp, cluster
 import run_obs_diag as rod
 
-#sys.path.append('/home/fs71386/lkugler/DART-WRF/scripts')
-#from obs import read_dartobs as rdo
+def listdir_dirs(path):
+    return [a for a in os.listdir(path) if os.path.isdir(os.path.join(path, a))]
 
 if __name__ == '__main__':
 

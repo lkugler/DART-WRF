@@ -17,7 +17,7 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
     copy(cluster.namelist, rundir+'/namelist.input')
 
     sed_inplace(rundir+'/namelist.input', '<dx>', str(int(exp.model_dx)))
-    sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
+    #sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
     sed_inplace(rundir+'/namelist.input', '<hist_interval>', str(int(hist_interval)))
     sed_inplace(rundir+'/namelist.input', '<radt>', str(int(radt)))
 
@@ -40,13 +40,16 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
 
     #########################
     if archive:
+        
+        init_dir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
+        os.makedirs(init_dir, exist_ok=True)
         try:
             print('copy wrfinput of this run to archive')
             wrfin_old = rundir+'/wrfinput_d01'
-            init_dir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
-            os.makedirs(init_dir, exist_ok=True)
             wrfin_arch = init_dir+'/wrfinput_d01'
             copy(wrfin_old, wrfin_arch)
+            print('copy namelist to archive')
+            copy(rundir+'/namelist.input', init_dir+'/namelist.input')
         except Exception as e:
             warnings.warn(str(e))
 
