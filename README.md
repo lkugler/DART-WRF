@@ -92,9 +92,11 @@ cluster = clusters.clusterA  # change cluster configuration here
 
 
 ### References
-This repo is a simplified python version of the code provided in the [DART-WRF Tutorial](http://www.image.ucar.edu/wrfdart/tutorial/).
-DART itself is available at github: [@NCAR/DART](https://github.com/NCAR/DART)
+This workflow was created following the [DART-WRF Tutorial](http://www.image.ucar.edu/wrfdart/tutorial/).
+DART is available at github: [@NCAR/DART](https://github.com/NCAR/DART)
 
 ### License
-DART is licensed under the Apache License, Version 2.0
+This repo is licensed under Apache License 2.0
+
+[@NCAR/DART](https://github.com/NCAR/DART) is licensed under the Apache License, Version 2.0
 Copyright 2019 University Corporation for Atmospheric Research
