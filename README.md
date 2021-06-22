@@ -7,8 +7,13 @@ This code runs an Ensemble Data Assimilation system with the software packages D
   - It handles dependencies using SLURM without '`sleep` loops in the bash script'. 
 Functions return a SLURM ID which can be used to trigger the start of another function (interface by [brentp/slurmpy](https://github.com/brentp/slurmpy)).
 
+- How does it work?
+  - There are two kinds of code/scripts: One that is run immediately and one that is run later on.
+  - The first one instructs the cluster (SLURM) to do the things you tell it - in the right order - using the right input.
+  - The latter kind of code actually does the things. It is not run right away, but when SLURM says "it's your turn now" - which depends on the available resources on the shared cluster.
+
 - Can I use it for real weather?
-  -  Yes, but you need to [convert your observations into DART format.](https://dart.ucar.edu/pages/Observations.html#obs_real)
+  -  Yes, but you need to [convert your observations into DART format.](https://docs.dart.ucar.edu)
 
 ### A possible workflow:
 [`scheduler.py`](https://github.com/lkugler/DART-WRF/blob/master/scheduler.py) 
@@ -89,6 +94,7 @@ clusterB.userdir = '/home/pathB/myuser/'
 
 ### References
 This workflow was created following the [DART-WRF Tutorial](http://www.image.ucar.edu/wrfdart/tutorial/).
+Read the DART documentation: [docs.dart.ucar.edu](https://docs.dart.ucar.edu)
 DART is available at github: [@NCAR/DART](https://github.com/NCAR/DART)
 
 ### License
