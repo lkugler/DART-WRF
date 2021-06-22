@@ -94,8 +94,8 @@ clusterB.userdir = '/home/pathB/myuser/'
 
 ### References
 This workflow was created following the [DART-WRF Tutorial](http://www.image.ucar.edu/wrfdart/tutorial/).
-Read the DART documentation: [docs.dart.ucar.edu](https://docs.dart.ucar.edu)
-DART is available at github: [@NCAR/DART](https://github.com/NCAR/DART)
+Read the DART documentation: [docs.dart.ucar.edu](https://docs.dart.ucar.edu).
+DART is available at github: [@NCAR/DART](https://github.com/NCAR/DART).
 
 ### License
 This repo is licensed under Apache License 2.0
