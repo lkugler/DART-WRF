@@ -1,6 +1,6 @@
 # DART-WRF
 
-This code runs an Ensemble Data Assimilation system with the software packages DART and WRF. All workflow steps are submitted to the cluster manager SLURM, which takes care of the dependencies.
+This code runs an Ensemble Data Assimilation system with the software packages DART and WRF. All workflow steps are submitted to the cluster manager SLURM, which takes care of the dependencies (the order in which tasks are done).
 
 - Why should I use it?
   - It's pythonic: see what it does at first glance, modular, flexible
@@ -11,8 +11,9 @@ Functions return a SLURM ID which can be used to trigger the start of another fu
   -  Yes, but you need to [convert your observations into DART format.](https://dart.ucar.edu/pages/Observations.html#obs_real)
 
 ### A possible workflow:
-`scheduler.py`
+[`scheduler.py`](https://github.com/lkugler/DART-WRF/blob/master/scheduler.py) 
 ```python
+### define your functions gen_synth_obs, assimilate, run_ENS, ...
 
 # create initial conditions
 id = prep_osse()  
@@ -69,9 +70,11 @@ $ squeue -u `whoami` --sort=i
       308393_[1-5]  mem_0384 EnsWRF-3  lkugler PD       0:00      1 (Dependency)
 ```
 
-### Easily switch between clusters
+### Configure your experiment
+Define simulation specific variables in [`config/cfg.py`](https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py).
 
-`config/clusters.py `
+### Easily switch between clusters
+Define cluster specific variables in `config/clusters.py `:
 ```python
 
 clusterA = ClusterConfig()
@@ -81,13 +84,6 @@ clusterA.userdir = '/home/pathA/myuser/'
 clusterB = ClusterConfig()
 clusterB.name = 'jet'
 clusterB.userdir = '/home/pathB/myuser/'
-```
-
-`config/cfg.py`
-```python
-
-from . import clusters
-cluster = clusters.clusterA  # change cluster configuration here
 ```
 
 
