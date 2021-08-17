@@ -51,16 +51,16 @@
    output_timestamps        = .false.,
    trace_execution          = .false.,
 
-   stages_to_write          = 'preassim', 'output'
+   stages_to_write          = 'output'
    output_members           = .true.
    output_mean              = .true.
    output_sd                = .true.
    write_all_stages_at_end  = .false.
 
-   inf_flavor                  = 0,                      0,
+   inf_flavor                  = 0,                      4,
    inf_initial_from_restart    = .true.,                 .false.,
    inf_sd_initial_from_restart = .true.,                 .false.,
-   inf_initial                 = 1.0,                     1.00,
+   inf_initial                 = 1.00,                     0.90,
    inf_lower_bound             = 1.0,                     1.0,
    inf_upper_bound             = 1000000.0,               1000000.0,
    inf_damping                 = 0.9,                     1.0,

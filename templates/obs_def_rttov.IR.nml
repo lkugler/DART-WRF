@@ -17,7 +17,6 @@
    addrefrac              = .false.
    plane_parallel         = .false.
    use_salinity           = .false.
-   apply_band_correction  = .true.
    cfrac_data             = .true.
    clw_data               = .true.
    rain_data              = .false.

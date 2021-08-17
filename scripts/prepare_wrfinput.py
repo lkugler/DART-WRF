@@ -5,6 +5,8 @@ from utils import symlink, copy, link_contents
 
 import prepare_namelist
 
+init_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
+
 for iens in range(1, exp.n_ens+1):
     print('preparing ens', iens)
     input_prof = (cluster.input_profile).replace('<iens>', str(iens).zfill(3))
@@ -17,9 +19,8 @@ for iens in range(1, exp.n_ens+1):
     symlink(cluster.wrfexe, rundir+'/wrf.exe')
 
     # time not important, but general settings
-    prepare_namelist.run(iens, begin=dt.datetime(2008, 7, 30, 6, 0),
-                         end=dt.datetime(2008, 7, 30, 6, 30),
-			 archive=False)
+    prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 12),
+                         archive=False)
 
     symlink(input_prof, rundir+'/input_sounding')
 print('finished.')

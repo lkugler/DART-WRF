@@ -24,9 +24,17 @@
  /
 
  &domains
- time_step                           = <timestep>,
+ use_adaptive_time_step              = .true.,
+ target_cfl                          = 1.2, 1.2, 1.2,
+ max_step_increase_pct               = 5, 51, 51,
+ starting_time_step                  = 8,
+ max_time_step                       = 16,
+ min_time_step                       = 6,
+ step_to_output_time                 = .true.,
+ time_step                           = 8,
  time_step_fract_num                 = 0,
  time_step_fract_den                 = 1,
+ step_to_output_time		     = .true.,
  max_dom                             = 1,
  s_we                                = 1,     1,     1,
  e_we                                = 201,    43,    43,
@@ -67,8 +75,8 @@
  &dynamics
  hybrid_opt                          = 0,
  rk_ord                              = 3,
- diff_opt                            = 2,      2,      2,
- km_opt                              = 2,      2,      2,
+ diff_opt                            = 1,      1,      1,
+ km_opt                              = 4,      4,      2,
  damp_opt                            = 2,
  zdamp                               = 5000.,  5000.,  5000.,
  dampcoef                            = 0.003,  0.003,  0.003

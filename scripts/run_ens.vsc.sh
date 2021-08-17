@@ -7,13 +7,13 @@ export SLURM_STEP_GRES=none
 echo "SLURM_ARRAY_TASK_ID:"$SLURM_ARRAY_TASK_ID
 EXPNAME=<expname>
 
-USERDIR=/home/fs71386/lkugler
+MAINDIR=/gpfs/data/fs71386/lkugler/run_WRF
 pinning=(0-11 12-23 24-35 36-47)
 
 for ((n=1; n<=4; n++))
 do
    IENS="$(((($SLURM_ARRAY_TASK_ID - 1)* 4) + $n))"
-   RUNDIR=$USERDIR/run_WRF/$EXPNAME/$IENS
+   RUNDIR=$MAINDIR/$EXPNAME/$IENS
    echo "ENSEMBLE NR: "$IENS" in "$RUNDIR
    cd $RUNDIR
    rm -rf wrfrst_d01_* wrfout_d01_* rsl.out.0* 
@@ -27,7 +27,7 @@ wait
 for ((n=1; n<=4; n++))
 do
    IENS="$(((($SLURM_ARRAY_TASK_ID - 1)* 4) + $n))"
-   RUNDIR=$USERDIR/run_WRF/$EXPNAME/$IENS
+   RUNDIR=$MAINDIR/$EXPNAME/$IENS
    cd $RUNDIR
    line=`tail -n 1 rsl.out.0000`
    if [[ $line == *"SUCCESS COMPLETE WRF"* ]]; 

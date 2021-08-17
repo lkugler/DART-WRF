@@ -1,3 +1,4 @@
+print('loading modules')
 import os, sys, warnings
 import datetime as dt
 import netCDF4 as nc
@@ -10,12 +11,14 @@ background_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
 exppath_firstguess = str(sys.argv[3])
 
 """
-sets initial condition data (wrfinput file) in run_WRF directories 
-from a DART output state (set of filter_restart files)
+-) sets initial condition data (wrfinput file) in the run_WRF directory for each ensemble member 
+   from a DART output state (set of filter_restart files)
+-) cycles (copies) some state variables from the prior ensemble to the wrfinput of the next run
 
 # assumes T = THM (dry potential temperature as prognostic variable)
 """
-update_vars = ['Times', 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
+update_vars = ['Times',]
+update_vars.extend(exp.update_vars) # 'U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
 updates = ','.join(update_vars)
 
 print('move output to WRF dir as new initial conditions')

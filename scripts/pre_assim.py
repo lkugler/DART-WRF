@@ -57,6 +57,8 @@ def run(assim_time, background_init_time, exppath_firstguess):
     os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
     os.system('rm -rf '+cluster.dartrundir+'/obs_seq.fina*')
 
+    os.system(cluster.python+' '+cluster.scriptsdir+'/link_rttov.py')
+
 
 if __name__ == '__main__':
     assim_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')

@@ -1,5 +1,5 @@
 import numpy as np
-from . import clusters
+from config import clusters  # from . = problem in archivedir
 cluster = clusters.vsc  # change cluster configuration here
 
 
@@ -9,12 +9,12 @@ class ExperimentConfiguration(object):
 
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.16_P0-4_Radar5+I-test"
+exp.expname = "exp_v1.16_Pwbub-1_40mem"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.n_nodes = 10
 
-n_obs = 4 #1600  # 50km res: 64:8x8; 10km res: 1600:40x40  # radar: n_obs for each observation height level
+n_obs = 121  #961 900: 10km resoltn # radar: n_obs for each observation height level
 
 vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
@@ -48,7 +48,9 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32, cov_loc_vert_km=5)
 
 
-exp.observations = [vis, wv73, ] # 108, wv73, vis]
+exp.observations = [] #wv73, vis] # 108, wv73, vis]
+exp.update_vars = ['T', 'QVAPOR', 'QCLOUD', 'QICE','CLDFRA']
+#exp.update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
 
 # directory paths depend on the name of the experiment
 cluster.expname = exp.expname

@@ -1,9 +1,6 @@
 import os, sys, shutil, warnings
 import datetime as dt
 from config.cfg import exp, cluster
-
-sys.path.append(cluster.scriptsdir)
-from config.cfg import exp, cluster
 from utils import sed_inplace, copy, symlink, mkdir
 
 def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
@@ -22,7 +19,7 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
     sed_inplace(rundir+'/namelist.input', '<radt>', str(int(radt)))
 
     if archive:
-        archdir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/')
+        archdir = cluster.archivedir+begin.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/')
         os.makedirs(archdir, exist_ok=True)
     else:
         archdir = './'
@@ -41,7 +38,7 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
     #########################
     if archive:
         
-        init_dir = cluster.archivedir()+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
+        init_dir = cluster.archivedir+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
         os.makedirs(init_dir, exist_ok=True)
         try:
             print('copy wrfinput of this run to archive')

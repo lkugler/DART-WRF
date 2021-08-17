@@ -1,5 +1,4 @@
 import os, sys, shutil, warnings
-import time as time_module
 import datetime as dt
 import numpy as np
 from scipy.interpolate import interp1d
@@ -107,8 +106,9 @@ def replace_errors_obsseqout(f, new_errors):
     print('replaced obs errors in', f)
 
 
-def set_DART_nml_singleobstype(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
+def set_DART_nml(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
                  just_prior_values=False):
+    """descr"""
     cov_loc_radian = cov_loc_radius_km/earth_radius_km
     
     if just_prior_values:
@@ -144,71 +144,43 @@ def set_DART_nml_singleobstype(sat_channel=False, cov_loc_radius_km=32, cov_loc_
         rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
-def set_DART_nml(cov_loc_radius_km=32, cov_loc_vert_km=False, just_prior_values=False):
-    cov_loc_radian = cov_loc_radius_km/earth_radius_km
-    
-    if just_prior_values:
-        template = cluster.scriptsdir+'/../templates/input.eval.nml'
-    else:
-        template = cluster.scriptsdir+'/../templates/input.nml'
-    copy(template, cluster.dartrundir+'/input.nml')
-
-    # options keys are replaced in input.nml with values
-    options = {'<n_ens>': str(int(exp.n_ens)),
-               '<cov_loc_radian>': str(cov_loc_radian)}
-
-    if cov_loc_vert_km:
-        vert_norm_rad = earth_radius_km*cov_loc_vert_km/cov_loc_radius_km*1000
-        options['<horiz_dist_only>'] = '.false.'
-        options['<vert_norm_hgt>'] = str(vert_norm_rad)
-    else:
-        options['<horiz_dist_only>'] = '.true.'
-        options['<vert_norm_hgt>'] = '50000.0'  # dummy value
-
-    for key, value in options.items():
-        sed_inplace(cluster.dartrundir+'/input.nml', key, value)
-
-    # input.nml for RTTOV
-    rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml'
-    append_file(cluster.dartrundir+'/input.nml', rttov_nml)
-
-
 def obs_operator_ensemble(istage):
     # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
     print('running obs operator on ensemble forecast')
     os.chdir(cluster.dartrundir)
 
-    list_ensemble_truths = []
-    t = time_module.time()
+    if sat_channel:
+        list_ensemble_truths = []
 
-    for iens in range(1, exp.n_ens+1):
-        print('observation operator for ens #'+str(iens))
-        # ens members are already linked to advance_temp<i>/wrfout_d01
-        copy(cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01',
-                cluster.dartrundir+'/wrfout_d01')
-        # DART may need a wrfinput file as well, which serves as a template for dimension sizes
-        symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+        for iens in range(1, exp.n_ens+1):
+            print('observation operator for ens #'+str(iens))
+            # ens members are already linked to advance_temp<i>/wrfout_d01
+            copy(cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01',
+                 cluster.dartrundir+'/wrfout_d01')
+            # DART may need a wrfinput file as well, which serves as a template for dimension sizes
+            symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+            
+            # add geodata, if istage>0, wrfout is DART output (has coords)
+            if istage == 0:
+                wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+
+            # run perfect_model obs (forward operator)
+            os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
+
+            # truth values in obs_seq.out are H(x) values
+            true, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
+            list_ensemble_truths.append(true)
         
-        # add geodata, if istage>0, wrfout is DART output (has coords)
-        if istage == 0:
-            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
-
-        # run perfect_model obs (forward operator)
-        os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
-
-        # truth values in obs_seq.out are H(x) values
-        true, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
-        list_ensemble_truths.append(true)
-    
-    print('obs operator ensemble took', int(time_module.time()-t), 'seconds')
-    n_obs = len(list_ensemble_truths[0])
-    np_array = np.full((exp.n_ens, n_obs), np.nan)
-    for i in range(exp.n_ens):
-        np_array[i, :] = list_ensemble_truths[i]
-    return np_array
+        n_obs = len(list_ensemble_truths[0])
+        np_array = np.full((exp.n_ens, n_obs), np.nan)
+        for i in range(exp.n_ens):
+            np_array[i, :] = list_ensemble_truths[i]
+        return np_array
+    else:
+        raise NotImplementedError()
 
 def obs_operator_nature(time):
-    print('getting true values in obs space from nature run')
+    print('what are the true values in obs space of nature run')
     prepare_nature_dart(time)
     run_perfect_model_obs()
     true, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
@@ -224,7 +196,6 @@ def link_nature_to_dart_truth(time):
 
 
 def prepare_nature_dart(time):
-    print('linking nature to DART & georeferencing')
     link_nature_to_dart_truth(time)
     wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
 
@@ -246,7 +217,6 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
     return OEs
 
 def run_perfect_model_obs():
-    print('generating observations - running ./perfect_model_obs')
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir+'/obs_seq.out')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
@@ -257,13 +227,10 @@ def run_perfect_model_obs():
                            '\n look for '+cluster.dartrundir+'log.perfect_model_obs')
 
 def assimilate(nproc=96):
-    print('time now', dt.datetime.now())
     print('running filter')
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir+'/obs_seq.final')
-    t = time_module.time()
     os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter > log.filter')
-    print('./filter took', int(time_module.time()-t), 'seconds')
 
 def archive_diagnostics(archive_dir, time):
     print('archive obs space diagnostics')
@@ -271,6 +238,11 @@ def archive_diagnostics(archive_dir, time):
     fout = archive_dir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final')
     copy(cluster.dartrundir+'/obs_seq.final', fout)
     print(fout, 'saved.')
+
+    try:
+        copy(cluster.dartrundir+'/obs_coords.pkl', archive_stage+'/obs_coords.pkl')
+    except Exception as e:
+        warnings.warn(str(e)) 
 
     # try:  # what are regression diagnostics?!
     #     print('archive regression diagnostics')
@@ -321,26 +293,21 @@ def archive_output(archive_stage):
 
 if __name__ == "__main__":
 
-    """Assimilate observations (different obs types)
+    """Generate observations (obs_seq.out file)
     as defined in config/cfg.py
     for a certain timestamp (argument) of the nature run (defined in config/clusters.py)
 
     Workflow:
     for each assimilation stage (one obs_seq.in and e.g. one observation type):
-    1) create obs_seq.in with obs-errors
-    2) prepare nature run for DART
-    3) create obs from nature (obs_seq.out)
-    4) Assimilate
-      - adapt obs errors for assimilation
-        - calculate assim obs error from parametrization
-            1) create obs_seq.in with obs error=0 
-            2) calculate y_nat = H(x_nature) and y_ens = H(x_ensemble) 
-            3) calculate obs error as function of y_nat, y_ensmean 
-        - or get assim obs error from config
-        - edit obs error in obs_seq.out
-      - assimilate
-      - write state to archive
+    1) prepare nature run for DART
+    optional: 2) calculate obs-error from parametrization
+    3) create obs_seq.in with obs-errors from 2)
+    4) generate actual observations (obs_seq.out) with obs_seq.in from 3)
 
+    - calculate obs-error from parametrization
+        1) create obs_seq.in with obs error=0
+        2) calculate y_nat = H(x_nature) and y_ens = H(x_ensemble) 
+        3) calculate obs error as function of y_nat, y_ensmean
     
     Assumptions:
     - x_ensemble is already linked for DART to advance_temp<iens>/wrfout_d01
@@ -352,62 +319,7 @@ if __name__ == "__main__":
     os.chdir(cluster.dartrundir)
     os.system('rm -f obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
 
-    print('create obs_seq.in from config')
-    istage = 0
-    archive_stage = archive_time + '/assim_stage'+str(istage)+'/'
-
-    prepare_nature_dart(time)  # link WRF files to DART directory
-
-    ################################################
-    print(' 1) get the assimilation errors in a single vector ')
-    error_assimilate = []
-
-    for i, obscfg in enumerate(exp.observations):
-        n_obs = obscfg['n_obs']
-        n_obs_z = obscfg.get('heights', 1)
-        n_obs_3d = n_obs * n_obs_z
-
-        parametrized = obscfg.get('sat_channel') == 6
-        if not parametrized:
-            err_this_type = np.zeros(n_obs_3d) + obscfg['error_generate']
-
-        else:  # error parametrization for WV73
-            # get observations for sat 6
-            osq.create_obsseqin_alltypes(time, [obscfg,], obs_errors='error_generate')
-            run_perfect_model_obs()
-            
-            # depends on obs_seq.out produced before by run_perfect_model_obs()
-            Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
-
-            Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
-            err_this_type = calc_obserr_WV73(Hx_nat, Hx_prior)
-     
-        error_assimilate.extend(err_this_type)
-
-    ################################################
-    print(' 2) generate observations ')
-    osq.create_obsseqin_alltypes(time, exp.observations, obs_errors='error_generate',
-                             archive_obs_coords=archive_stage+'/obs_coords.pkl')
-
-    first_obstype = exp.observations[0]
-    set_DART_nml(cov_loc_radius_km=first_obstype['cov_loc_radius_km'],
-                 cov_loc_vert_km=first_obstype.get('cov_loc_vert_km', False))
-
-    run_perfect_model_obs()  # actually create observations that are used to assimilate
-
-    ################################################
-    print(' 3) assimilate with adapted observation-errors ')
-    replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
-    t = time.time()
-    assimilate()
-    
-    dir_obsseq = cluster.archivedir+'/obs_seq_final/assim_stage'+str(istage)
-    archive_diagnostics(dir_obsseq, time)
-    archive_output(archive_stage)
-
-
-    sys.exit()  # below is the code for separate assimilation of different obs types
-
+    n_stages = len(exp.observations)
     for istage, obscfg in enumerate(exp.observations):
         print('running observation stage', istage, obscfg)
 
@@ -415,6 +327,18 @@ if __name__ == "__main__":
         n_obs = obscfg['n_obs']
         n_obs_3d = n_obs * len(obscfg['heights'])
         sat_channel = obscfg.get('sat_channel', False)
+        error_generate = obscfg['error_generate']
+        error_assimilate = obscfg['error_assimilate']
+
+        set_DART_nml(sat_channel=sat_channel, 
+                     cov_loc_radius_km=obscfg['cov_loc_radius_km'],
+                     cov_loc_vert_km=obscfg.get('cov_loc_vert_km', False))
+
+        # create obs template file, now with correct errors
+        osq.create_obsseq_in(time, obscfg, obs_errors=error_generate,
+                             archive_obs_coords=archive_stage+'/obs_coords.pkl')
+        prepare_nature_dart(time)  # link WRF files to DART directory
+        run_perfect_model_obs()  # actually create observations that are used to assimilate
 
         # debug option: overwrite time in prior files
         # for iens in range(1,41):

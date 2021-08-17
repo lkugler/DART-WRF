@@ -1,31 +1,33 @@
 """Add geogrid data to wrfinput
-this is needed for DART, but not provided by ideal.exe
+DART needs a georeference, but ideal.exe does not provide it
 
-take LAT,LON, mapfac from geogrid, so that they are consistent.
-do not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
+Takes LAT,LON, mapfac from geogrid, so that they are consistent.
+Does not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
 
-example call:
+Example call:
     ./wrfout_add_geo.py geo_em.d01.nc wrfinput_d01
 """
 import os, sys
 import netCDF4 as nc
-
 from config.cfg import exp, cluster
 
+fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
+                "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
+fields_new = ["XLAT",     "XLONG",      "CLAT",
+                "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
+
 def run(geo_data_file, wrfout_file):
+    debug = False
+
+    print('updating geodata in', wrfout_file, 'from', geo_data_file)
     geo_ds = nc.Dataset(geo_data_file, 'r')
     wrfinp_ds = nc.Dataset(wrfout_file, 'r+')
 
-    fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
-                  "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
-    fields_new = ["XLAT",     "XLONG",      "CLAT",
-                  "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
-
     for old, new in zip(fields_old, fields_new):
-        print('moving old field', old, 'into new field', new)
-        #print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
+        if debug:
+            print('moving old field', old, 'into new field', new)
+            print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
         wrfinp_ds.variables[new][:] = geo_ds.variables[old][:]
-        #print(wrfinp_ds.variables[new][:])
 
     wrfinp_ds.close()
     geo_ds.close()
