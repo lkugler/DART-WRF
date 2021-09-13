@@ -74,6 +74,7 @@ def replace_errors_obsseqout(f, new_errors):
     new_errors (np.array) : standard deviation,
                             shape must match the number of observations
     """
+    debug = True
     obsseq = open(f, 'r').readlines()
 
     # find number of lines between two ' OBS   ' lines:
@@ -96,7 +97,7 @@ def replace_errors_obsseqout(f, new_errors):
 
             previous_err_var = obsseq[line_error_obs_i]
             new_err_obs_i = new_errors[i_obs]**2  # variance in obs_seq.out
-            #print('previous err var ', previous_err_var, 'new error', new_err_obs_i)
+            if debug: print('previous err var ', previous_err_var, 'new error', new_err_obs_i)
             obsseq[line_error_obs_i] = ' '+str(new_err_obs_i)+' \n'
 
             i_obs += 1  # next iteration
@@ -189,9 +190,10 @@ def obs_operator_ensemble(istage):
         # DART may need a wrfinput file as well, which serves as a template for dimension sizes
         symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
         
+        # I dont think this is necessary, we do this already in pre_assim.py
         # add geodata, if istage>0, wrfout is DART output (has coords)
-        if istage == 0:
-            wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+        #if istage == 0:
+        #    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
 
         # run perfect_model obs (forward operator)
         os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
@@ -221,6 +223,7 @@ def link_nature_to_dart_truth(time):
                 cluster.dartrundir+'/wrfout_d01')
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
     symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
+    print('linked', time.strftime(cluster.nature_wrfout), 'to', cluster.dartrundir+'/wrfout_d01')
 
 
 def prepare_nature_dart(time):
@@ -254,7 +257,7 @@ def run_perfect_model_obs():
     os.system('mpirun -np 12 ./perfect_model_obs > log.perfect_model_obs')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.out'):
         raise RuntimeError('obs_seq.out does not exist in '+cluster.dartrundir, 
-                           '\n look for '+cluster.dartrundir+'log.perfect_model_obs')
+                           '\n look for '+cluster.dartrundir+'/log.perfect_model_obs')
 
 def assimilate(nproc=96):
     print('time now', dt.datetime.now())
@@ -279,6 +282,8 @@ def archive_diagnostics(archive_dir, time):
     #     warnings.warn(str(e))
 
 def recycle_output():
+    """Use output of assimilation (./filter) as input for another assimilation (with ./filter)
+    Specifically, this copies the state fields from filter_restart_d01.000x to the wrfout files in advance_temp folders"""
     update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QRAIN', 'U10', 'V10', 'T2', 'Q2', 'TSK', 'PSFC', 'CLDFRA']
     updates = ','.join(update_vars)
 
@@ -344,6 +349,9 @@ if __name__ == "__main__":
     
     Assumptions:
     - x_ensemble is already linked for DART to advance_temp<iens>/wrfout_d01
+
+    Example call:
+    python assim.py 2008-08-07_12:00
     """
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
@@ -360,20 +368,21 @@ if __name__ == "__main__":
 
     ################################################
     print(' 1) get the assimilation errors in a single vector ')
-    error_assimilate = []
+    error_generate = []
 
     for i, obscfg in enumerate(exp.observations):
         n_obs = obscfg['n_obs']
-        n_obs_z = obscfg.get('heights', 1)
+        n_obs_z = len(obscfg.get('heights', [1,]))
         n_obs_3d = n_obs * n_obs_z
 
         parametrized = obscfg.get('sat_channel') == 6
+
         if not parametrized:
             err_this_type = np.zeros(n_obs_3d) + obscfg['error_generate']
 
         else:  # error parametrization for WV73
             # get observations for sat 6
-            osq.create_obsseqin_alltypes(time, [obscfg,], obs_errors='error_generate')
+            osq.create_obsseqin_alltypes(time, [obscfg,], np.zeros(n_obs_3d))
             run_perfect_model_obs()
             
             # depends on obs_seq.out produced before by run_perfect_model_obs()
@@ -382,11 +391,11 @@ if __name__ == "__main__":
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             err_this_type = calc_obserr_WV73(Hx_nat, Hx_prior)
      
-        error_assimilate.extend(err_this_type)
+        error_generate.extend(err_this_type)  # the obs-error we assume for generating observations
 
     ################################################
     print(' 2) generate observations ')
-    osq.create_obsseqin_alltypes(time, exp.observations, obs_errors='error_generate',
+    osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=error_generate,
                              archive_obs_coords=archive_stage+'/obs_coords.pkl')
 
     first_obstype = exp.observations[0]
@@ -397,58 +406,60 @@ if __name__ == "__main__":
 
     ################################################
     print(' 3) assimilate with adapted observation-errors ')
+    error_assimilate = np.zeros(n_obs_3d) + obscfg['error_assimilate']  # the obs-error we assume for assimilation
     replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
-    t = time.time()
+    t = time_module.time()
     assimilate()
+    print('filter took', time_module.time()-t, 'seconds')
     
     dir_obsseq = cluster.archivedir+'/obs_seq_final/assim_stage'+str(istage)
     archive_diagnostics(dir_obsseq, time)
     archive_output(archive_stage)
 
 
-    sys.exit()  # below is the code for separate assimilation of different obs types
+    #sys.exit()  # below is the code for separate assimilation of different obs types
 
-    for istage, obscfg in enumerate(exp.observations):
-        print('running observation stage', istage, obscfg)
+    #for istage, obscfg in enumerate(exp.observations):
+    #    print('running observation stage', istage, obscfg)
 
-        archive_stage = archive_time + '/assim_stage'+str(istage)+'/'
-        n_obs = obscfg['n_obs']
-        n_obs_3d = n_obs * len(obscfg['heights'])
-        sat_channel = obscfg.get('sat_channel', False)
+    #    archive_stage = archive_time + '/assim_stage'+str(istage)+'/'
+    #    n_obs = obscfg['n_obs']
+    #    n_obs_3d = n_obs * len(obscfg['heights'])
+    #    sat_channel = obscfg.get('sat_channel', False)
 
-        # debug option: overwrite time in prior files
-        # for iens in range(1,41):
-        #    os.system('ncks -A -v Times '+cluster.dartrundir+'/wrfout_d01 '+cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
+    #    # debug option: overwrite time in prior files
+    #    # for iens in range(1,41):
+    #    #    os.system('ncks -A -v Times '+cluster.dartrundir+'/wrfout_d01 '+cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01')
 
-        if error_assimilate == False:
-            # use error parametrization for assimilation-obs.errors
+    #    if error_assimilate == False:
+    #        # use error parametrization for assimilation-obs.errors
 
-            if sat_channel != 6:
-                raise NotImplementedError('sat channel '+str(sat_channel))
+    #        if sat_channel != 6:
+    #            raise NotImplementedError('sat channel '+str(sat_channel))
 
-            # depends on obs_seq.out produced before by run_perfect_model_obs()
-            Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
+    #        # depends on obs_seq.out produced before by run_perfect_model_obs()
+    #        Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
 
-            Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
-            error_assimilate = calc_obserr_WV73(Hx_nat, Hx_prior)
+    #        Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
+    #        error_assimilate = calc_obserr_WV73(Hx_nat, Hx_prior)
 
-        else:
-            # overwrite error values in obs_seq.out
-            error_assimilate = np.zeros(n_obs_3d) + error_assimilate  # ensure shape
+    #    else:
+    #        # overwrite error values in obs_seq.out
+    #        error_assimilate = np.zeros(n_obs_3d) + error_assimilate  # ensure shape
 
-        replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
-        assimilate()
-        dir_obsseq = cluster.archivedir+'/obs_seq_final/assim_stage'+str(istage)
-        archive_diagnostics(dir_obsseq, time)
+    #    replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
+    #    assimilate()
+    #    dir_obsseq = cluster.archivedir+'/obs_seq_final/assim_stage'+str(istage)
+    #    archive_diagnostics(dir_obsseq, time)
 
-        if istage < n_stages-1:
-            # recirculation: filter output -> input
-            archive_output(archive_stage)
-            recycle_output()
+    #    if istage < n_stages-1:
+    #        # recirculation: filter output -> input
+    #        archive_output(archive_stage)
+    #        recycle_output()
 
-        elif istage == n_stages-1:
-            # last assimilation, continue integration now
-            archive_output(archive_stage)
+    #    elif istage == n_stages-1:
+    #        # last assimilation, continue integration now
+    #        archive_output(archive_stage)
 
-        else:
-            RuntimeError('this should never occur?!')
+    #    else:
+    #        RuntimeError('this should never occur?!')

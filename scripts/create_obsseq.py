@@ -143,7 +143,7 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
 
         omit_covloc_radius_on_boundary = True
         if omit_covloc_radius_on_boundary:  #  in order to avoid an increment step on the boundary
-            skip_km = cov_loc_radius_km*1.5
+            skip_km = 50  # cov_loc_radius_km*1.5
             skip_gridpoints = int(skip_km/model_dx_km)  # skip this many gridpoints on each side
 
             gridpoints_left = nx - 2*skip_gridpoints
@@ -376,13 +376,14 @@ def create_obsseq_in_separate_obs(time_dt, obscfg, obs_errors=False,
     write_file(txt, output_path=cluster.dartrundir+'/obs_seq.in')
 
 
-def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors='error_assimilate', archive_obs_coords=False):
+def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coords=False):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
         time_dt (dt.datetime): time of observation
         list_obscfg (list of dict)
-        obs_errors (False or str): Key to obsdict, which field contains the error values
+        obs_errors (list of float, False): contains observation errors, one for each observation
+              if False: use zero error
         archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
     """
     print('creating obs_seq.in:')
@@ -411,9 +412,12 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors='error_assimilate'
         n_obs_3d_thistype = len(coords)
 
         # define obs error
-        obserr_std = np.zeros(n_obs_3d_thistype) 
-        if obs_errors:
-            obserr_std += obscfg[obs_errors]
+        if obs_errors == False:  
+            obs_errors = np.zeros(n_obs_3d_thistype)
+        assert len(obs_errors) == n_obs_3d_thistype, 'len(obs_errors) == n_obs_3d_thistype'
+        obserr_std = obs_errors #np.zeros(n_obs_3d_thistype) 
+        #if obs_errors:
+        #    obserr_std += obscfg[obs_errors]
 
         sat_info = write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt)
 
