@@ -24,8 +24,8 @@ for iens in range(1, exp.n_ens+1):
         z = (z[1:]+z[:-1])/2
         z = z[:, np.newaxis, np.newaxis]
 
-        cx = 100*dx_km #(80 + 40*np.random.rand())*dx_km
-        cy = 100*dx_km #(80 + 40*np.random.rand())*dx_km
+        cx = (80 + 40*np.random.rand())*dx_km
+        cy = (80 + 40*np.random.rand())*dx_km
         print(cx, cy)
         x = np.arange(0,nx)*dx_km
         y = np.arange(0,ny)*dx_km
@@ -36,6 +36,6 @@ for iens in range(1, exp.n_ens+1):
 
         pert = 3*np.exp(-(dr/cr)**2)*np.exp(-(z/cz)**2)
 
-        ds.variables['T'][0,...] = ds.variables['T'][0,...] + pert
+        ds.variables['THM'][0,...] = ds.variables['THM'][0,...] + pert
 
     print(wrfin, 'wbubble inserted.')

@@ -19,7 +19,7 @@ for iens in range(1, exp.n_ens+1):
     symlink(cluster.wrfexe, rundir+'/wrf.exe')
 
     # time not important, but general settings
-    prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 12),
+    prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 23),
                          archive=False)
 
     symlink(input_prof, rundir+'/input_sounding')

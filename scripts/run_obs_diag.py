@@ -2,7 +2,7 @@ import os, sys, shutil, glob
 from config.cfg import exp, cluster
 from utils import symlink, copy, sed_inplace, append_file
 
-rundir_program = '/home/fs71386/lkugler/data/DART-WRF/rundir/'
+rundir_program = '/home/fs71386/lkugler/data/run_DART/'
 
 
 def prepare(obserr_iszero='.true.'):
@@ -38,10 +38,6 @@ def run_obsdiag(filepaths, f_out='./obsdiag.nc'):
         print('------ running obs_diag program')
         os.chdir(rundir_program)
         symlink(cluster.dart_srcdir+'/obs_diag', rundir_program+'/obs_diag')
-        try:
-            os.remove(rundir_program+'/obs_seq_to_netcdf')
-        except:
-            pass
         os.system('./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
 
         # move output to archive
@@ -71,5 +67,5 @@ if __name__ == '__main__':
     folder_obs_seq_final = str(sys.argv[1])
     files = sorted(glob.glob(folder_obs_seq_final+'/*.final'))  # input for obs_diag program
     
-    run_obsdiag(files, outdir=folder_obs_seq_final)  # input must be files with posterior data!!
+    run_obsdiag(files, f_out='./test.nc')  # input must be files with posterior data!!
     run_obs_seq_to_netcdf(files, outdir=folder_obs_seq_final)  # input can be files without posterior data
