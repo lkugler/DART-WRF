@@ -381,7 +381,7 @@ if __name__ == "__main__":
         parametrized = obscfg.get('sat_channel') == 6
 
         if not parametrized:
-            err_this_type = np.zeros(n_obs_3d) + obscfg['error_assimilate']
+            err_assim = np.zeros(n_obs_3d) + obscfg['error_assimilate']
 
         else:  # error parametrization for WV73
             # get observations for sat 6
@@ -392,9 +392,9 @@ if __name__ == "__main__":
             Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
 
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
-            err_this_type = calc_obserr_WV73(Hx_nat, Hx_prior)
+            err_assim = calc_obserr_WV73(Hx_nat, Hx_prior)
      
-        error_assimilate.extend(err_this_type)  # the obs-error we assume for assimilating observations
+        error_assimilate.extend(err_assim)  # the obs-error we assume for assimilating observations
 
     ################################################
     print(' 2) generate observations ')
@@ -402,8 +402,7 @@ if __name__ == "__main__":
     # the obs-error we use for generating obs is user-defined
     error_generate = []
     for i, obscfg in enumerate(exp.observations):
-        err_this_type = np.zeros(n_obs_3d) + obscfg['error_generate']  
-        error_generate.extend(err_this_type)
+        error_generate.extend(np.zeros(n_obs_3d) + obscfg['error_generate'])
 
     osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=error_generate,
                              archive_obs_coords=archive_stage+'/obs_coords.pkl')
