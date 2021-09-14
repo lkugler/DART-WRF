@@ -368,7 +368,10 @@ if __name__ == "__main__":
 
     ################################################
     print(' 1) get the assimilation errors in a single vector ')
-    error_generate = []
+    error_assimilate = []  
+    # to get the obs-error for assimilation, 
+    # we need to get the true obs-space values for the parametrized variable
+    # and collect the obs-error for assimilation in a single vector/list
 
     for i, obscfg in enumerate(exp.observations):
         n_obs = obscfg['n_obs']
@@ -378,7 +381,7 @@ if __name__ == "__main__":
         parametrized = obscfg.get('sat_channel') == 6
 
         if not parametrized:
-            err_this_type = np.zeros(n_obs_3d) + obscfg['error_generate']
+            err_this_type = np.zeros(n_obs_3d) + obscfg['error_assimilate']
 
         else:  # error parametrization for WV73
             # get observations for sat 6
@@ -391,10 +394,17 @@ if __name__ == "__main__":
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             err_this_type = calc_obserr_WV73(Hx_nat, Hx_prior)
      
-        error_generate.extend(err_this_type)  # the obs-error we assume for generating observations
+        error_assimilate.extend(err_this_type)  # the obs-error we assume for assimilating observations
 
     ################################################
     print(' 2) generate observations ')
+
+    # the obs-error we use for generating obs is user-defined
+    error_generate = []
+    for i, obscfg in enumerate(exp.observations):
+        err_this_type = np.zeros(n_obs_3d) + obscfg['error_generate']  
+        error_generate.extend(err_this_type)
+
     osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=error_generate,
                              archive_obs_coords=archive_stage+'/obs_coords.pkl')
 
@@ -407,10 +417,7 @@ if __name__ == "__main__":
     ################################################
     print(' 3) assimilate with observation-errors for assimilation')
 
-    error_assimilate = []
-    for i, obscfg in enumerate(exp.observations):
-        err_this_type = np.zeros(n_obs_3d) + obscfg['error_assimilate']  # the obs-error we assume for assimilation
-        error_assimilate.extend(err_this_type)
+
 
     replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
     t = time_module.time()
