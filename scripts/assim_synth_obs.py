@@ -405,8 +405,13 @@ if __name__ == "__main__":
     run_perfect_model_obs()  # actually create observations that are used to assimilate
 
     ################################################
-    print(' 3) assimilate with adapted observation-errors ')
-    error_assimilate = np.zeros(n_obs_3d) + obscfg['error_assimilate']  # the obs-error we assume for assimilation
+    print(' 3) assimilate with observation-errors for assimilation')
+
+    error_assimilate = []
+    for i, obscfg in enumerate(exp.observations):
+        err_this_type = np.zeros(n_obs_3d) + obscfg['error_assimilate']  # the obs-error we assume for assimilation
+        error_assimilate.extend(err_this_type)
+
     replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
     t = time_module.time()
     assimilate()
