@@ -51,7 +51,7 @@
    output_timestamps        = .false.,
    trace_execution          = .false.,
 
-   stages_to_write          = 'output'
+   stages_to_write          = 'postassim', 'output'
    output_members           = .true.
    output_mean              = .true.
    output_sd                = .true.
@@ -114,6 +114,8 @@
    convert_all_state_verticals_first = .true.
    convert_all_obs_verticals_first   = .true.
    print_every_nth_obs               = 0,
+   special_localization_obs_types  = <list_obstypes>,
+   special_localization_cutoffs    = <list_cutoffs>
    /
 
 &cov_cutoff_nml

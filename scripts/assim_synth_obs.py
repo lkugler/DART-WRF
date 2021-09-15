@@ -97,7 +97,7 @@ def replace_errors_obsseqout(f, new_errors):
 
             previous_err_var = obsseq[line_error_obs_i]
             new_err_obs_i = new_errors[i_obs]**2  # variance in obs_seq.out
-            if debug: print('previous err var ', previous_err_var, 'new error', new_err_obs_i)
+            if debug: print('previous err var ', float(previous_err_var.strip()), 'new error', new_err_obs_i)
             obsseq[line_error_obs_i] = ' '+str(new_err_obs_i)+' \n'
 
             i_obs += 1  # next iteration
@@ -110,6 +110,7 @@ def replace_errors_obsseqout(f, new_errors):
 
 def set_DART_nml_singleobstype(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
                  just_prior_values=False):
+    """this function is outdated and will not work"""
     cov_loc_radian = cov_loc_radius_km/earth_radius_km
     
     if just_prior_values:
@@ -145,8 +146,19 @@ def set_DART_nml_singleobstype(sat_channel=False, cov_loc_radius_km=32, cov_loc_
         rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
         append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
-def set_DART_nml(cov_loc_radius_km=32, cov_loc_vert_km=False, just_prior_values=False):
-    cov_loc_radian = cov_loc_radius_km/earth_radius_km
+def set_DART_nml(just_prior_values=False):
+
+    def to_radian_horizontal(cov_loc_horiz_km):
+        cov_loc_radian = cov_loc_horiz_km/earth_radius_km
+        return cov_loc_radian
+    
+    def to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km):
+        vert_norm_rad = earth_radius_km*cov_loc_vert_km/cov_loc_horiz_km*1000
+        return vert_norm_rad
+
+    list_obstypes = [obscfg['kind'] for obscfg in exp.observations]
+    list_cov_loc_radius_km = [obscfg['cov_loc_radius_km'] for obscfg in exp.observations]
+    list_cov_loc_radian = [str(to_radian_horizontal(a)) for a in list_cov_loc_radius_km]
     
     if just_prior_values:
         template = cluster.scriptsdir+'/../templates/input.eval.nml'
@@ -156,15 +168,20 @@ def set_DART_nml(cov_loc_radius_km=32, cov_loc_vert_km=False, just_prior_values=
 
     # options keys are replaced in input.nml with values
     options = {'<n_ens>': str(int(exp.n_ens)),
-               '<cov_loc_radian>': str(cov_loc_radian)}
+               '<cov_loc_radian>': '0.00000001',  # dummy value, used for types not mentioned below
+               '<list_obstypes>': "'" + "','".join(list_obstypes) + "'",
+               '<list_cutoffs>': ", ".join(list_cov_loc_radian),
+               }
 
-    if cov_loc_vert_km:
-        vert_norm_rad = earth_radius_km*cov_loc_vert_km/cov_loc_radius_km*1000
-        options['<horiz_dist_only>'] = '.false.'
-        options['<vert_norm_hgt>'] = str(vert_norm_rad)
-    else:
-        options['<horiz_dist_only>'] = '.true.'
-        options['<vert_norm_hgt>'] = '50000.0'  # dummy value
+    # if cov_loc_vert_km:
+    options['<horiz_dist_only>'] = '.true.'
+    
+    cov_loc_vert_km, cov_loc_horiz_km = exp.cov_loc_vert_km_horiz_km
+    vert_norm_hgt = to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km)
+    options['<vert_norm_hgt>'] = str(vert_norm_hgt)
+    # else:
+    #     options['<horiz_dist_only>'] = '.true.'
+    #     options['<vert_norm_hgt>'] = '50000.0'  # dummy value
 
     for key, value in options.items():
         sed_inplace(cluster.dartrundir+'/input.nml', key, value)
@@ -295,42 +312,56 @@ def recycle_output():
 
 ############### archiving
 
-def archive_assimilation(time)
+def archive_osq_final(time, posterior_1min=False):
+    """Save obs_seq.final file for later. 
+    time (dt.datetime) : time of sampling values from files
+    posterior_1min (bool) : False if usual assimilation
+    """
 
-    print('archive obs space diagnostics')
-    archive_dir = cluster.archivedir+'/obs_seq_final/'
+    if posterior_1min:
+        archive_dir = cluster.archivedir+'/obs_seq_final_1min/'
+    else:
+        archive_dir = cluster.archivedir+'/obs_seq_final/'
     mkdir(archive_dir)
     fout = archive_dir+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.final')
     copy(cluster.dartrundir+'/obs_seq.final', fout)
     print(fout, 'saved.')
 
-    # try:  # what are regression diagnostics?!
-    #     print('archive regression diagnostics')
+    # try:  
+    #     print('archive regression diagnostics') # what are regression diagnostics?!
     #     copy(cluster.dartrundir+'/reg_diagnostics', archive_dir+'/reg_diagnostics')
     # except Exception as e:
     #     warnings.warn(str(e))
 
+def archive_filteroutput(time):
     print('archiving output')
-    archive_assim = cluster.archivedir + '/assim_stage0/'
+    archive_assim = cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/')
     mkdir(archive_assim)
     copy(cluster.dartrundir+'/input.nml', archive_assim+'/input.nml')
 
     for iens in range(1, exp.n_ens+1):  # single members
-        filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
-        copy(filter_out, archive_assim+'/filter_restart_d01.'+str(iens).zfill(4))
+        copy(cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4), 
+             archive_assim+'/filter_restart_d01.'+str(iens).zfill(4))
 
-    for f in ['output_mean.nc', 'output_sd.nc']:  # copy mean and sd to archive
-        copy(cluster.dartrundir+'/'+f, archive_assim+'/'+f)
+    try:  # not necessary for next forecast run
+        for iens in range(1, exp.n_ens+1):
+            copy(cluster.dartrundir+'/postassim_member_'+str(iens).zfill(4)+'.nc', 
+                archive_assim+'/postassim_member_'+str(iens).zfill(4)+'.nc')
 
-def archive_obs_generation(time):
+        for f in ['output_mean.nc', 'output_sd.nc']:  # copy mean and sd to archive
+            copy(cluster.dartrundir+'/'+f, archive_assim+'/'+f)
 
+    except Exception as e:
+        warnings.warn(str(e))
+
+
+def archive_osq_out(time):
     dir_obsseq = cluster.archivedir+'/obs_seq_out/'
     os.makedirs(dir_obsseq, exist_ok=True)
     copy(cluster.dartrundir+'/obs_seq.out', dir_obsseq+time.strftime('/%Y-%m-%d_%H:%M_obs_seq.out'))
 
 
 if __name__ == "__main__":
-
     """Assimilate observations (different obs types)
     as defined in config/cfg.py
     for a certain timestamp (argument) of the nature run (defined in config/clusters.py)
@@ -339,7 +370,7 @@ if __name__ == "__main__":
     for each assimilation stage (one obs_seq.in and e.g. one observation type):
     1) create obs_seq.in with obs-errors
     2) prepare nature run for DART
-    3) create obs from nature (obs_seq.out)
+    3) create obs from nature (obs_seq.out) using pre-defined obs-errors
     4) Assimilate
       - adapt obs errors for assimilation
         - calculate assim obs error from parametrization
@@ -395,7 +426,7 @@ if __name__ == "__main__":
 
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             err_assim = calc_obserr_WV73(Hx_nat, Hx_prior)
-     
+
         error_assimilate.extend(err_assim)  # the obs-error we assume for assimilating observations
 
     ################################################
@@ -408,12 +439,10 @@ if __name__ == "__main__":
 
     osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=error_generate)
 
-    first_obstype = exp.observations[0]  # TODO: different for each observation type
-    set_DART_nml(cov_loc_radius_km=first_obstype['cov_loc_radius_km'],
-                 cov_loc_vert_km=first_obstype.get('cov_loc_vert_km', False))
+    set_DART_nml()
 
     run_perfect_model_obs()  # actually create observations that are used to assimilate
-    archive_obs_generation(time)
+    archive_osq_out(time)
 
     ################################################
     print(' 3) assimilate with observation-errors for assimilation')
@@ -423,4 +452,5 @@ if __name__ == "__main__":
     assimilate()
     print('filter took', time_module.time()-t, 'seconds')
     
-    archive_assimilation(time)
+    archive_filteroutput(time)
+    archive_osq_final(time)

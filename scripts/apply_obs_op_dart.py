@@ -48,37 +48,34 @@ if __name__ == '__main__':
 
     # only the prior state values are of interest in this file
     # observation and truth is wrong in this file (dummy)
-    istage = 0
-    archive_stage = savedir+'/assim_stage'+str(istage)
-    aso.archive_diagnostics(archive_stage, time)
+    aso.archive_osq_final(time, posterior_1min=True)
 
-    sys.exit()  # multi stage below
+    # sys.exit()  # multi stage below
+    # n_stages = len(exp.observations)
+    # for istage, obscfg in enumerate(exp.observations):
 
-    n_stages = len(exp.observations)
-    for istage, obscfg in enumerate(exp.observations):
+    #     n_obs = obscfg['n_obs']
+    #     sat_channel = obscfg.get('sat_channel', False)
+    #     obscfg['folder_obs_coords'] = False
 
-        n_obs = obscfg['n_obs']
-        sat_channel = obscfg.get('sat_channel', False)
-        obscfg['folder_obs_coords'] = False
+    #     aso.set_DART_nml(cov_loc_radius_km=obscfg['cov_loc_radius_km'],
+    #                      cov_loc_vert_km=obscfg.get('cov_loc_vert_km', False), 
+    #                      just_prior_values=True)
 
-        aso.set_DART_nml(cov_loc_radius_km=obscfg['cov_loc_radius_km'],
-                         cov_loc_vert_km=obscfg.get('cov_loc_vert_km', False), 
-                         just_prior_values=True)
-
-        osq.create_obsseq_in(time, obscfg)
+    #     osq.create_obsseq_in(time, obscfg)
 
 
 
-        # prepare dummy nature (this Hx is irrelevant)
-        os.chdir(cluster.dartrundir)
-        os.system('cp ./advance_temp1/wrfout_d01 ./wrfout_d01')
-        wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc',
-                           cluster.dartrundir+'/wrfout_d01')
-        aso.run_perfect_model_obs()
-        aso.assimilate(nproc=96)
+    #     # prepare dummy nature (this Hx is irrelevant)
+    #     os.chdir(cluster.dartrundir)
+    #     os.system('cp ./advance_temp1/wrfout_d01 ./wrfout_d01')
+    #     wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc',
+    #                        cluster.dartrundir+'/wrfout_d01')
+    #     aso.run_perfect_model_obs()
+    #     aso.assimilate(nproc=96)
 
-        # only the prior state values are of interest in this file
-        # observation and truth is wrong in this file (dummy)
-        archive_stage = savedir+'/assim_stage'+str(istage)
-        aso.archive_diagnostics(archive_stage, time)
+    #     # only the prior state values are of interest in this file
+    #     # observation and truth is wrong in this file (dummy)
+    #     archive_stage = savedir+'/assim_stage'+str(istage)
+    #     aso.archive_diagnostics(archive_stage, time)
 
