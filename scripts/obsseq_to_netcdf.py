@@ -8,17 +8,14 @@ def listdir_dirs(path):
 if __name__ == '__main__':
 
     datadir = cluster.archive_base
-    expname = 'exp_v1.16_Pwbub-1_Radar_soe2' 
+    #expname = 'exp_v1.16_Pwbub-1_Radar_soe2' 
     expname = exp.expname
     ddir = datadir+expname+'/obs_seq_final/'
 
-    for dir_name in listdir_dirs(ddir):
-        files = sorted(glob.glob(ddir+'/'+dir_name+'/*.final'))  
-        rod.run_obsdiag(files, f_out=ddir+'/obsdiag_'+dir_name+'.nc')
-        rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch-'+dir_name+'.nc') 
+    files = sorted(glob.glob(ddir+'/*.final')) 
+    rod.run_obsdiag(files, f_out=ddir+'/obsdiag.nc')
+    rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch.nc') 
 
     ddir = datadir+expname+'/obs_seq_final_1min/'
-
-    for dir_name in listdir_dirs(ddir):
-        files = sorted(glob.glob(ddir+'/'+dir_name+'/*.final'))
-        rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch-'+dir_name+'.nc') 
+    files = sorted(glob.glob(ddir+'/*.final'))
+    rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch.nc') 
