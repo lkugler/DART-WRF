@@ -192,7 +192,7 @@ def set_DART_nml(just_prior_values=False):
     append_file(cluster.dartrundir+'/input.nml', rttov_nml)
 
 
-def obs_operator_ensemble(istage):
+def obs_operator_ensemble():
     # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
     print('running obs operator on ensemble forecast')
     os.chdir(cluster.dartrundir)
@@ -422,7 +422,7 @@ if __name__ == "__main__":
             # depends on obs_seq.out produced before by run_perfect_model_obs()
             Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir+'/obs_seq.out')
 
-            Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
+            Hx_prior = obs_operator_ensemble()  # files are already linked to DART directory
             err_assim = calc_obserr_WV73(Hx_nat, Hx_prior)
         else:
             err_assim = np.zeros(n_obs_3d) + obscfg['error_assimilate']
