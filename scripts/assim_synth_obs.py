@@ -97,7 +97,8 @@ def replace_errors_obsseqout(f, new_errors):
 
             previous_err_var = obsseq[line_error_obs_i]
             new_err_obs_i = new_errors[i_obs]**2  # variance in obs_seq.out
-            if debug: print('previous err var ', float(previous_err_var.strip()), 'new error', new_err_obs_i)
+            if debug: 
+                print(line.strip(), 'previous err var ', float(previous_err_var.strip()), 'new error', new_err_obs_i)
             obsseq[line_error_obs_i] = ' '+str(new_err_obs_i)+' \n'
 
             i_obs += 1  # next iteration
@@ -411,12 +412,9 @@ if __name__ == "__main__":
         n_obs_z = len(obscfg.get('heights', [1,]))
         n_obs_3d = n_obs * n_obs_z
 
-        parametrized = obscfg.get('sat_channel') == 6
-
-        if not parametrized:
-            err_assim = np.zeros(n_obs_3d) + obscfg['error_assimilate']
-
-        else:  # error parametrization for WV73
+        do_error_parametrization = ((obscfg['error_assimilate'] == False) and (obscfg.get('sat_channel') == 6))
+        
+        if do_error_parametrization:
             # get observations for sat 6
             osq.create_obsseqin_alltypes(time, [obscfg,], np.zeros(n_obs_3d))
             run_perfect_model_obs()
@@ -426,6 +424,8 @@ if __name__ == "__main__":
 
             Hx_prior = obs_operator_ensemble(istage)  # files are already linked to DART directory
             err_assim = calc_obserr_WV73(Hx_nat, Hx_prior)
+        else:
+            err_assim = np.zeros(n_obs_3d) + obscfg['error_assimilate']
 
         error_assimilate.extend(err_assim)  # the obs-error we assume for assimilating observations
 
@@ -437,7 +437,7 @@ if __name__ == "__main__":
     for i, obscfg in enumerate(exp.observations):
         error_generate.extend(np.zeros(n_obs_3d) + obscfg['error_generate'])
 
-    osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=error_generate)
+    osq.create_obsseqin_alltypes(time, exp.observations, error_generate)
 
     set_DART_nml()
 

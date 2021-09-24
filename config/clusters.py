@@ -25,6 +25,7 @@ class ClusterConfig(object):
 vsc = ClusterConfig()
 vsc.name = 'vsc'
 vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
+vsc.python_enstools = '/home/fs71386/lkugler/miniconda3/envs/enstools/bin/python'
 vsc.ncks = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/ncks'
 vsc.tmpfiledir = '/gpfs/data/fs71386/lkugler'
 vsc.userdir = '/home/fs71386/lkugler'
@@ -34,10 +35,9 @@ vsc.dart_srcdir = '/home/fs71386/lkugler/DART/DART-9.11.9/models/wrf/work'
 vsc.dartrundir = '/gpfs/data/fs71386/lkugler/run_DART'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts/'
 
-vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.16_Pwbub_nat/2008-07-30_09:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.17_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/from_LMU/raso.nat.<iens>.wrfprof'
-vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.nat.001.wrfprof'
+vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.fc.<iens>.wrfprof'
 
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.2_v1.16.exe'
 vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.3_v1.16.exe'
@@ -45,7 +45,7 @@ vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
 vsc.run_WRF = '/home/fs71386/lkugler/DART-WRF/scripts/run_ens.vsc.sh'
 
 vsc.slurm_cfg = {"account": "p71386", "partition": "mem_0384", "qos": "p71386_0384",
-                 "ntasks": "1", "nodes": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
+                 "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
 

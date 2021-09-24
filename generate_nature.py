@@ -29,32 +29,22 @@ print('starting osse')
 backup_scripts()
 id = None
 
-init_time = dt.datetime(2008, 7, 30, 9)
+init_time = dt.datetime(2008, 7, 30, 6)
 id = prepare_wrfinput(init_time)  # create initial conditions
 
-# get initial conditions from archive
-integration_end_time = dt.datetime(2008, 7, 30, 12)
-#exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_P1_40mem'
-#id = update_wrfinput_from_archive(integration_end_time, init_time, exppath_arch, depends_on=id)
+if False:
+    init_time = dt.datetime(2008, 7, 30, 8)
+    # get initial conditions from archive
+    integration_end_time = dt.datetime(2008, 7, 30, 9)
+    exppath_arch = cluster.archivedir #'/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_P1_40mem'
+    id = update_wrfinput_from_archive(integration_end_time, init_time, exppath_arch, depends_on=id)
+    
+    #id = wrfinput_insert_wbubble(depends_on=id)
+    
 
-id = wrfinput_insert_wbubble(depends_on=id)
+begin = dt.datetime(2008, 7, 30, 6)
+end = dt.datetime(2008, 7, 31, 0)
 
 
-begin = dt.datetime(2008, 7, 30, 9, 0)
-end = dt.datetime(2008, 7, 30, 12, 0)
-
-# whole forecast timespan
-hist_interval = 5
-radt = 5
-s = my_Slurm("namelist", cfg_update=dict(time="2"))
-id = s.run(' '.join([cluster.python,
-            cluster.scriptsdir+'/prepare_namelist.py',
-            begin.strftime('%Y-%m-%d_%H:%M'),
-            end.strftime('%Y-%m-%d_%H:%M'),
-            str(hist_interval), str(radt),]), 
-        depends_on=[id])
-
-s = my_Slurm("EnsWRF", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
-             "mem-per-cpu": "2G", "mail-type": "BEGIN,FAIL,END"})
-cmd = script_to_str(cluster.run_WRF).replace('<expname>', exp.expname)
-id = s.run(cmd, depends_on=[id])
+id = run_ENS(begin=begin, end=end, first_minute=False, depends_on=id)
+create_satimages(begin, depends_on=id)

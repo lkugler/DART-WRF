@@ -33,7 +33,7 @@ if __name__ == '__main__':
     savedir = cluster.archivedir+'/obs_seq_final_1min/'
 
     aso.set_DART_nml(just_prior_values=True)
-    osq.create_obsseqin_alltypes(time, exp.observations, obs_errors=False)
+    osq.create_obsseqin_alltypes(time, exp.observations, 0.)
 
     # prepare dummy nature (this Hx is irrelevant)
     os.chdir(cluster.dartrundir)

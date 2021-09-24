@@ -170,12 +170,12 @@
 #
 
 &obs_def_radar_mod_nml
-   apply_ref_limit_to_obs      =   .false.,
-   reflectivity_limit_obs      =  -10.0,
-   lowest_reflectivity_obs     =  -10.0,
-   apply_ref_limit_to_fwd_op   =   .false.,
-   reflectivity_limit_fwd_op   =  -10.0,
-   lowest_reflectivity_fwd_op  =  -10.0,
+   apply_ref_limit_to_obs      =   .true.,
+   reflectivity_limit_obs      =  5.0,
+   lowest_reflectivity_obs     =  5.0,
+   apply_ref_limit_to_fwd_op   =   .true.,
+   reflectivity_limit_fwd_op   =  5.0,
+   lowest_reflectivity_fwd_op  =  5.0,
    max_radial_vel_obs          =   1000000,
    allow_wet_graupel           =   .false.,
    microphysics_type           =       5  ,

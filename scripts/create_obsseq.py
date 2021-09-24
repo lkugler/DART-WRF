@@ -140,6 +140,7 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
         n_obs_x = int(np.sqrt(n_obs))
         nx = len(ds.south_north)  # number of gridpoints in one direction
         model_dx_km = exp.model_dx/1000
+        print('assuming', model_dx_km, 'km model grid')
 
         omit_covloc_radius_on_boundary = True
         if omit_covloc_radius_on_boundary:  #  in order to avoid an increment step on the boundary
@@ -382,8 +383,7 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
     Args:
         time_dt (dt.datetime): time of observation
         list_obscfg (list of dict)
-        obs_errors (list of float, False): contains observation errors, one for each observation
-              if False: use zero error
+        obs_errors (np.array): contains observation errors, one for each observation
         archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
     """
     print('creating obs_seq.in:')
@@ -411,13 +411,7 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
         coords = append_hgt_to_coords(coords, vert_coords)
         n_obs_3d_thistype = len(coords)
 
-        # define obs error
-        if obs_errors == False:  
-            obs_errors = np.zeros(n_obs_3d_thistype)
-        assert len(obs_errors) == n_obs_3d_thistype, 'len(obs_errors) == n_obs_3d_thistype'
-        obserr_std = obs_errors #np.zeros(n_obs_3d_thistype) 
-        #if obs_errors:
-        #    obserr_std += obscfg[obs_errors]
+        obserr_std = np.zeros(n_obs_3d_thistype) + obs_errors
 
         sat_info = write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt)
 
@@ -455,7 +449,7 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
 if __name__ == '__main__':
     # for testing
     time_dt = dt.datetime(2008, 7, 30, 9, 0)
-    n_obs = 900  # radar: n_obs for each observation height level
+    n_obs = 22801  # radar: n_obs for each observation height level
 
     vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
             kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs,
@@ -490,10 +484,11 @@ if __name__ == '__main__':
 
     #create_obsseq_in(time_dt, radar, archive_obs_coords=False) #'./coords_stage1.pkl')
 
-    create_obsseqin_alltypes(time_dt, [vis, wv73], obs_errors='error_generate', archive_obs_coords='./obs_coords.pkl')
+    create_obsseqin_alltypes(time_dt, [wv73], obs_errors=False, archive_obs_coords=False) #'./obs_coords.pkl')
 
-    error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
-    import assim_synth_obs as aso
-    #aso.replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
+    if False:
+        error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
+        import assim_synth_obs as aso
+        aso.replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
 
 

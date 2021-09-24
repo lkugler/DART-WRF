@@ -207,7 +207,7 @@ def assimilate(assim_time, prior_init_time,
 
 
 def create_satimages(init_time, depends_on=None):
-    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "30"})
+    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "30", "nodes": "1"})
     s.run(cluster.python+' /home/fs71386/lkugler/RTTOV-WRF/run_init.py '+cluster.archivedir
           +init_time.strftime('/%Y-%m-%d_%H:%M/'),
           depends_on=[depends_on])
@@ -219,20 +219,31 @@ def mailme(depends_on=None):
 
 def gen_obsseq(depends_on=None):
     s = my_Slurm("obsseq_netcdf", cfg_update={"time": "10", "mail-type": "FAIL,END"})
-    s.run(cluster.python+' '+cluster.scripts_rundir+'/obsseq_to_netcdf.py',
+    id = s.run(cluster.python+' '+cluster.scripts_rundir+'/obsseq_to_netcdf.py',
+               depends_on=[depends_on])
+    return id
+
+def verify(depends_on=None):
+    s = my_Slurm("verify", cfg_update={"time": "180", "mail-type": "FAIL,END", 
+                 "ntasks": "96",  "ntasks-per-node": "96", "ntasks-per-core": "2"})
+    s.run(cluster.python_enstools+' '+cluster.userdir+'/osse_analysis/analyze_fc.py '+exp.expname+' has_node',
           depends_on=[depends_on])
 
 def copy_to_jet(depends_on=None):
-    s = my_Slurm("rsync-jet", cfg_update={"time": "1", "mail-type": "FAIL"})
-    s.run('bash rsync -avh '+cluster.archivedir+' lkugler@jet01.img.univie.ac.at:/jetfs/home/lkugler/data_jetfs/sim_archive/ &',
+    Slurm('rsync-jet', slurm_kwargs={"time": "30",
+          "account": "p71386", "partition": "mem_0384", "qos": "p71386_0384",
+          "ntasks": "1", "mem": "5gb",
+          "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"},
+          log_dir=log_dir, scripts_dir=slurm_scripts_dir,
+    ).run("bash -c 'nohup rsync -avh "+cluster.archivedir+" lkugler@jet01.img.univie.ac.at:/jetfs/home/lkugler/data/sim_archive/ &'",
           depends_on=[depends_on])
 
 ################################
 if __name__ == "__main__":
     print('starting osse')
 
-    timedelta_integrate = dt.timedelta(minutes=10)
-    timedelta_btw_assim = dt.timedelta(minutes=10)
+    timedelta_integrate = dt.timedelta(minutes=15)
+    timedelta_btw_assim = dt.timedelta(minutes=15)
 
     backup_scripts()
     id = None
@@ -257,10 +268,10 @@ if __name__ == "__main__":
         id = prepare_wrfinput(init_time)  # create initial conditions
         
         # get initial conditions from archive
-        integration_end_time = dt.datetime(2008, 7, 30, 13)
+        integration_end_time = dt.datetime(2008, 7, 30, 10)
         exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_P1_40mem'
-        #id = update_wrfinput_from_archive(integration_end_time, init_time, exppath_arch, depends_on=id)
-        id = wrfinput_insert_wbubble(depends_on=id)
+        id = update_wrfinput_from_archive(integration_end_time, init_time, exppath_arch, depends_on=id)
+        #id = wrfinput_insert_wbubble(depends_on=id)
         prior_path_exp = exppath_arch  # for next assimilation
 
     # values for assimilation
@@ -268,7 +279,7 @@ if __name__ == "__main__":
     assim_time = integration_end_time
     prior_init_time = init_time
 
-    while time <= dt.datetime(2008, 7, 30, 14):
+    while time <= dt.datetime(2008, 7, 30, 10, 30):
 
         id = assimilate(assim_time,
                         prior_init_time,
@@ -280,8 +291,8 @@ if __name__ == "__main__":
         this_forecast_init = assim_time  # start integration from here
 
         timedelta_integrate = timedelta_btw_assim
-        if this_forecast_init.minute == 0 and this_forecast_init.hour != dt.datetime(2008, 7, 30, 13):  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(minutes=3*60)
+        if this_forecast_init.minute in [30, 0]:  # longer forecast every full hour
+            timedelta_integrate = dt.timedelta(hours=2)
 
         this_forecast_end = assim_time + timedelta_integrate
 
@@ -298,5 +309,6 @@ if __name__ == "__main__":
         assim_time = time
         prior_init_time = time - timedelta_btw_assim
 
-    gen_obsseq(id)   # mailme(id)
-    copy_to_jet(id)
+    id = gen_obsseq(id)
+    verify(id)
+    # copy to jet
