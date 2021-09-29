@@ -6,7 +6,7 @@ from utils import symlink, copy
 time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 
 # get wrfout_d01 from nature run
-shutil.copy(time.strftime(cluster.nature_wrfout),
+shutil.copy(time.strftime(exp.nature_wrfout),
             cluster.dartrundir+'/wrfout_d01')
 
 import wrfout_add_geo

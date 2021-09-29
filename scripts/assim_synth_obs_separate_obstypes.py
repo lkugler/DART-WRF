@@ -189,7 +189,7 @@ def obs_operator_nature(time):
 
 def link_nature_to_dart_truth(time):
     # get wrfout_d01 from nature run
-    shutil.copy(time.strftime(cluster.nature_wrfout),
+    shutil.copy(time.strftime(exp.nature_wrfout),
                 cluster.dartrundir+'/wrfout_d01')
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
     symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')

@@ -35,10 +35,6 @@ vsc.dart_srcdir = '/home/fs71386/lkugler/DART/DART-9.11.9/models/wrf/work'
 vsc.dartrundir = '/gpfs/data/fs71386/lkugler/run_DART'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts/'
 
-vsc.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.17_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/from_LMU/raso.nat.<iens>.wrfprof'
-vsc.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.fc.<iens>.wrfprof'
-
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.2_v1.16.exe'
 vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.3_v1.16.exe'
 vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
@@ -58,7 +54,6 @@ jet.srcdir = '/jetfs/home/lkugler/compile/WRF/WRF-4.1.5/run'
 jet.scriptsdir = ''
 jet.archive_base = '/jetfs/home/lkugler/data_jetfs/sim_archive/'
 jet.dartrundir = '/jetfs/home/lkugler/DART-WRF/rundir'
-jet.nature_wrfout = '/raid61/scratch/lkugler/VSC/sim_archive/OSSE_v1.10_LMU+shear/2/single/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 jet.ideal = jet.userdir+'/compile/bin/ideal.exe'
 jet.wrfexe = jet.userdir+'/compile/bin/wrf-v4.2_v1.10.dmpar.exe'

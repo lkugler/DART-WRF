@@ -9,10 +9,15 @@ class ExperimentConfiguration(object):
 
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.17_P1-1_WV_10z"
+exp.expname = "exp_v1.18_P1_nature"
 exp.model_dx = 2000
-exp.n_ens = 40
-exp.n_nodes = 10
+exp.n_ens = 4
+exp.n_nodes = 1
+
+#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.17_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+exp.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.nat.<iens>.wrfprof'
+#exp.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.fc.<iens>.wrfprof'
+
 
 # localize vertically, if it has a vertical position
 # needs a horizontal scale too, to calculate the vertical normalization
@@ -53,7 +58,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [wv73] #radar] # 108, wv73, vis]
+exp.observations = [] #wv73] #radar] # 108, wv73, vis]
 #exp.update_vars = ['T', 'QVAPOR', 'QCLOUD', 'QICE','CLDFRA']
 exp.update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'TSK', 'CLDFRA']
 
