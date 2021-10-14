@@ -183,7 +183,7 @@ def assimilate(assim_time, prior_init_time, prior_valid_time,
                +assim_time.strftime('%Y-%m-%d_%H:%M ')
                +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
                +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
-               +prior_path_exp, depends_on=[id])
+               +prior_path_exp, depends_on=[depends_on])
  
 
     s = my_Slurm("updateIC", cfg_update=dict(time="8"))
