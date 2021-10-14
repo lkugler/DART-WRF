@@ -131,7 +131,7 @@ def calc_obs_locations(n_obs, coords_from_domaincenter=True,
         so that the assimilation increments are zero on the boundary
         distance to boundary = 1.5x localization-radius
         """
-        fcoords = cluster.dartrundir+'/geo_em.d01.nc'
+        fcoords = cluster.dartrundir+'/../geo_em.d01.nc'
         import xarray as xr
         ds = xr.open_dataset(fcoords)
 

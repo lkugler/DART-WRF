@@ -17,6 +17,9 @@ class ClusterConfig(object):
     def scripts_rundir(self):
         return self.archivedir+'/DART-WRF/'
 
+    @property
+    def dartrundir(self):
+        return '/gpfs/data/fs71386/lkugler/run_DART/'+self.expname+'/'
 
 
 #######################################################################################
@@ -31,8 +34,8 @@ vsc.tmpfiledir = '/gpfs/data/fs71386/lkugler'
 vsc.userdir = '/home/fs71386/lkugler'
 vsc.srcdir = '/gpfs/data/fs71386/lkugler/compile/WRF/WRF-4.3/run'
 vsc.archive_base = '/gpfs/data/fs71386/lkugler/sim_archive/'
-vsc.dart_srcdir = '/home/fs71386/lkugler/DART/DART-9.11.9/models/wrf/work'
-vsc.dartrundir = '/gpfs/data/fs71386/lkugler/run_DART'
+vsc.dart_srcdir = '/gpfs/data/fs71386/lkugler/compile/DART/DART-9.11.9/models/wrf/work'
+vsc.rttov_srcdir = '/gpfs/data/fs71386/lkugler/compile/RTTOV13/rtcoef_rttov13/'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts/'
 
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.2_v1.16.exe'
@@ -53,7 +56,6 @@ jet.userdir = '/jetfs/home/lkugler'
 jet.srcdir = '/jetfs/home/lkugler/compile/WRF/WRF-4.1.5/run'
 jet.scriptsdir = ''
 jet.archive_base = '/jetfs/home/lkugler/data_jetfs/sim_archive/'
-jet.dartrundir = '/jetfs/home/lkugler/DART-WRF/rundir'
 
 jet.ideal = jet.userdir+'/compile/bin/ideal.exe'
 jet.wrfexe = jet.userdir+'/compile/bin/wrf-v4.2_v1.10.dmpar.exe'

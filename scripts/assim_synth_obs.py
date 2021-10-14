@@ -109,44 +109,6 @@ def replace_errors_obsseqout(f, new_errors):
     print('replaced obs errors in', f)
 
 
-def set_DART_nml_singleobstype(sat_channel=False, cov_loc_radius_km=32, cov_loc_vert_km=False,
-                 just_prior_values=False):
-    """this function is outdated and will not work"""
-    cov_loc_radian = cov_loc_radius_km/earth_radius_km
-    
-    if just_prior_values:
-        template = cluster.scriptsdir+'/../templates/input.eval.nml'
-    else:
-        template = cluster.scriptsdir+'/../templates/input.nml'
-    copy(template, cluster.dartrundir+'/input.nml')
-
-    # options are overwritten with settings
-    options = {'<n_ens>': str(int(exp.n_ens)),
-               '<cov_loc_radian>': str(cov_loc_radian)}
-
-    if cov_loc_vert_km:
-        vert_norm_rad = earth_radius_km*cov_loc_vert_km/cov_loc_radius_km*1000
-        options['<horiz_dist_only>'] = '.false.'
-        options['<vert_norm_hgt>'] = str(vert_norm_rad)
-    else:
-        options['<horiz_dist_only>'] = '.true.'
-        options['<vert_norm_hgt>'] = '50000.0'  # dummy value
-
-    for key, value in options.items():
-        sed_inplace(cluster.dartrundir+'/input.nml', key, value)
-
-    # input.nml for RTTOV
-    if sat_channel > 0:
-        if sat_channel in [1, 2, 3, 12]:  # VIS channels
-            rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.VIS.nml'
-        else:  # IR channels
-            rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
-        append_file(cluster.dartrundir+'/input.nml', rttov_nml)
-    else:
-        # append any rttov segment, needs to exist anyway
-        rttov_nml = cluster.scriptsdir+'/../templates/obs_def_rttov.IR.nml'
-        append_file(cluster.dartrundir+'/input.nml', rttov_nml)
-
 def set_DART_nml(just_prior_values=False):
 
     def to_radian_horizontal(cov_loc_horiz_km):
@@ -208,10 +170,6 @@ def obs_operator_ensemble():
         # DART may need a wrfinput file as well, which serves as a template for dimension sizes
         symlink(cluster.dartrundir+'/wrfout_d01', cluster.dartrundir+'/wrfinput_d01')
         
-        # I dont think this is necessary, we do this already in pre_assim.py
-        # add geodata, if istage>0, wrfout is DART output (has coords)
-        #if istage == 0:
-        #    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
 
         # run perfect_model obs (forward operator)
         os.system('mpirun -np 12 ./perfect_model_obs > /dev/null')
@@ -247,7 +205,70 @@ def link_nature_to_dart_truth(time):
 def prepare_nature_dart(time):
     print('linking nature to DART & georeferencing')
     link_nature_to_dart_truth(time)
-    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+    wrfout_add_geo.run(cluster.dartrundir+'/../geo_em.d01.nc', cluster.dartrundir+'/wrfout_d01')
+
+
+def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
+    """Prepares DART files for running filter 
+    i.e.
+    - links first guess state to DART first guess filenames
+    - creates wrfinput_d01 files
+    - adds geo-reference (xlat,xlon) coords so that DART can deal with the files
+    - writes txt files so DART knows what input and output is
+    - removes probably pre-existing files which could lead to problems
+    """
+    os.makedirs(cluster.dartrundir, exist_ok=True)
+
+    print('prepare prior state estimate')
+    for iens in range(1, exp.n_ens+1):
+        print('link wrfout file to DART background file')
+        wrfout_run = prior_path_exp \
+                    +prior_init_time.strftime('/%Y-%m-%d_%H:%M/')  \
+                    +str(iens) \
+                    +prior_valid_time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
+        dart_ensdir = cluster.dartrundir+'/advance_temp'+str(iens)
+        wrfout_dart = dart_ensdir+'/wrfout_d01'
+
+        os.makedirs(dart_ensdir, exist_ok=True)
+        print('copy', wrfout_run, 'to', wrfout_dart)
+        copy(wrfout_run, wrfout_dart)
+        symlink(wrfout_dart, dart_ensdir+'/wrfinput_d01')
+
+        # ensure prior time matches assim time (can be off intentionally)
+        if assim_time != prior_valid_time:
+            print('overwriting time in prior from nature wrfout')
+            os.system(cluster.ncks+' -A -v XTIME '
+                      +cluster.dartrundir+'/wrfout_d01 '+wrfout_dart)
+
+        # this seems to be necessary (else wrong level selection)
+        wrfout_add_geo.run(cluster.dartrundir+'/../geo_em.d01.nc', wrfout_dart) 
+
+    fpath = cluster.dartrundir+'/input_list.txt'
+    print('writing', fpath)
+    try_remove(fpath)
+    with open(fpath, 'w') as f:
+        for iens in range(1, exp.n_ens+1):
+            f.write('./advance_temp'+str(iens)+'/wrfout_d01')
+            f.write('\n')
+
+    fpath = cluster.dartrundir+'/output_list.txt'
+    print('writing', fpath)
+    try_remove(fpath)
+    with open(fpath, 'w') as f:
+        for iens in range(1, exp.n_ens+1):
+            f.write('./filter_restart_d01.'+str(iens).zfill(4))
+            f.write('\n')
+
+
+    print('removing preassim and filter_restart')
+    os.system('rm -rf '+cluster.dartrundir+'/preassim_*')
+    os.system('rm -rf '+cluster.dartrundir+'/filter_restart*')
+    os.system('rm -rf '+cluster.dartrundir+'/output_mean*')
+    os.system('rm -rf '+cluster.dartrundir+'/output_sd*')
+    os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
+    os.system('rm -rf '+cluster.dartrundir+'/obs_seq.fina*')
+
+    os.system(cluster.python+' '+cluster.scriptsdir+'/link_rttov.py')
 
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
@@ -269,6 +290,7 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
 def run_perfect_model_obs():
     print('generating observations - running ./perfect_model_obs')
     os.chdir(cluster.dartrundir)
+
     try_remove(cluster.dartrundir+'/obs_seq.out')
     if not os.path.exists(cluster.dartrundir+'/obs_seq.in'):
         raise RuntimeError('obs_seq.in does not exist in '+cluster.dartrundir)
@@ -286,30 +308,31 @@ def assimilate(nproc=96):
     os.system('mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-'+str(int(nproc)-1)+' -np '+str(int(nproc))+' ./filter > log.filter')
     print('./filter took', int(time_module.time()-t), 'seconds')
 
-def recycle_output():
-    """Use output of assimilation (./filter) as input for another assimilation (with ./filter)
-    Specifically, this copies the state fields from filter_restart_d01.000x to the wrfout files in advance_temp folders"""
-    update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QRAIN', 'U10', 'V10', 'T2', 'Q2', 'TSK', 'PSFC', 'CLDFRA']
-    updates = ','.join(update_vars)
+# currently unused
+# def recycle_output():
+#     """Use output of assimilation (./filter) as input for another assimilation (with ./filter)
+#     Specifically, this copies the state fields from filter_restart_d01.000x to the wrfout files in advance_temp folders"""
+#     update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QRAIN', 'U10', 'V10', 'T2', 'Q2', 'TSK', 'PSFC', 'CLDFRA']
+#     updates = ','.join(update_vars)
 
-    print('recycle DART output to be used as input')
-    for iens in range(1, exp.n_ens+1):
-        dart_output = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
-        dart_input = cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01'
+#     print('recycle DART output to be used as input')
+#     for iens in range(1, exp.n_ens+1):
+#         dart_output = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
+#         dart_input = cluster.dartrundir+'/advance_temp'+str(iens)+'/wrfout_d01'
 
-        #print('check for non-monotonic vertical pressure')
+#         #print('check for non-monotonic vertical pressure')
 
-        # convert link to file in order to be able to update the content
-        if os.path.islink(dart_input):
-            l = os.readlink(dart_input)
-            os.remove(dart_input)
-            copy(l, dart_input) 
+#         # convert link to file in order to be able to update the content
+#         if os.path.islink(dart_input):
+#             l = os.readlink(dart_input)
+#             os.remove(dart_input)
+#             copy(l, dart_input) 
 
-        # print('move DART output to input: '+dart_output+' -> '+dart_input)
-        # os.rename(dart_output, dart_input)  # probably doesnt work
+#         # print('move DART output to input: '+dart_output+' -> '+dart_input)
+#         # os.rename(dart_output, dart_input)  # probably doesnt work
 
-        print('updating', updates, 'in', dart_input, 'from', dart_output)
-        os.system(cluster.ncks+' -A -v '+updates+' '+dart_output+' '+dart_input)
+#         print('updating', updates, 'in', dart_input, 'from', dart_output)
+#         os.system(cluster.ncks+' -A -v '+updates+' '+dart_output+' '+dart_input)
 
 ############### archiving
 
@@ -388,17 +411,24 @@ if __name__ == "__main__":
     - x_ensemble is already linked for DART to advance_temp<iens>/wrfout_d01
 
     Example call:
-    python assim.py 2008-08-07_12:00
+    python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
     """
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
+    prior_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
+    prior_valid_time = dt.datetime.strptime(sys.argv[3], '%Y-%m-%d_%H:%M')
+    prior_path_exp = str(sys.argv[4])
+
     archive_time = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/')
-
     os.chdir(cluster.dartrundir)
-    os.system('rm -f obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
+    os.system('rm -f input.nml obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
+    set_DART_nml()
 
-    print('create obs_seq.in from config')
+    print('prepare nature')
     prepare_nature_dart(time)  # link WRF files to DART directory
+
+    print('prepare prior ensemble')
+    prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
 
     ################################################
     print(' 1) get the assimilation errors in a single vector ')

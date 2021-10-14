@@ -38,7 +38,7 @@ if __name__ == '__main__':
     # prepare dummy nature (this Hx is irrelevant)
     os.chdir(cluster.dartrundir)
     os.system('cp ./advance_temp1/wrfout_d01 ./wrfout_d01')
-    wrfout_add_geo.run(cluster.dartrundir+'/geo_em.d01.nc',
+    wrfout_add_geo.run(cluster.dartrundir+'/../geo_em.d01.nc',
                         cluster.dartrundir+'/wrfout_d01')
     aso.run_perfect_model_obs()
     aso.assimilate(nproc=96)

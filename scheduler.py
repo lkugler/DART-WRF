@@ -11,9 +11,6 @@ from config.cfg import exp, cluster
 from scripts.utils import script_to_str, symlink
 
 
-# necessary to find modules in folder, since SLURM runs the script elsewhere
-sys.path.append(os.getcwd())
-
 # allow scripts to access the configuration
 # symlink(cluster.scriptsdir+'/../config', cluster.scriptsdir+'/config')
 
@@ -153,7 +150,7 @@ def run_ENS(begin, end, depends_on=None, first_minute=True):
     #           + begin.strftime('%Y-%m-%d_%H:%M'), depends_on=[id2])
     return id
 
-def assimilate(assim_time, prior_init_time,
+def assimilate(assim_time, prior_init_time, prior_valid_time,
                prior_path_exp=False, depends_on=None):
     """Creates observations from a nature run and assimilates them.
 
@@ -171,32 +168,23 @@ def assimilate(assim_time, prior_init_time,
     elif not isinstance(prior_path_exp, str):
         raise TypeError('prior_path_exp either str or False, is '+str(type(prior_path_exp)))
 
-    # prepare state of nature run, from which observation is sampled
-    #s = my_Slurm("prepNature", cfg_update=dict(time="2"))
-    #id = s.run(cluster.python+' '+cluster.scripts_rundir+'/prepare_nature.py '
-    #           +time.strftime('%Y-%m-%d_%H:%M'), depends_on=[depends_on])
-    
-    # prepare prior model state
-    s = my_Slurm("preAssim", cfg_update=dict(time="2"))
-    id = s.run(cluster.python+' '+cluster.scripts_rundir+'/pre_assim.py '
-               +assim_time.strftime('%Y-%m-%d_%H:%M ')
-               +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
-               +prior_path_exp, depends_on=[depends_on])
 
-    # prepare nature run, generate observations
+    # # prepare prior model state
+    # s = my_Slurm("preAssim", cfg_update=dict(time="2"))
+    # id = s.run(cluster.python+' '+cluster.scripts_rundir+'/pre_assim.py '
+    #            +assim_time.strftime('%Y-%m-%d_%H:%M ')
+    #            +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
+    #            +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
+    #            +prior_path_exp, depends_on=[depends_on])
+
     s = my_Slurm("Assim", cfg_update={"nodes": "1", "ntasks": "96", "time": "60",
                              "mem": "300G", "ntasks-per-node": "96", "ntasks-per-core": "2"})
     id = s.run(cluster.python+' '+cluster.scripts_rundir+'/assim_synth_obs.py '
-               +assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
+               +assim_time.strftime('%Y-%m-%d_%H:%M ')
+               +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
+               +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
+               +prior_path_exp, depends_on=[id])
  
-    # # actuall assimilation step
-    # s = my_Slurm("Assim", cfg_update=dict(nodes="1", ntasks="48", time="50", mem="200G"))
-    # cmd = 'cd '+cluster.dartrundir+'; mpirun -np 48 ./filter; rm obs_seq_all.out'
-    # id = s.run(cmd, depends_on=[id])
-
-    # s = my_Slurm("archiveAssim", cfg_update=dict(time="10"))
-    # id = s.run(cluster.python+' '+cluster.scripts_rundir+'/archive_assim.py '
-    #            + assim_time.strftime('%Y-%m-%d_%H:%M'), depends_on=[id])
 
     s = my_Slurm("updateIC", cfg_update=dict(time="8"))
     id = s.run(cluster.python+' '+cluster.scripts_rundir+'/update_wrfinput_from_filteroutput.py '
@@ -224,7 +212,7 @@ def gen_obsseq(depends_on=None):
     return id
 
 def verify(depends_on=None):
-    s = my_Slurm("verify", cfg_update={"time": "180", "mail-type": "FAIL,END", 
+    s = my_Slurm("verify", cfg_update={"time": "240", "mail-type": "FAIL,END", 
                  "ntasks": "96",  "ntasks-per-node": "96", "ntasks-per-core": "2"})
     s.run(cluster.python_enstools+' '+cluster.userdir+'/osse_analysis/analyze_fc.py '+exp.expname+' has_node',
           depends_on=[depends_on])
@@ -252,11 +240,12 @@ if __name__ == "__main__":
     is_new_run = not start_from_existing_state
 
     if is_new_run:
-        init_time = dt.datetime(2008, 7, 30, 6)
+        init_time = dt.datetime(2008, 7, 30, 9)
         id = prepare_wrfinput(init_time)  # create initial conditions
+        id = wrfinput_insert_wbubble(depends_on=id)
 
         # spin up the ensemble
-        integration_end_time = dt.datetime(2008, 7, 30, 9)
+        integration_end_time = dt.datetime(2008, 7, 30, 14)
         id = run_ENS(begin=init_time,
                     end=integration_end_time,
                     first_minute=False,
@@ -264,34 +253,34 @@ if __name__ == "__main__":
         prior_path_exp = False  # for next assimilation
         
     elif start_from_existing_state:
+        time = dt.datetime(2008, 7, 30, 11)
+
+        # prior init time
         init_time = dt.datetime(2008, 7, 30, 6)
-        id = prepare_wrfinput(init_time)  # create initial conditions
-        
-        # get initial conditions from archive
-        integration_end_time = dt.datetime(2008, 7, 30, 10)
-        exppath_arch = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_P1_40mem'
-        id = update_wrfinput_from_archive(integration_end_time, init_time, exppath_arch, depends_on=id)
+        #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_Pwbub_40mem'
+        #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem'
+        prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.16_P1_40mem'
+        #id = update_wrfinput_from_archive(integration_end_time, init_time, prior_path_exp, depends_on=id)
         #id = wrfinput_insert_wbubble(depends_on=id)
-        prior_path_exp = exppath_arch  # for next assimilation
 
     # values for assimilation
-    time = integration_end_time
-    assim_time = integration_end_time
+    assim_time = time
     prior_init_time = init_time
 
-    while time <= dt.datetime(2008, 7, 30, 10, 30):
+    while time <= dt.datetime(2008, 7, 30, 11):
 
         id = assimilate(assim_time,
-                        prior_init_time,
+                        prior_init_time, 
+                        prior_valid_time=time+dt.timedelta(hours=2),
                         prior_path_exp=prior_path_exp,
                         depends_on=id)
-        prior_path_exp = False  # use own exp path
+        prior_path_exp = False  # use own exp path as prior
 
         # integration
         this_forecast_init = assim_time  # start integration from here
 
         timedelta_integrate = timedelta_btw_assim
-        if this_forecast_init.minute in [30, 0]:  # longer forecast every full hour
+        if this_forecast_init.minute in [0,30]:  # longer forecast every full hour
             timedelta_integrate = dt.timedelta(hours=2)
 
         this_forecast_end = assim_time + timedelta_integrate
@@ -311,4 +300,3 @@ if __name__ == "__main__":
 
     id = gen_obsseq(id)
     verify(id)
-    # copy to jet
