@@ -2,7 +2,7 @@ import os, sys
 import datetime as dt
 
 class ClusterConfig(object):
-    """Helper class"""
+    """Helper class, contains useful abbreviations to use in code later on"""
     def __init__(self):
         pass
 
@@ -23,10 +23,41 @@ class ClusterConfig(object):
 
 
 #######################################################################################
+"""Configuration name docs
 
+Use attributes of a dictionary like this: `path = vsc.archivedir`
+
+attribute name  | publicly usable  |   description
+------------------------------------------------------
+name                yes                 any custom name (currently unused)
+python              yes                 path of python version to use
+python_enstools     no                  path of python version to use for verification script (not provided)
+ncks                yes                 path to 'ncks' program; type 'which ncks' to find the path,
+                                        if it doesn't exist, try to load the module first ('module load nco')
+tmpfiledir          yes                 path to directory where the 'run_WRF' directory is created
+                                        necessary to run WRF forecasts
+userdir             no                  path to user's directory
+srcdir              yes                 path to where WRF has been compiled
+                                        including the 'run' folder of WRF, e.g. /home/WRF-4.3/run
+archive_base        yes                 path where to write output to
+                                        in there, one folder will be created for every experiment
+dart_srcdir         yes                 path to DART compile directory, e.g. /home/DART-9.11.9/models/wrf/work
+rttov_srcdir        yes                 path to RTTOV compile directory, e.g. /home/RTTOV13/rtcoef_rttov13/
+scriptsdir          yes                 path where DART-WRF scripts reside, e.g. /home/DART-WRF/scripts
+ideal               yes                 path to WRF's ideal.exe
+wrfexe              yes                 path to WRF's wrf.exe
+namelist            yes                 path to a namelist template; strings like <hist_interval> 
+                                        will be overwritten in scripts/prepare_namelist.py
+run_WRF             yes                 path to script which runs WRF on a node of the cluster
+slurm_cfg           yes                 python dictionary, containing options of SLURM
+                                        defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
+                                        this configuration can be overwritten later on, for example:
+                                        'dict(cluster.slurm_cfg, **cfg_update)' where
+                                        'cfg_update = {"nodes": "2"}'
+"""                 
 
 vsc = ClusterConfig()
-vsc.name = 'vsc'
+vsc.name = 'vsc'  
 vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
 vsc.python_enstools = '/home/fs71386/lkugler/miniconda3/envs/enstools/bin/python'
 vsc.ncks = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/ncks'
@@ -39,7 +70,7 @@ vsc.rttov_srcdir = '/gpfs/data/fs71386/lkugler/compile/RTTOV13/rtcoef_rttov13/'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts/'
 
 vsc.ideal = vsc.userdir+'/compile/bin/ideal-v4.2.2_v1.16.exe'
-vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.3_v1.16.exe'
+vsc.wrfexe = vsc.userdir+'/compile/bin/wrf-v4.3_v1.19.exe'
 vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
 vsc.run_WRF = '/home/fs71386/lkugler/DART-WRF/scripts/run_ens.vsc.sh'
 
