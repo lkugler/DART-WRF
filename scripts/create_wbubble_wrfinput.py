@@ -6,8 +6,14 @@ from config.cfg import exp, cluster
 import netCDF4 as nc
 
 dx_km = 2
-cr = 50  # km
-cz = 3000  # meters
+cr = 15  # km horizontal relaxation distance
+cz = 3000  # meters vertical relaxation distance
+
+perturbations = False
+if len(sys.argv) > 1:
+    if 'perturb' == sys.argv[1]:
+        perturbations = True
+print('perturb wbubble = ', perturbations)
 
 for iens in range(1, exp.n_ens+1):
     print('update state in wrfinput  wrfout file to DART background file')
@@ -24,9 +30,13 @@ for iens in range(1, exp.n_ens+1):
         z = (z[1:]+z[:-1])/2
         z = z[:, np.newaxis, np.newaxis]
 
-        cx = (80 + 40*np.random.rand())*dx_km
-        cy = (80 + 40*np.random.rand())*dx_km
-        print(cx, cy)
+        if perturbations:
+            cx = (85 + 30*np.random.rand())*dx_km
+            cy = (85 + 30*np.random.rand())*dx_km
+        else:
+            cx = 100*dx_km
+            cy = 100*dx_km
+        print('wbubble center is', cx, cy)
         x = np.arange(0,nx)*dx_km
         y = np.arange(0,ny)*dx_km
         dx = x-cx
@@ -36,6 +46,7 @@ for iens in range(1, exp.n_ens+1):
 
         pert = 3*np.exp(-(dr/cr)**2)*np.exp(-(z/cz)**2)
 
-        ds.variables['THM'][0,...] = ds.variables['THM'][0,...] + pert
+        ds.variables['T'][0,...] += pert
+        ds.variables['THM'][0,...] += pert
 
     print(wrfin, 'wbubble inserted.')
