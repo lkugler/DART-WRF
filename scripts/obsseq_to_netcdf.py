@@ -1,4 +1,4 @@
-import os, sys, glob
+import os, sys, glob, warnings
 from config.cfg import exp, cluster
 import run_obs_diag as rod
 
@@ -18,4 +18,7 @@ if __name__ == '__main__':
 
     ddir = datadir+expname+'/obs_seq_final_1min/'
     files = sorted(glob.glob(ddir+'/*.final'))
-    rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch.nc') 
+    try:
+        rod.run_obs_seq_to_netcdf(files, f_out=ddir+'/obs_epoch.nc') 
+    except Exception as e:
+        warnings.warn(str(e))
