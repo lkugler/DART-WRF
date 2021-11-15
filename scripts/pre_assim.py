@@ -4,7 +4,7 @@ from config.cfg import exp, cluster
 from utils import symlink, copy_scp_srvx8, copy, sed_inplace, try_remove
 import wrfout_add_geo
 
-def run(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
+def run(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
     """Prepares DART files for running filter 
     i.e.
     - links first guess state to DART first guess filenames

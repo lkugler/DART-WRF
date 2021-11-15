@@ -21,14 +21,16 @@ usually applied to 1 min forecasts to assess the posterior analysis quality
 """
 
 if __name__ == '__main__':
-    prev_forecast_init = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
+    prior_init_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
     time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
     exppath_firstguess = cluster.archivedir
-    print(prev_forecast_init, time)
+    prior_valid_time = time
+    print('compute Hx from 1min forecast')
+    print(time, prior_init_time, prior_valid_time, exppath_firstguess)
 
     # link ensemble states to run_DART directory
     # we want the observation operator applied to these states!
-    pre_assim.run(time, prev_forecast_init, exppath_firstguess)
+    pre_assim.run(time, prior_init_time, prior_valid_time, exppath_firstguess)
 
     savedir = cluster.archivedir+'/obs_seq_final_1min/'
 

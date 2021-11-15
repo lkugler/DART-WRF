@@ -13,10 +13,13 @@
  end_second                          = 0,   00,   00,
  interval_seconds                    = 86400
  history_interval                    = <hist_interval>,   15,   15,
+ write_hist_at_0h_rst                = .true.,
  frames_per_outfile                  = 1, 1, 1,
  history_outname 		     = '<archivedir>/wrfout_d<domain>_<date>'
- restart                             = .false.,
- restart_interval                    = 720,
+ restart                             = <restart>,
+ override_restart_timers             = .true.,
+ restart_interval                    = <restart_interval>,
+ rst_outname			     = '<archivedir>/wrfrst_d<domain>_<date>',
  io_form_history                     = 2
  io_form_restart                     = 2
  io_form_input                       = 2

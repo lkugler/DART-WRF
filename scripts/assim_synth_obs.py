@@ -11,16 +11,16 @@ import wrfout_add_geo
 
 earth_radius_km = 6370
 
-# fit of Fig 7, Harnisch 2016
-x_ci = [0,   5, 10.5, 13, 16]
-y_oe = [1, 4.5,   10, 12, 13]  # Kelvin
+# Kelvin, fit of Fig 7b, Harnisch 2016
+x_ci = [0,   5, 10.5, 13, 16]  # average cloud impact
+y_oe = [1, 4.5,   10, 12, 13]  # adjusted observation error
 oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
 
 def oe_73(ci):
     if ci < 13:
         return oe_73_linear(ci)
     else:
-        return 16.
+        return 13.
 
 def cloudimpact_73(bt_mod, bt_obs):
     """
@@ -217,8 +217,6 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     - writes txt files so DART knows what input and output is
     - removes probably pre-existing files which could lead to problems
     """
-    os.makedirs(cluster.dartrundir, exist_ok=True)
-
     print('prepare prior state estimate')
     for iens in range(1, exp.n_ens+1):
         print('link wrfout file to DART background file')
@@ -237,7 +235,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
         # ensure prior time matches assim time (can be off intentionally)
         if assim_time != prior_valid_time:
             print('overwriting time in prior from nature wrfout')
-            os.system(cluster.ncks+' -A -v XTIME '
+            os.system(cluster.ncks+' -A -v XTIME,Times '
                       +cluster.dartrundir+'/wrfout_d01 '+wrfout_dart)
 
         # this seems to be necessary (else wrong level selection)
@@ -334,6 +332,7 @@ def assimilate(nproc=96):
 #         print('updating', updates, 'in', dart_input, 'from', dart_output)
 #         os.system(cluster.ncks+' -A -v '+updates+' '+dart_output+' '+dart_input)
 
+
 ############### archiving
 
 def archive_osq_final(time, posterior_1min=False):
@@ -420,6 +419,7 @@ if __name__ == "__main__":
     prior_path_exp = str(sys.argv[4])
 
     archive_time = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/')
+    os.makedirs(cluster.dartrundir, exist_ok=True)
     os.chdir(cluster.dartrundir)
     os.system('rm -f input.nml obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
     set_DART_nml()
@@ -481,6 +481,6 @@ if __name__ == "__main__":
     t = time_module.time()
     assimilate()
     print('filter took', time_module.time()-t, 'seconds')
-    
+   
     archive_filteroutput(time)
     archive_osq_final(time)

@@ -16,7 +16,7 @@ do
    RUNDIR=$MAINDIR/$EXPNAME/$IENS
    echo "ENSEMBLE NR: "$IENS" in "$RUNDIR
    cd $RUNDIR
-   rm -rf wrfrst_d01_* wrfout_d01_* rsl.out.0* 
+   rm -rf rsl.out.0* 
    echo "mpirun -genv I_MPI_PIN_PROCESSOR_LIST="${pinning[$n-1]}" -np 12 ./wrf.exe"
    mpirun -genv I_MPI_PIN_PROCESSOR_LIST=${pinning[$n-1]} -np 12 ./wrf.exe &
    cd ../

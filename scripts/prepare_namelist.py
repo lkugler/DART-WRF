@@ -1,22 +1,41 @@
+"""Create namelist.input files
+
+Usage:
+  prepare_namelist.py <begin> <end> <intv> [--radt=<minutes>] [--restart=<flag>] [--restart_interval=<minutes>] [--rst_inname=<path>]
+
+Options:
+  --radt=<minutes>   		Radiation interval [default: 5]
+  --restart=<flag> 		Restart flag (.true., .false.) [default: .false.]
+  --restart_interval=<minutes>	Restart frequency [default: 720]
+  --rst_inname=<path>           Path to directory of input wrfrst file
+"""
 import os, sys, shutil, warnings
 import datetime as dt
+from docopt import docopt
 from config.cfg import exp, cluster
 from utils import sed_inplace, copy, symlink, mkdir
 
-def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
-    """
+def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
+        restart=False, restart_interval=720, rst_inname=False):
+    """Create namelist.input files
+
     Args:
     archive (bool): if True, write to archivedir of experiment
         if False, write to WRF run directory
+    restart (str): fortran bool whether to use wrfinput or wrfrst
+    restart_interval (int): output frequency of wrfrst (minutes)
     """
     rundir = cluster.wrf_rundir(iens)
-    print(rundir)
     copy(cluster.namelist, rundir+'/namelist.input')
 
     sed_inplace(rundir+'/namelist.input', '<dx>', str(int(exp.model_dx)))
     #sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
     sed_inplace(rundir+'/namelist.input', '<hist_interval>', str(int(hist_interval)))
     sed_inplace(rundir+'/namelist.input', '<radt>', str(int(radt)))
+
+    rst_flag = '.true.' if restart else '.false.'
+    sed_inplace(rundir+'/namelist.input', '<restart>', rst_flag)
+    sed_inplace(rundir+'/namelist.input', '<restart_interval>', str(int(float(restart_interval))))
 
     if archive:
         archdir = cluster.archivedir+begin.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/')
@@ -25,7 +44,12 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
         archdir = './'
     print('namelist for run from', begin, end, 'output to', archdir)
     sed_inplace(rundir+'/namelist.input', '<archivedir>', archdir)
-    
+
+    if rst_inname:  # rst_inname did not work -> link file to directory
+        # sed_inplace(rundir+'/namelist.input', '<initdir>', rst_inname) 
+        fname = begin.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
+        symlink(rst_inname+fname, rundir+fname)
+        print('linked', rst_inname+fname, 'to rundir')
 
     # set times
     for k, v in {'<y1>': '%Y', '<m1>': '%m', '<d1>': '%d',
@@ -40,29 +64,44 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True):
         
         init_dir = cluster.archivedir+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
         os.makedirs(init_dir, exist_ok=True)
+        print('copy namelist to archive')
+        copy(rundir+'/namelist.input', init_dir+'/namelist.input')
         try:
-            print('copy wrfinput of this run to archive')
-            wrfin_old = rundir+'/wrfinput_d01'
-            wrfin_arch = init_dir+'/wrfinput_d01'
-            copy(wrfin_old, wrfin_arch)
-            print('copy namelist to archive')
-            copy(rundir+'/namelist.input', init_dir+'/namelist.input')
+            if not restart:
+                print('copy wrfinput of this run to archive')
+                wrfin_old = rundir+'/wrfinput_d01'
+                wrfin_arch = init_dir+'/wrfinput_d01'
+                copy(wrfin_old, wrfin_arch)
         except Exception as e:
             warnings.warn(str(e))
 
 
 if __name__ == '__main__':
-    begin = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
-    end = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
-    intv = int(sys.argv[3])
-    radt = int(sys.argv[4])
-    archive = True
-    try:
-        if sys.argv[5] == '1':
-            archive = False
-    except:
-        pass
+    args = docopt(__doc__)
+    begin = dt.datetime.strptime(args['<begin>'], '%Y-%m-%d_%H:%M')
+    end = dt.datetime.strptime(args['<end>'], '%Y-%m-%d_%H:%M')
+    intv = int(args['<intv>'])
 
-    print('prepare namelists for all ens members')
+    radt = int(args['--radt']) 
+    if not radt:
+        radt = '5'
+
+    restart = False
+    if args['--restart'] == '.true.':
+        restart = True
+
+    restart_interval = args['--restart_interval']
+    if not restart_interval:
+        restart_interval = 720
+
+    print('prepare namelists for all ens members',intv,radt,restart,restart_interval)
     for iens in range(1, exp.n_ens+1):
-        run(iens, begin, end, hist_interval=intv, radt=radt, archive=archive)
+
+        rst_inname = False
+        if args['--rst_inname']:
+            rst_inname = args['--rst_inname'] + '/'+str(iens)
+            print('rst_inname', rst_inname)
+
+        run(iens, begin, end, hist_interval=intv, radt=radt, 
+            restart=restart, restart_interval=restart_interval,
+            rst_inname=rst_inname)
