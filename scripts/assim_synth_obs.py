@@ -266,7 +266,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
     os.system('rm -rf '+cluster.dartrundir+'/obs_seq.fina*')
 
-    os.system(cluster.python+' '+cluster.scriptsdir+'/link_rttov.py')
+    os.system(cluster.python+' '+cluster.scriptsdir+'/link_dart_rttov.py')
 
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
