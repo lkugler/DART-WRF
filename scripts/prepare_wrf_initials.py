@@ -8,12 +8,16 @@ from utils import symlink, copy, mkdir, clean_wrfdir, try_remove
 
 """
 Sets initial condition data (wrfinput/wrrst file) in the run_WRF directory for each ensemble member 
- 1) copies wrfrst to run_WRF directory
- 2) overwrites DA-updated variables with DART output fields
 
- (for verification later on, since a restart run does not write the first wrfout) 
- 3) copy wrfout from prior to archivedir
- 4) overwrite DA-updated variables with DART output
+You have 2 options to restart:
+1) using wrfout files  (function create_updated_wrfinput_from_wrfout)
+2) using wrfrst files  (function create_wrfrst_in_WRF_rundir)
+
+Ad 1: copy wrfout from prior to archivedir
+      overwrite DA-updated variables with DART output
+
+Ad 2: copies wrfrst to run_WRF directory
+      overwrites DA-updated variables with DART output fields
 
 # assumes T = THM (dry potential temperature as prognostic variable)
 """
@@ -50,8 +54,30 @@ def create_wrfrst_in_WRF_rundir(time, prior_init_time, exppath_firstguess):
         for f in files_rst:
             try_remove(f)
 
+def create_updated_wrfinput_from_wrfout(time, prior_init_time, exppath_firstguess):
+    """Same as create_wrfout_in_archivedir, but output is `wrfinput` in WRF run directory"""
+
+    print('writing updated wrfout to WRF run directory as wrfinput')
+    for iens in range(1, exp.n_ens+1):
+        prior_wrfout = exppath_firstguess + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
+                       +str(iens)+time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
+        post_wrfout = cluster.wrf_rundir(iens) + '/wrfinput_d01' 
+        copy(prior_wrfout, post_wrfout)
+
+        if True: # overwrite DA updated variables
+            filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
+            os.system(cluster.ncks+' -A -v '+updates+' '+filter_out+' '+post_wrfout)
+
+            # need to overwrite THM manually
+            with nc.Dataset(filter_out, 'r') as ds_filter:
+                with nc.Dataset(post_wrfout, 'r+') as ds_wrfout:
+                    ds_wrfout.variables['THM'][:] = ds_filter.variables['T'][:]
+        print(post_wrfout, 'created.')
+
 def create_wrfout_in_archivedir(time, prior_init_time, exppath_firstguess):
     """Put updated wrfout in archive dir (because wrf restart writes no 0 minute wrfout)
+
+    probably not necessary, if using the wrf namelist option `write_hist_at_0h_rst`
     """
     print('writing updated wrfout to archive (for verification)')
     for iens in range(1, exp.n_ens+1):
@@ -73,28 +99,6 @@ def create_wrfout_in_archivedir(time, prior_init_time, exppath_firstguess):
             with nc.Dataset(post_wrfout_archive, 'r+') as ds_wrfout:
                 ds_wrfout.variables['THM'][:] = ds_filter.variables['T'][:]
         print(post_wrfout_archive, 'created.')
-
-
-def create_updated_wrfinput_from_wrfout(time, prior_init_time, exppath_firstguess):
-    """Same as create_wrfout_in_archivedir, but output is `wrfinput` in WRF run directory"""
-
-    print('writing updated wrfout to WRF run directory as wrfinput')
-    for iens in range(1, exp.n_ens+1):
-        prior_wrfout = exppath_firstguess + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
-                       +str(iens)+time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
-        post_wrfout = cluster.wrf_rundir(iens) + '/wrfinput_d01' 
-        copy(prior_wrfout, post_wrfout)
-
-        if True: # overwrite DA updated variables
-            filter_out = cluster.dartrundir+'/filter_restart_d01.'+str(iens).zfill(4)
-            os.system(cluster.ncks+' -A -v '+updates+' '+filter_out+' '+post_wrfout)
-
-            # need to overwrite THM manually
-            with nc.Dataset(filter_out, 'r') as ds_filter:
-                with nc.Dataset(post_wrfout, 'r+') as ds_wrfout:
-                    ds_wrfout.variables['THM'][:] = ds_filter.variables['T'][:]
-        print(post_wrfout, 'created.')
-
 
 if __name__ == '__main__':
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
