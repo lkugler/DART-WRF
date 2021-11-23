@@ -159,7 +159,8 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
     runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
     s = my_Slurm("runWRF2", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
                 "time": str(runtime_wallclock_mins_expected), "mem-per-cpu": "2G"})
-    cmd = script_to_str(cluster.run_WRF).replace('<expname>', exp.expname)
+    cmd = script_to_str(cluster.run_WRF).replace('<exp.expname>', exp.expname
+                                       ).replace('cluster.wrf_rundir_base', cluster.wrf_rundir_base)
     id = s.run(cmd, depends_on=[id])
     return id
 

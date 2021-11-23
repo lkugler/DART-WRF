@@ -5,9 +5,9 @@ export SLURM_STEP_GRES=none
 
 ##  $SLURM_ARRAY_TASK_ID
 echo "SLURM_ARRAY_TASK_ID:"$SLURM_ARRAY_TASK_ID
-EXPNAME=<expname>
+EXPNAME=<exp.expname>
 
-MAINDIR=/gpfs/data/fs71386/lkugler/run_WRF
+MAINDIR=<cluster.wrf_rundir_base>
 pinning=(0-11 12-23 24-35 36-47)
 
 for ((n=1; n<=4; n++))
