@@ -42,14 +42,7 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
         os.makedirs(archdir, exist_ok=True)
     else:
         archdir = './'
-    print('namelist for run from', begin, end, 'output to', archdir)
     sed_inplace(rundir+'/namelist.input', '<archivedir>', archdir)
-
-    if rst_inname:  # rst_inname did not work -> link file to directory
-        # sed_inplace(rundir+'/namelist.input', '<initdir>', rst_inname) 
-        fname = begin.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
-        symlink(rst_inname+fname, rundir+fname)
-        print('linked', rst_inname+fname, 'to rundir')
 
     # set times
     for k, v in {'<y1>': '%Y', '<m1>': '%m', '<d1>': '%d',
@@ -59,6 +52,8 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
                  '<HH2>': '%H', '<MM2>': '%M'}.items():
         sed_inplace(rundir+'/namelist.input', k, end.strftime(v))
 
+    print(rundir+'/namelist.input created')
+    print('runtime:', begin, end, 'output to', archdir)
     #########################
     if archive:
         
