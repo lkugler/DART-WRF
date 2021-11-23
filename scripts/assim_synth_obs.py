@@ -266,8 +266,6 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system('rm -rf '+cluster.dartrundir+'/perfect_output_*')
     os.system('rm -rf '+cluster.dartrundir+'/obs_seq.fina*')
 
-    os.system(cluster.python+' '+cluster.scriptsdir+'/link_dart_rttov.py')
-
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
 
@@ -406,11 +404,12 @@ if __name__ == "__main__":
       - write state to archive
 
     
-    Assumptions:
-    - x_ensemble is already linked for DART to advance_temp<iens>/wrfout_d01
+    Note:
+        assim_time (dt.datetime):           time of output
+        prior_valid_time (dt.datetime):     valid time of prior (may be different to assim_time)
 
     Example call:
-    python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
+        python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
     """
 
     time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
@@ -419,8 +418,9 @@ if __name__ == "__main__":
     prior_path_exp = str(sys.argv[4])
 
     archive_time = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/')
-    os.makedirs(cluster.dartrundir, exist_ok=True)
+    os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dartrundir)
+    os.system(cluster.python+' '+cluster.scripts_rundir+'/link_dart_rttov.py')  # link DART binaries to run_DART
     os.system('rm -f input.nml obs_seq.in obs_seq.out obs_seq.final')  # remove any existing observation files
     set_DART_nml()
 

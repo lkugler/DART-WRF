@@ -9,6 +9,7 @@ bins = ['perfect_model_obs', 'filter', 'obs_diag', 'obs_seq_to_netcdf']
 for b in bins:
     symlink(joinp(cluster.dart_srcdir, b),
             joinp(cluster.dartrundir, b))
+    print(joinp(cluster.dartrundir, b), 'created')
 
 rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
                #'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.dat',
@@ -32,3 +33,5 @@ symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sens
 
 symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/work/sampling_error_correction_table.nc',
         cluster.dartrundir+'/sampling_error_correction_table.nc')
+
+print('prepared DART & RTTOV links in', cluster.dartrundir)

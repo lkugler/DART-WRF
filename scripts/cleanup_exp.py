@@ -8,13 +8,12 @@ from utils import try_remove
 2) remove run_DART folders from exp
 3) remove run_WRF files from exp
 """
-expname = sys.argv[1]
 keep_last_init_wrfrst = True
 
 print('removing files for exp', exp)
 
 # 1) wrfrst
-inits = reversed(sorted(glob.glob(cluster.archive_base+'/'+expname+'/20??-??-??_??:??')))
+inits = reversed(sorted(glob.glob(cluster.archivedir+'/20??-??-??_??:??')))
 for k, init in enumerate(inits):
     rst_files = glob.glob(init+'/*/wrfrst_*')
 
@@ -28,7 +27,7 @@ for k, init in enumerate(inits):
             try_remove(f)
 
 # 2) run_DART/exp
-os.removedirs(cluster.tmpfiledir+'/run_DART/'+expname)
+os.removedirs(cluster.dartrundir)
 
 # 3) run_WRF/exp
 for iens in range(1, exp.n_ens+1):
