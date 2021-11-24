@@ -9,8 +9,8 @@ Functions return a SLURM ID which can be used to trigger the start of another fu
 
 - How does it work?
   - There are two kinds of code/scripts: One that is run immediately and one that is run later on.
-  - The first one instructs the cluster (SLURM) to do the things you tell it - in the right order - using the right input. Example: [`scheduler.py`](https://github.com/lkugler/DART-WRF/blob/master/scheduler.py)
-  - The latter kind of code actually does the things. Its code is not executed right away, but when there are resources assigned to you by SLURM. Example: [`prepare_nature.py`](https://github.com/lkugler/DART-WRF/blob/master/scripts/prepare_nature.py) and other files in the `/scripts` folder.
+  - The first one instructs the cluster (SLURM) to do the things you tell it - in the right order - using the right input. 
+  - The latter kind of code actually does the things. Its code is not executed right away, but when there are resources assigned to you by SLURM. 
 
 - Can I use it for real weather?
   -  Yes, but you need to [convert your observations into DART format.](https://docs.dart.ucar.edu)
