@@ -1,13 +1,9 @@
-import datetime
 import setuptools
 
 """
 Install locally:
->>> pip install climodlab
+>>> python setup.py install
 """
-
-YEAR = datetime.date.today().year
-LICENSE_SHORT = f"Copyright (C) {YEAR} ZAMG. All rights reserved"
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
