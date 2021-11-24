@@ -46,26 +46,24 @@ Dependencies are `numpy, pandas, scipy, xarray, netCDF4`. Install non-standard p
 ## Finally
 
 ### SLURM submissions
-`scheduler.py` submits jobs into the SLURM queue with dependencies, so that SLURM starts the jobs itself as soon as resources are available. Most jobs need only one node, but model integration is done in a SLURM job array across e.g. 5 nodes:
+`scheduler.py` submits jobs into the SLURM queue with dependencies, so that SLURM starts the jobs itself as soon as resources are available. Most jobs need only one node, but model integration is done in a SLURM job array across e.g. 10 nodes:
 ```
 $ squeue -u `whoami` --sort=i
-            308377  mem_0384 ideal-01  lkugler PD       0:00      1 (Resources)
-            308378  mem_0384 prerun-a  lkugler PD       0:00      1 (Priority)
-      308379_[1-5]  mem_0384 EnsWRF-3  lkugler PD       0:00      1 (Dependency)
-            308380  mem_0384 pregensy  lkugler PD       0:00      1 (Dependency)
-            308381  mem_0384 gensynth  lkugler PD       0:00      1 (Dependency)
-            308382  mem_0384 preassim  lkugler PD       0:00      1 (Dependency)
-            308383  mem_0384 assim-37  lkugler PD       0:00      1 (Dependency)
-            308384  mem_0384 postassi  lkugler PD       0:00      1 (Dependency)
-            308385  mem_0384 prerun-e  lkugler PD       0:00      1 (Dependency)
-      308386_[1-5]  mem_0384 EnsWRF-3  lkugler PD       0:00      1 (Dependency)
-            308387  mem_0384 pregensy  lkugler PD       0:00      1 (Dependency)
-            308388  mem_0384 gensynth  lkugler PD       0:00      1 (Dependency)
-            308389  mem_0384 preassim  lkugler PD       0:00      1 (Dependency)
-            308390  mem_0384 assim-37  lkugler PD       0:00      1 (Dependency)
-            308391  mem_0384 postassi  lkugler PD       0:00      1 (Dependency)
-            308392  mem_0384 prerun-6  lkugler PD       0:00      1 (Dependency)
-      308393_[1-5]  mem_0384 EnsWRF-3  lkugler PD       0:00      1 (Dependency)
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+           1710274  mem_0384 prepwrfr  lkugler PD       0:00      1 (Priority)
+           1710275  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+           1710276  mem_0384 Assim-42  lkugler PD       0:00      1 (Dependency)
+           1710277  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+           1710278  mem_0384 IC-updat  lkugler PD       0:00      1 (Dependency)
+           1710279  mem_0384 preWRF2-  lkugler PD       0:00      1 (Dependency)
+    1710280_[1-10]  mem_0384 runWRF2-  lkugler PD       0:00      1 (Dependency)
+           1710281  mem_0384 pRTTOV-6  lkugler PD       0:00      1 (Dependency)
+           1710282  mem_0384 Assim-3a  lkugler PD       0:00      1 (Dependency)
+           1710283  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+           1710284  mem_0384 IC-updat  lkugler PD       0:00      1 (Dependency)
+           1710285  mem_0384 preWRF2-  lkugler PD       0:00      1 (Dependency)
+    1710286_[1-10]  mem_0384 runWRF2-  lkugler PD       0:00      1 (Dependency)
+           1710287  mem_0384 pRTTOV-7  lkugler PD       0:00      1 (Dependency)
 ```
 
 ### Easily switch between clusters
