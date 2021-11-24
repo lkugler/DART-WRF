@@ -81,7 +81,7 @@ def wrfinput_insert_wbubble(perturb=True, depends_on=None):
     return id
 
 def run_ENS(begin, end, depends_on=None, first_minute=True, 
-            input_is_restart=False, restart_path=False, output_restart_interval=720):
+            input_is_restart=True, restart_path=False, output_restart_interval=720):
     """Run forecast for 1 minute, save output. 
     Then run whole timespan with 5 minutes interval.
 
@@ -147,7 +147,7 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
     s = my_Slurm("runWRF2", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
                 "time": str(runtime_wallclock_mins_expected), "mem-per-cpu": "2G"})
     cmd = script_to_str(cluster.run_WRF).replace('<exp.expname>', exp.expname
-                                       ).replace('cluster.wrf_rundir_base', cluster.wrf_rundir_base)
+                                       ).replace('<cluster.wrf_rundir_base>', cluster.wrf_rundir_base)
     id = s.run(cmd, depends_on=[id])
     return id
 
