@@ -173,4 +173,3 @@ dependencies:
   - zipp=3.3.0=py_0
   - zlib=1.2.11=h7b6447c_3
   - zstd=1.4.4=h0b5b093_3
-prefix: /home/fs71409/nicolap96/miniconda3/envs/DART
