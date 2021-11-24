@@ -1,13 +1,12 @@
 """Create namelist.input files
 
 Usage:
-  prepare_namelist.py <begin> <end> <intv> [--radt=<minutes>] [--restart=<flag>] [--restart_interval=<minutes>] [--rst_inname=<path>]
+  prepare_namelist.py <begin> <end> <intv> [--radt=<minutes>] [--restart=<flag>] [--restart_interval=<minutes>]
 
 Options:
   --radt=<minutes>   		Radiation interval [default: 5]
   --restart=<flag> 		Restart flag (.true., .false.) [default: .false.]
   --restart_interval=<minutes>	Restart frequency [default: 720]
-  --rst_inname=<path>           Path to directory of input wrfrst file
 """
 import os, sys, shutil, warnings
 import datetime as dt
@@ -16,7 +15,7 @@ from config.cfg import exp, cluster
 from utils import sed_inplace, copy, symlink, mkdir
 
 def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
-        restart=False, restart_interval=720, rst_inname=False):
+        restart=False, restart_interval=720):
     """Create namelist.input files
 
     Args:
@@ -92,11 +91,5 @@ if __name__ == '__main__':
     print('prepare namelists for all ens members',intv,radt,restart,restart_interval)
     for iens in range(1, exp.n_ens+1):
 
-        rst_inname = False
-        if args['--rst_inname']:
-            rst_inname = args['--rst_inname'] + '/'+str(iens)
-            print('rst_inname', rst_inname)
-
         run(iens, begin, end, hist_interval=intv, radt=radt, 
-            restart=restart, restart_interval=restart_interval,
-            rst_inname=rst_inname)
+            restart=restart, restart_interval=restart_interval)
