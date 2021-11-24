@@ -218,8 +218,8 @@ def verify(depends_on=None):
           depends_on=[depends_on])
 
 
-def cleanup_storage(depends=None):
-    Slurm('cleanup').run(
+def cleanup_storage(depends_on=None):
+    my_Slurm('cleanup', cfg_update={"time": "2"}).run(
         cluster.python+' '+cluster.scripts_rundir+'/cleanup_exp.py '+exp.expname, 
         depends_on=[depends_on])
 
@@ -233,9 +233,6 @@ if __name__ == "__main__":
 
     backup_scripts()
     id = None
-
-    start_from_existing_state = True
-    is_new_run = not start_from_existing_state
 
     init_time = dt.datetime(2008, 7, 30, 12)
     time = dt.datetime(2008, 7, 30, 13)
@@ -290,6 +287,6 @@ if __name__ == "__main__":
         prior_init_time = time - timedelta_btw_assim
 
 
-    #cleanup_storage(id)
+    cleanup_storage(id)
     id = gen_obsseq(id)
     verify(id)
