@@ -1,0 +1,6 @@
+*.pyc
+slurm-scripts/
+logs/
+dask-worker-space/
+DART_WRF.egg*
+build*
