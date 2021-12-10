@@ -4,3 +4,4 @@ logs/
 dask-worker-space/
 DART_WRF.egg*
 build*
+._*
