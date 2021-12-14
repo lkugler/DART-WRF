@@ -5,3 +5,6 @@ dask-worker-space/
 DART_WRF.egg*
 build*
 ._*
+.vscode
+dist/
+experimental/

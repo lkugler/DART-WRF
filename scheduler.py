@@ -8,7 +8,7 @@ import datetime as dt
 from slurmpy import Slurm
 
 from config.cfg import exp, cluster
-from scripts.utils import script_to_str, symlink, copy
+from dartwrf.utils import script_to_str, symlink, copy
 
 log_dir = cluster.archivedir+'/logs/'
 slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'

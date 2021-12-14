@@ -79,11 +79,11 @@ vsc.archive_base = '/gpfs/data/fs71386/lkugler/sim_archive/'
 vsc.srcdir = '/gpfs/data/fs71386/lkugler/compile/WRF/WRF-4.3/run'
 vsc.dart_srcdir = '/gpfs/data/fs71386/lkugler/compile/DART/DART-9.11.9/models/wrf/work'
 vsc.rttov_srcdir = '/gpfs/data/fs71386/lkugler/compile/RTTOV13/rtcoef_rttov13/'
-vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/scripts/'
+vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/dartwrf/'
 
 # templates/run scripts
 vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
-vsc.run_WRF = '/home/fs71386/lkugler/DART-WRF/scripts/run_ens.vsc.sh'
+vsc.run_WRF = '/home/fs71386/lkugler/DART-WRF/dartwrf/run_ens.vsc.sh'
 
 vsc.slurm_cfg = {"account": "p71386", "partition": "mem_0384", "qos": "p71386_0384",
                  "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",

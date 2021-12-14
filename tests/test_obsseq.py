@@ -1,9 +1,7 @@
-import sys
-sys.path.append('../scripts')
 import filecmp
 from config.cfg import exp, cluster
 
-import obsseq
+from dartwrf import obsseq
 
 
 def test_oso():

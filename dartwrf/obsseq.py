@@ -569,7 +569,7 @@ class ObsSeq(object):
 if __name__ == "__main__":
     # for testing purposes
 
-    obs = ObsSeqOut(cluster.scriptsdir + "/../tests/obs_seq.orig.out")
+    obs = ObsSeq(cluster.scriptsdir + "/../tests/obs_seq.orig.out")
 
     # select a subset (lat-lon)
     obs.superob(window_km=50)
