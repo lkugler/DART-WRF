@@ -7,7 +7,7 @@ import netCDF4 as nc
 
 dx_km = 2
 cr = 15  # km horizontal relaxation distance
-cz = 3000  # meters vertical relaxation distance
+cz = 2000  # meters vertical relaxation distance
 
 perturbations = False
 if len(sys.argv) > 1:
@@ -44,7 +44,7 @@ for iens in range(1, exp.n_ens+1):
         xx, yy = np.meshgrid(dx, dy)
         dr = np.sqrt(xx**2 + yy**2)[np.newaxis, :, :]
 
-        pert = 3*np.exp(-(dr/cr)**2)*np.exp(-(z/cz)**2)
+        pert = 4*np.exp(-(dr/cr)**2)*np.exp(-(z/cz)**2)
 
         ds.variables['T'][0,...] += pert
         ds.variables['THM'][0,...] += pert

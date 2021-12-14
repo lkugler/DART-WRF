@@ -134,8 +134,8 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
                 str(hist_interval),
                 '--radt='+str(radt),
                 '--restart='+restart_flag,]
-    if restart_path:
-        args.append('--rst_inname='+restart_path)
+    # if restart_path:
+    #     args.append('--rst_inname='+restart_path)
     if output_restart_interval:
         args.append('--restart_interval='+str(int(float(output_restart_interval))))
 
@@ -212,7 +212,7 @@ def gen_obsseq(depends_on=None):
 
 
 def verify(depends_on=None):
-    s = my_Slurm("verify", cfg_update={"time": "240", "mail-type": "FAIL,END", 
+    s = my_Slurm("verify-"+exp.expname, cfg_update={"time": "240", "mail-type": "FAIL,END", 
                  "ntasks": "96",  "ntasks-per-node": "96", "ntasks-per-core": "2"})
     s.run(cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/analyze_fc.py '+exp.expname+' has_node',
           depends_on=[depends_on])
@@ -266,7 +266,7 @@ if __name__ == "__main__":
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
         if time == dt.datetime(2008, 7, 30, 14): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(hours=3)
+            timedelta_integrate = dt.timedelta(hours=1)
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
