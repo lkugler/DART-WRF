@@ -1,6 +1,6 @@
 import os, glob
 from config.cfg import exp, cluster
-from utils import try_remove
+from .utils import try_remove
 
 """Run this script after an experiment to reduce cluster disk usage.
 

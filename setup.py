@@ -20,7 +20,7 @@ def read_requirements(fname):
 
 
 setuptools.setup(
-    name="DART-WRF",
+    name="dartwrf",
     version="2021.12.14",
     author="Lukas Kugler",
     author_email="lukas.kugler@univie.ac.at",

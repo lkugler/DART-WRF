@@ -2,7 +2,7 @@
 slurm-scripts/
 logs/
 dask-worker-space/
-DART_WRF.egg*
+dartwrf.egg*
 build*
 ._*
 .vscode

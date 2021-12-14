@@ -1,9 +1,9 @@
 import os, sys, shutil
 import datetime as dt
 from config.cfg import exp, cluster
-from utils import symlink, copy, link_contents
+from .utils import symlink, copy, link_contents
 
-import prepare_namelist
+from . import prepare_namelist
 
 init_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 

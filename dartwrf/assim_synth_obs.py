@@ -5,10 +5,10 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from config.cfg import exp, cluster
-from utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
-import create_obsseq as osq
-import wrfout_add_geo
-import obsseq
+from .utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
+from . import create_obsseq as osq
+from . import wrfout_add_geo
+from . import obsseq
 
 earth_radius_km = 6370
 
