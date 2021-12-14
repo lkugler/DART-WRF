@@ -55,9 +55,7 @@ def read_prior_obs(f_obs_prior):
             for j in range(5, 5 + exp.n_ens):
                 prior_ens.append(float(obsseq[i + j].strip()))
 
-            OBSs.append(
-                dict(observed=observed, truth=truth, prior_ens=np.array(prior_ens))
-            )
+            OBSs.append(dict(observed=observed, truth=truth, prior_ens=np.array(prior_ens)))
     return OBSs
 
 
@@ -86,7 +84,7 @@ def replace_errors_obsseqout(f, new_errors):
     obsseq = open(f, "r").readlines()
 
     # find number of lines between two ' OBS   ' lines:
-    first_obs = None
+    first_obs = second_obs = None
     for i, line in enumerate(obsseq):
         if " OBS " in line:
             if first_obs is None:
@@ -94,10 +92,10 @@ def replace_errors_obsseqout(f, new_errors):
             else:
                 second_obs = i
                 break
+    if not second_obs:
+        raise RuntimeError('just one OBS in this file?! '+str(f))
     lines_between = second_obs - first_obs
-    lines_obserr_after_obsnr = (
-        lines_between - 1
-    )  # obserr line is one before ' OBS   ' line
+    lines_obserr_after_obsnr = lines_between - 1  # obserr line is one before ' OBS   ' line
 
     # replace values in list obsseq
     i_obs = 0
@@ -135,9 +133,7 @@ def set_DART_nml(just_prior_values=False):
         return vert_norm_rad
 
     list_obstypes = [obscfg["kind"] for obscfg in exp.observations]
-    list_cov_loc_radius_km = [
-        obscfg["cov_loc_radius_km"] for obscfg in exp.observations
-    ]
+    list_cov_loc_radius_km = [obscfg["cov_loc_radius_km"] for obscfg in exp.observations]
     list_cov_loc_radian = [str(to_radian_horizontal(a)) for a in list_cov_loc_radius_km]
 
     if just_prior_values:
@@ -172,39 +168,35 @@ def set_DART_nml(just_prior_values=False):
     append_file(cluster.dartrundir + "/input.nml", rttov_nml)
 
 
-def obs_operator_ensemble():
+def get_Hx_truth_prior():
+
     # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
     print("running obs operator on ensemble forecast")
     os.chdir(cluster.dartrundir)
 
-    list_ensemble_truths = []
     t = time_module.time()
 
-    for iens in range(1, exp.n_ens + 1):
-        print("observation operator for ens #" + str(iens))
-        # ens members are already linked to advance_temp<i>/wrfout_d01
-        copy(
-            cluster.dartrundir + "/advance_temp" + str(iens) + "/wrfout_d01",
-            cluster.dartrundir + "/wrfout_d01",
-        )
-        # DART may need a wrfinput file as well, which serves as a template for dimension sizes
-        symlink(
-            cluster.dartrundir + "/wrfout_d01", cluster.dartrundir + "/wrfinput_d01"
-        )
+    # set input.nml to calculate prior Hx 
+    set_DART_nml(just_prior_values=True)
 
-        # run perfect_model obs (forward operator)
-        os.system("mpirun -np 12 ./perfect_model_obs > /dev/null")
+    # run filter to calculate prior Hx 
+    os.system("mpirun -np 12 ./filter &> log.filter.preassim")
 
-        # truth values in obs_seq.out are H(x) values
-        true, _ = read_truth_obs_obsseq(cluster.dartrundir + "/obs_seq.out")
-        list_ensemble_truths.append(true)
+    # read prior Hx values from obs_seq.final
+    osf = obsseq.ObsSeq(cluster.dartrundir + '/obs_seq.final')
+
+    if hasattr(exp, "superob_km"):
+        print("superobbing to", exp.superob_km, "km")
+
+        t = time_module.time()
+        osf.superob(window_km=exp.superob_km)
+        print("superob took", int(time_module.time() - t), "seconds")
+
+    prior_Hx = osf.get_prior_Hx_matrix().T
+    truth_Hx = osf.get_truth_Hx()
 
     print("obs operator ensemble took", int(time_module.time() - t), "seconds")
-    n_obs = len(list_ensemble_truths[0])
-    np_array = np.full((exp.n_ens, n_obs), np.nan)
-    for i in range(exp.n_ens):
-        np_array[i, :] = list_ensemble_truths[i]
-    return np_array
+    return truth_Hx, prior_Hx
 
 
 def obs_operator_nature(time):
@@ -236,9 +228,7 @@ def prepare_nature_dart(time):
     )
 
 
-def prepare_prior_ensemble(
-    assim_time, prior_init_time, prior_valid_time, prior_path_exp
-):
+def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
     """Prepares DART files for running filter
     i.e.
     - links first guess state to DART first guess filenames
@@ -304,7 +294,7 @@ def prepare_prior_ensemble(
 
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
-
+    debug = False
     n_obs = len(Hx_nature)
     OEs = np.ones(n_obs)
     for iobs in range(n_obs):
@@ -315,7 +305,8 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
         mean_CI = np.mean(CIs)
 
         oe_nature = oe_73(mean_CI)
-        print("oe_nature:", oe_nature, ", bt_y:", bt_y, ", mean_CI:", mean_CI)
+        if debug:
+            print("oe_nature:", oe_nature, ", bt_y:", bt_y, ", mean_CI:", mean_CI)
         OEs[iobs] = oe_nature
     return OEs
 
@@ -432,21 +423,13 @@ def archive_filteroutput(time):
 def archive_osq_out(time):
     dir_obsseq = cluster.archivedir + "/obs_seq_out/"
     os.makedirs(dir_obsseq, exist_ok=True)
-    copy(
-        cluster.dartrundir + "/obs_seq.out",
-        dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out"),
-    )
-
-
-def superob():
-    if hasattr(exp, "superob_km"):
-        t = time_module.time()
-        obs = obsseq.ObsSeqOut(cluster.dartrundir + "/obs_seq.out")
-        print("superobbing to", exp.superob_km, "km")
-        obs.superob(window_km=exp.superob_km)
-        obs.to_dart(f=cluster.dartrundir + "/obs_seq.out")
-        print("superob took", int(time_module.time() - t), "seconds")
-
+    copy(cluster.dartrundir + "/obs_seq.out",
+         dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out"))
+    try:
+        copy(cluster.dartrundir + "/obs_seq.out-orig",
+            dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-orig"))
+    except Exception as e:
+        warnings.warn(str(e))
 
 if __name__ == "__main__":
     """Assimilate observations (different obs types)
@@ -486,12 +469,12 @@ if __name__ == "__main__":
     archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
     os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dartrundir)
-    os.system(
-        cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py"
-    )  # link DART binaries to run_DART
-    os.system(
-        "rm -f input.nml obs_seq.in obs_seq.out obs_seq.final"
-    )  # remove any existing observation files
+
+    # link DART binaries to run_DART
+    os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
+
+    # remove any existing observation files
+    os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
     set_DART_nml()
 
     print("prepare nature")
@@ -508,46 +491,35 @@ if __name__ == "__main__":
     # and collect the obs-error for assimilation in a single vector/list
 
     for i, obscfg in enumerate(exp.observations):
+        print('for', obscfg)
         n_obs = obscfg["n_obs"]
-        n_obs_z = len(
-            obscfg.get(
-                "heights",
-                [
-                    1,
-                ],
-            )
-        )
+        levels = obscfg.get("heights", [1,])
+        n_obs_z = len(levels)
         n_obs_3d = n_obs * n_obs_z
 
         do_error_parametrization = (obscfg["error_assimilate"] == False) and (
-            obscfg.get("sat_channel") == 6
-        )
+                                    obscfg.get("sat_channel") == 6)
 
         if do_error_parametrization:
             # get observations for sat 6
-            osq.create_obsseqin_alltypes(
-                time,
-                [
-                    obscfg,
-                ],
-                np.zeros(n_obs_3d),
-            )
+            osq.create_obsseqin_alltypes(time, [obscfg, ], 0)
+
+            # create observations at full resolution
             run_perfect_model_obs()
-            superob()
 
-            # depends on obs_seq.out produced before by run_perfect_model_obs()
-            Hx_nat, _ = read_truth_obs_obsseq(cluster.dartrundir + "/obs_seq.out")
+            # run obs operator (through filter program)
+            # to create truth and prior ensemble Hx 
+            # superob the high-res observations
+            # return the averaged observations / prior Hx
+            Hx_truth, Hx_prior = get_Hx_truth_prior()
 
-            Hx_prior = (
-                obs_operator_ensemble()
-            )  # files are already linked to DART directory
-            err_assim = calc_obserr_WV73(Hx_nat, Hx_prior)
+            # compute the obs error for assimilation on the averaged grid
+            # since the assimilation is done on the averaged grid 
+            err_assim = calc_obserr_WV73(Hx_truth, Hx_prior)
         else:
             err_assim = np.zeros(n_obs_3d) + obscfg["error_assimilate"]
 
-        error_assimilate.extend(
-            err_assim
-        )  # the obs-error we assume for assimilating observations
+        error_assimilate.extend(err_assim)  
 
     ################################################
     print(" 2) generate observations ")
@@ -558,17 +530,25 @@ if __name__ == "__main__":
         error_generate.extend(np.zeros(n_obs_3d) + obscfg["error_generate"])
 
     osq.create_obsseqin_alltypes(time, exp.observations, error_generate)
-
     set_DART_nml()
 
     run_perfect_model_obs()  # actually create observations that are used to assimilate
-    superob()
-    archive_osq_out(time)
+
+    oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+
+    if hasattr(exp, "superob_km"):
+        print("superobbing to", exp.superob_km, "km")
+        oso.superob(window_km=exp.superob_km)
+        copy(cluster.dartrundir + "/obs_seq.out", cluster.dartrundir + "/obs_seq.out-orig")
+        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     ################################################
     print(" 3) assimilate with observation-errors for assimilation")
 
-    replace_errors_obsseqout(cluster.dartrundir + "/obs_seq.out", error_assimilate)
+    oso.df['variance'] = error_assimilate  # replace error variance
+    oso.to_dart(cluster.dartrundir + "/obs_seq.out")
+    archive_osq_out(time)
+
     t = time_module.time()
     assimilate()
     print("filter took", time_module.time() - t, "seconds")

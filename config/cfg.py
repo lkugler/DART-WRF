@@ -7,7 +7,7 @@ class ExperimentConfiguration(object):
         pass
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.19_wb-random_WV_superob2-12"
+exp.expname = "exp_v1.19_wb-random_WV_superob4-12"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.n_nodes = 10
@@ -25,7 +25,7 @@ exp.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/
 exp.cov_loc_vert_km_horiz_km = (1, 30)  
 exp.superob_km = 12
 
-n_obs = 22801  #22801: 2km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
+n_obs = 5776  #5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
 
 vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
