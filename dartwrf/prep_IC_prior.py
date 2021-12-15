@@ -2,7 +2,7 @@ import os, sys, warnings, glob
 import datetime as dt
 
 from config.cfg import exp, cluster
-from .utils import copy, clean_wrfdir, try_remove
+from utils import copy, clean_wrfdir, try_remove
 
 """
 Sets initial condition data (wrfinput/wrfrst file) in the run_WRF directory for each ensemble member 

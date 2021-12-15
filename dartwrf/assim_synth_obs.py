@@ -5,10 +5,10 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from config.cfg import exp, cluster
-from .utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
-from . import create_obsseq as osq
-from . import wrfout_add_geo
-from . import obsseq
+from utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
+import create_obsseq as osq
+import wrfout_add_geo
+import obsseq
 
 earth_radius_km = 6370
 
@@ -168,35 +168,24 @@ def set_DART_nml(just_prior_values=False):
     append_file(cluster.dartrundir + "/input.nml", rttov_nml)
 
 
-def get_Hx_truth_prior():
-
+def run_Hx(time, obscfg):
+    """
     # assumes that prior ensemble is already linked to advance_temp<i>/wrfout_d01
-    print("running obs operator on ensemble forecast")
-    os.chdir(cluster.dartrundir)
-
-    t = time_module.time()
+    Creates 
+        obs_seq.final (file):       observations on (non-averaged) grid
+    """
+    # existing obs_seq.out is a precondition for filter
+    # needs to know where to take observations
+    osq.create_obsseqin_alltypes(time, [obscfg, ], 0)
+    run_perfect_model_obs()
+    
+    print("running H(x) : obs operator on ensemble prior")
 
     # set input.nml to calculate prior Hx 
     set_DART_nml(just_prior_values=True)
 
     # run filter to calculate prior Hx 
     os.system("mpirun -np 12 ./filter &> log.filter.preassim")
-
-    # read prior Hx values from obs_seq.final
-    osf = obsseq.ObsSeq(cluster.dartrundir + '/obs_seq.final')
-
-    if hasattr(exp, "superob_km"):
-        print("superobbing to", exp.superob_km, "km")
-
-        t = time_module.time()
-        osf.superob(window_km=exp.superob_km)
-        print("superob took", int(time_module.time() - t), "seconds")
-
-    prior_Hx = osf.get_prior_Hx_matrix().T
-    truth_Hx = osf.get_truth_Hx()
-
-    print("obs operator ensemble took", int(time_module.time() - t), "seconds")
-    return truth_Hx, prior_Hx
 
 
 def obs_operator_nature(time):
@@ -294,6 +283,15 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
 
 
 def calc_obserr_WV73(Hx_nature, Hx_prior):
+    """Calculate parametrized error (for assimilation)
+    Args:
+        Hx_nature (np.array):       dim (observations)
+        Hx_prior (np.array):        dim (ensemble_members, observations)
+
+    Returns
+        np.array        Observation error std-deviation with dim (observations)
+    """
+
     debug = False
     n_obs = len(Hx_nature)
     OEs = np.ones(n_obs)
@@ -322,8 +320,7 @@ def run_perfect_model_obs():
     if not os.path.exists(cluster.dartrundir + "/obs_seq.out"):
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dartrundir,
-            "\n look for " + cluster.dartrundir + "/log.perfect_model_obs",
-        )
+            "\n look for " + cluster.dartrundir + "/log.perfect_model_obs")
 
 
 def assimilate(nproc=96):
@@ -332,15 +329,15 @@ def assimilate(nproc=96):
     os.chdir(cluster.dartrundir)
     try_remove(cluster.dartrundir + "/obs_seq.final")
     t = time_module.time()
-    os.system(
-        "mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-"
-        + str(int(nproc) - 1)
-        + " -np "
-        + str(int(nproc))
-        + " ./filter > log.filter"
-    )
+    #os.system('mpirun -np 12 ./filter &> log.filter')
+    os.system("".join([
+        "mpirun -genv I_MPI_PIN_PROCESSOR_LIST=0-",
+        str(int(nproc) - 1)," -np ",str(int(nproc))," ./filter > log.filter"]))
     print("./filter took", int(time_module.time() - t), "seconds")
-
+    if not os.path.isfile(cluster.dartrundir + "/obs_seq.final"):
+        raise RuntimeError(
+            "obs_seq.final does not exist in " + cluster.dartrundir,
+            "\n look for " + cluster.dartrundir + "/log.filter")
 
 # currently unused
 # def recycle_output():
@@ -368,9 +365,7 @@ def assimilate(nproc=96):
 #         print('updating', updates, 'in', dart_input, 'from', dart_output)
 #         os.system(cluster.ncks+' -A -v '+updates+' '+dart_output+' '+dart_input)
 
-
 ############### archiving
-
 
 def archive_osq_final(time, posterior_1min=False):
     """Save obs_seq.final file for later.
@@ -425,11 +420,49 @@ def archive_osq_out(time):
     os.makedirs(dir_obsseq, exist_ok=True)
     copy(cluster.dartrundir + "/obs_seq.out",
          dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out"))
-    try:
-        copy(cluster.dartrundir + "/obs_seq.out-orig",
-            dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-orig"))
-    except Exception as e:
-        warnings.warn(str(e))
+    if os.path.isfile(cluster.dartrundir + "/obs_seq.out-orig"):
+        try:
+            copy(cluster.dartrundir + "/obs_seq.out-orig",
+                dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-orig"))
+        except Exception as e:
+            warnings.warn(str(e))
+
+def is_assim_error_parametrized(obscfg):
+    if (obscfg["error_assimilate"] == False) and (
+        obscfg.get("sat_channel") == 6):
+        return True
+    else:
+        return False
+
+def get_parametrized_error(obscfg, df_obs):
+    """Calculate the parametrized error for an ObsRecord
+    This can be all observations or just a subset of all
+
+    Args
+        obscfg ()
+        df_obs (obsseq.ObsRecord):      contains observations from obs_seq.out
+
+    Returns
+        np.array            observation error std-dev for assimilation
+    """
+
+    # run obs operator (through filter program)
+    # creates obs_seq.final containing truth & prior Hx
+    run_Hx(time, obscfg)
+
+    if hasattr(exp, "superob_km"):
+        print("superobbing to", exp.superob_km, "km")
+        t = time_module.time()
+        df_obs.superob(window_km=exp.superob_km)
+        print("superob took", int(time_module.time() - t), "seconds")
+
+    Hx_prior = df_obs.get_prior_Hx().T
+    Hx_truth = df_obs.get_truth_Hx()
+
+    # compute the obs error for assimilation on the averaged grid
+    # since the assimilation is done on the averaged grid
+    return calc_obserr_WV73(Hx_truth, Hx_prior)
+
 
 if __name__ == "__main__":
     """Assimilate observations (different obs types)
@@ -484,49 +517,14 @@ if __name__ == "__main__":
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
 
     ################################################
-    print(" 1) get the assimilation errors in a single vector ")
-    error_assimilate = []
-    # to get the obs-error for assimilation,
-    # we need to get the true obs-space values for the parametrized variable
-    # and collect the obs-error for assimilation in a single vector/list
-
-    for i, obscfg in enumerate(exp.observations):
-        print('for', obscfg)
-        n_obs = obscfg["n_obs"]
-        levels = obscfg.get("heights", [1,])
-        n_obs_z = len(levels)
-        n_obs_3d = n_obs * n_obs_z
-
-        do_error_parametrization = (obscfg["error_assimilate"] == False) and (
-                                    obscfg.get("sat_channel") == 6)
-
-        if do_error_parametrization:
-            # get observations for sat 6
-            osq.create_obsseqin_alltypes(time, [obscfg, ], 0)
-
-            # create observations at full resolution
-            run_perfect_model_obs()
-
-            # run obs operator (through filter program)
-            # to create truth and prior ensemble Hx 
-            # superob the high-res observations
-            # return the averaged observations / prior Hx
-            Hx_truth, Hx_prior = get_Hx_truth_prior()
-
-            # compute the obs error for assimilation on the averaged grid
-            # since the assimilation is done on the averaged grid 
-            err_assim = calc_obserr_WV73(Hx_truth, Hx_prior)
-        else:
-            err_assim = np.zeros(n_obs_3d) + obscfg["error_assimilate"]
-
-        error_assimilate.extend(err_assim)  
-
-    ################################################
-    print(" 2) generate observations ")
+    print(" 1) generate observations with specified obs-error")
 
     # the obs-error we use for generating obs is user-defined
     error_generate = []
     for i, obscfg in enumerate(exp.observations):
+        levels = obscfg.get("heights", [1,])
+        n_obs_z = len(levels)
+        n_obs_3d = obscfg["n_obs"] * n_obs_z
         error_generate.extend(np.zeros(n_obs_3d) + obscfg["error_generate"])
 
     osq.create_obsseqin_alltypes(time, exp.observations, error_generate)
@@ -534,7 +532,13 @@ if __name__ == "__main__":
 
     run_perfect_model_obs()  # actually create observations that are used to assimilate
 
+    # read in the actual observations
     oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+
+    if False:  # only refl < 6 dBz
+        # oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+        oso.df = oso.df[oso.df['truth'].values < 6]
+        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     if hasattr(exp, "superob_km"):
         print("superobbing to", exp.superob_km, "km")
@@ -543,15 +547,26 @@ if __name__ == "__main__":
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     ################################################
-    print(" 3) assimilate with observation-errors for assimilation")
+    print(" 2) define observation-errors for assimilation ")
 
-    oso.df['variance'] = error_assimilate  # replace error variance
+    for obscfg in exp.observations:
+        kind = obscfg['kind']
+        mask_kind = oso.df.kind == kind
+
+        if is_assim_error_parametrized(obscfg):
+
+            assim_err = get_parametrized_error(obscfg, oso.df[mask_kind])
+
+            oso.df[mask_kind] = assim_err**2
+        else:
+            # overwrite with user-defined values
+            oso.df[mask_kind] = obscfg["error_assimilate"]**2
+
     oso.to_dart(cluster.dartrundir + "/obs_seq.out")
-    archive_osq_out(time)
 
-    t = time_module.time()
+    print(" 3) assimilate ")
+    archive_osq_out(time)
     assimilate()
-    print("filter took", time_module.time() - t, "seconds")
 
     archive_filteroutput(time)
     archive_osq_final(time)

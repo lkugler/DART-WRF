@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from config.cfg import exp, cluster
-from .utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
+from utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
 
 
 def plot_box(m, lat, lon, label="", **kwargs):
@@ -47,6 +47,177 @@ def rad_to_degrees(rad):
     return degr
 
 
+
+
+class ObsRecord(pd.DataFrame):
+    """Content of obsseq.ObsSeq instances
+    provides additional methods for pd.DataFrame
+    created inside an ObsSeq instance
+    """
+    @property
+    def _constructor(self):
+        # This ensures that pandas operations return ObsRecord instances
+        # e.g. subsetting df with df[3:4] returns ObsRecord
+        return ObsRecord
+
+    def get_prior_Hx(self):
+        """Return prior Hx array (n_obs, n_ens)"""
+        return self._get_model_Hx(self, 'prior')
+
+    def get_posterior_Hx(self):
+        """Return posterior Hx array (n_obs, n_ens)"""
+        return self._get_model_Hx(self, 'posterior')
+
+    def get_truth_Hx(self):
+        return self['truth'].values
+
+    def _get_model_Hx(self, what):
+        """Return ensemble member info
+
+        Args:
+            self (pd.DataFrame):      usually self.self
+            what (str):             'prior' or 'posterior'
+
+        Returns:
+            np.array
+
+        Works with all observations (self = self.self) 
+        or a subset of observations (self = self.self[343:348])
+        """
+        if what not in  ['prior', 'posterior']:
+            raise ValueError
+
+        # which columns do we need?
+        keys = self.columns
+        keys_bool = np.array([what+' ensemble member' in a for a in keys])
+
+        # select columns in DataFrame
+        Hx = self.iloc[:, keys_bool]
+
+        # consistency check: compute mean over ens - compare with value from file
+        assert np.allclose(Hx.mean(axis=1), self[what+' ensemble mean'])
+        return Hx.values
+
+    def get_lon_lat(self):
+        lats = np.empty(len(self), np.float32)
+        lons = lats.copy()
+
+        for i_obs, values in self.loc3d.items():
+            x, y, z, z_coord = values
+
+            # convert radian to degrees lon/lat
+            lon = rad_to_degrees(x)
+            lat = rad_to_degrees(y)
+            lons[i_obs] = lon
+            lats[i_obs] = lat
+
+        return pd.DataFrame(index=self.index, data=dict(lat=lats, lon=lons))
+
+    def superob(self, window_km):
+        """Select subset, average, overwrite existing obs with average
+
+        TODO: allow different obs types (KIND)
+        TODO: loc3d overwrite with mean
+        Metadata is copied from the first obs in a superob-box
+
+        Note:
+            This routine discards observations (round off)
+            e.g. 31 obs with 5 obs-window => obs #31 is not processed
+
+        Args:
+            window_km (numeric):        horizontal window edge length
+                                        includes obs on edge
+                                        25x25 km with 5 km obs density
+                                        = average 5 x 5 observations
+        """
+        debug = False
+        radius_earth_meters = 6.371 * 1e6
+        m_per_degrees = np.pi * radius_earth_meters / 180  # m per degree latitude
+        km_per_degrees = m_per_degrees / 1000
+
+        def calc_deg_from_km(distance_km, center_lat):
+            """Approximately calculate distance in degrees from meters
+            Input: distance in km; degree latitude
+            Output: distance in degrees of latitude, longitude
+            """
+            assert distance_km > 0, "window size <= 0, must be > 0"
+            dist_deg_lat = distance_km / km_per_degrees
+            dist_deg_lon = dist_deg_lat * np.cos(center_lat * np.pi / 180)
+            return dist_deg_lat, dist_deg_lon
+
+        def calc_km_from_deg(deg_lat, deg_lon, center_lat):
+            dist_km_lat = deg_lat * km_per_degrees
+            dist_km_lon = deg_lon * km_per_degrees * np.cos(center_lat * np.pi / 180)
+            return dist_km_lat, dist_km_lon
+
+        # assume cartesian grid of observations
+        i_obs_grid = self.index.values
+        nx = int(len(i_obs_grid) ** 0.5)
+        i_obs_grid = i_obs_grid.reshape(nx, nx)
+
+        # loop through columns/rows
+        # avoid loop in (lat,lon) space as coordinates are non-cartesian
+        # i.e. first column of observations does not have same longitude
+
+        # determine obs density (approx)
+        coords = self.get_lon_lat()
+        dx_obs_lat_deg = coords.lat.diff().max()
+        km_lat, _ = calc_km_from_deg(dx_obs_lat_deg, np.nan, 45)
+        obs_spacing_km = int(km_lat)
+
+        # how many observations in x/y direction?
+        win_obs = int(window_km / obs_spacing_km)
+        if debug:
+            print('window_km=', window_km)
+            print('obs spacing=', obs_spacing_km)
+            print("window (#obs in x/y)=", win_obs)
+
+        out = self.drop(self.index)  # this df will be filled
+
+        for i in range(0, nx - win_obs, win_obs):
+            for j in range(0, nx - win_obs, win_obs):
+
+                # find indices of observations which lie in the superob box
+                i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs].ravel()
+
+                if debug:
+                    print("index x from", i, 'to', i + win_obs)
+                    print("index y from", j, 'to', j + win_obs)
+                    print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs])
+
+                # average the subset
+                # metadata are assumed to be equal
+                obs_box = self.iloc[i_obs_box]
+
+                obs_mean = obs_box.iloc[0]
+                # despite its name, 'observations' is a single value
+                for key in obs_box:
+                    if key in ['loc3d', 'kind', 'metadata', 'time']:
+                        pass
+                    elif 'spread' in key:  # mean of std deviations
+                        obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
+                    else:
+                        obs_mean.at[key] = obs_box[key].mean()
+
+                if debug:
+                    print("pre_avg:", obs_box.head())
+                    print("avg:", obs_mean)
+
+                out = out.append(obs_mean)
+
+        n_pre_superob = len(self)
+        n_post_superob = len(out)
+
+        # assume square of obs
+        n_windows_x = int(n_pre_superob**.5/win_obs)  # in x-direction
+        n_target_post = n_windows_x**2  # number of windows
+        print('superob from', n_pre_superob, 'obs to', n_post_superob, 'obs')
+        assert n_post_superob == n_target_post, RuntimeError()
+
+        self = out  # overwrite dataframe
+        return self  # output itself (allows to write it to a new name)
+
+
 class ObsSeq(object):
     """Read, manipulate, save obs_seq.out / final files
     """
@@ -57,8 +228,7 @@ class ObsSeq(object):
         self.get_preamble_content()
         self.read_preamble()
 
-        self.dict = self.obs_to_dict()
-        self.df = self.to_pandas()
+        self.df = ObsRecord(self.to_pandas())
 
     def __str__(self):
         return self.df.__str__()
@@ -172,6 +342,11 @@ class ObsSeq(object):
                     obs_list.append(content[obs_begin : obs_end + 1])
 
             assert len(obs_list) > 1
+
+            # consistency check to ensure that all observations have been detected
+            if len(obs_list) != self.num_obs:
+                raise RuntimeError('num_obs read in does not match preamble num_obs '
+                                   +str(len(obs_list))+' != '+str(self.num_obs))
             return obs_list
 
         def one_obs_to_dict(obs_list_entry):
@@ -194,9 +369,7 @@ class ObsSeq(object):
 
             for k, key in enumerate(self.keys_for_values):
                 out[key] = float(lines[1+k].strip())
-            #out["obs"] = float(lines[1].strip())
-            #out["truth"] = float(lines[2].strip())
-            #out["qc"] = float(lines[3].strip())
+
             x, y, z, z_coord = lines[line_loc].split()
             out["loc3d"] = float(x), float(y), float(z), int(z_coord)
             out["kind"] = int(lines[line_kind].strip())
@@ -225,150 +398,6 @@ class ObsSeq(object):
         # each obs is one dictionary
         list_of_obsdict = obs_list_to_dict(obs_list)
         return list_of_obsdict
-
-    def _get_model_Hx(self, what):
-        if what not in  ['prior', 'posterior']:
-            raise ValueError
-
-        # which columns do we need?
-        keys = self.df.columns
-        keys_bool = np.array([what+' ensemble member' in a for a in keys])
-
-        # select columns in DataFrame
-        Hx = self.df.iloc[:, keys_bool]
-
-        # consistency check: compute mean over ens - compare with value from file
-        assert np.allclose(Hx.mean(axis=1), self.df[what+' ensemble mean'])
-
-        return Hx.values
-
-    def get_prior_Hx(self):
-        """Return prior Hx array (n_obs, n_ens)"""
-        return self._get_model_Hx('prior')
-
-    def get_posterior_Hx(self):
-        """Return posterior Hx array (n_obs, n_ens)"""
-        return self._get_model_Hx('posterior')
-
-    def get_truth_Hx(self):
-        return self.df['truth'].values
-
-    def get_lon_lat(self):
-        lats = np.empty(len(self.df), np.float32)
-        lons = lats.copy()
-
-        for i_obs, values in self.df.loc3d.items():
-            x, y, z, z_coord = values
-
-            # convert radian to degrees lon/lat
-            lon = rad_to_degrees(x)
-            lat = rad_to_degrees(y)
-            lons[i_obs] = lon
-            lats[i_obs] = lat
-
-        return pd.DataFrame(index=self.df.index, data=dict(lat=lats, lon=lons))
-
-    def superob(self, window_km):
-        """Select subset, average, overwrite existing obs with average
-
-        TODO: allow different obs types (KIND)
-        TODO: loc3d overwrite with mean
-        Metadata is copied from the first obs in a superob-box
-
-        Note:
-            This routine discards observations (round off)
-            e.g. 31 obs with 5 obs-window => obs #31 is not processed
-
-        Args:
-            window_km (numeric):        horizontal window edge length
-                                        includes obs on edge
-                                        25x25 km with 5 km obs density
-                                        = average 5 x 5 observations
-        """
-        debug = False
-        radius_earth_meters = 6.371 * 1e6
-        m_per_degrees = np.pi * radius_earth_meters / 180  # m per degree latitude
-        km_per_degrees = m_per_degrees / 1000
-
-        def calc_deg_from_km(distance_km, center_lat):
-            """Approximately calculate distance in degrees from meters
-            Input: distance in km; degree latitude
-            Output: distance in degrees of latitude, longitude
-            """
-            assert distance_km > 0, "window size <= 0, must be > 0"
-            dist_deg_lat = distance_km / km_per_degrees
-            dist_deg_lon = dist_deg_lat * np.cos(center_lat * np.pi / 180)
-            return dist_deg_lat, dist_deg_lon
-
-        def calc_km_from_deg(deg_lat, deg_lon, center_lat):
-            dist_km_lat = deg_lat * km_per_degrees
-            dist_km_lon = deg_lon * km_per_degrees * np.cos(center_lat * np.pi / 180)
-            return dist_km_lat, dist_km_lon
-
-        # assume cartesian grid of observations
-        i_obs_grid = self.df.index.values
-        nx = int(len(i_obs_grid) ** 0.5)
-        i_obs_grid = i_obs_grid.reshape(nx, nx)
-
-        # loop through columns/rows
-        # avoid loop in (lat,lon) space as coordinates are non-cartesian
-        # i.e. first column of observations does not have same longitude
-
-        # determine obs density (approx)
-        coords = self.get_lon_lat()
-        dx_obs_lat_deg = coords.lat.diff().max()
-        km_lat, _ = calc_km_from_deg(dx_obs_lat_deg, np.nan, 45)
-        obs_spacing_km = int(km_lat)
-
-        # how many observations in x/y direction?
-        win_obs = int(window_km / obs_spacing_km)
-        if debug:
-            print('window_km=', window_km)
-            print('obs spacing=', obs_spacing_km)
-            print("window (#obs in x/y)=", win_obs)
-
-        out = self.df.drop(self.df.index)  # this df will be filled
-
-        for i in range(0, nx - win_obs, win_obs):
-            for j in range(0, nx - win_obs, win_obs):
-
-                # find indices of observations which lie in the superob box
-                i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs].ravel()
-
-                if debug:
-                    print("index x from", i, 'to', i + win_obs)
-                    print("index y from", j, 'to', j + win_obs)
-                    print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs])
-
-                # average the subset
-                # metadata are assumed to be equal
-                obs_box = self.df.iloc[i_obs_box]
-
-                obs_mean = obs_box.iloc[0]
-                # despite its name, 'observations' is a single value
-                for key in obs_box:
-                    if key in ['loc3d', 'kind', 'metadata', 'time']:
-                        pass
-                    elif 'spread' in key:  # mean of std deviations
-                        obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
-                    else:
-                        obs_mean.at[key] = obs_box[key].mean()
-
-                if debug:
-                    print("pre_avg:", obs_box.head())
-                    print("avg:", obs_mean)
-
-                out = out.append(obs_mean)
-
-        self.df = out  # overwrite input
-        n_pre_superob = self.num_obs
-        n_post_superob = len(self.df)
-
-        # assume square of obs
-        n_windows_x = int(n_pre_superob**.5/win_obs)  # in x-direction
-        n_target_post = n_windows_x**2  # number of windows
-        print('superob from', n_pre_superob, 'obs to', n_post_superob, 'obs')
-        assert n_post_superob == n_target_post, RuntimeError()
 
     def to_pandas(self):
         """Create xr.Dataset containing observations
@@ -462,17 +491,12 @@ class ObsSeq(object):
                                 str(obs["loc3d"][3]),
                             ]
                         ),
-                        "kind", "         " + str(obs["kind"]),
+                        "kind", "         " + str(int(obs["kind"])),
                         "".join(obs["metadata"]),
                     ]
                 )
-                + str(i)
-                + "\n "
-                + obs["time"][0]
-                + "     "
-                + obs["time"][1]
-                + "\n"
-                + str(obs["variance"])
+                + " \n " + obs["time"][0] + "     " + obs["time"][1]
+                + " \n " + str(obs["variance"])
             )
             return out
 
@@ -580,9 +604,11 @@ if __name__ == "__main__":
     # for testing purposes
 
     obs = ObsSeq(cluster.scriptsdir + "/../tests/obs_seq.orig.out")
+    print(type(obs))
 
     # select a subset (lat-lon)
-    obs.superob(window_km=50)
+    obs.df = obs.df[:].superob(window_km=50)
+    print(type(obs.df))
 
     # write to obs_seq.out in DART format
     obs.to_dart(f=cluster.dartrundir + "/obs_seq.out")

@@ -7,7 +7,7 @@ class ExperimentConfiguration(object):
         pass
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.19_wb-random_WV_superob4-12"
+exp.expname = "exp_v1.19_wb-random_Radar_zero"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.n_nodes = 10
@@ -23,9 +23,9 @@ exp.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/
 # needs a horizontal scale too, to calculate the vertical normalization
 # since you can not specify different vertical localizations for diff. variables
 exp.cov_loc_vert_km_horiz_km = (1, 30)  
-exp.superob_km = 12
+#exp.superob_km = 12
 
-n_obs = 5776  #5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
+n_obs = 961  #5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
 
 vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
@@ -65,7 +65,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [wv73]  # 108, wv73, vis]
+exp.observations = [radar]  # 108, wv73, vis]
 #exp.update_vars = ['T', 'QVAPOR', 'QCLOUD', 'QICE','CLDFRA']
 exp.update_vars = ['U', 'V', 'T', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'CLDFRA']
 
