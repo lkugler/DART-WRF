@@ -13,7 +13,7 @@ MAINDIR=<cluster.wrf_rundir_base>
 pinning=(0-11 12-23 24-35 36-47)
 
 mytasks=4
-for i in `seq 1 $mytasks`
+for n in `seq 1 $mytasks`
 do
    IENS="$(((($SLURM_ARRAY_TASK_ID - 1)* 4) + $n))"  # ensemble number (5,6,7,8 for job array element 2)
    RUNDIR=$MAINDIR/$EXPNAME/$IENS
