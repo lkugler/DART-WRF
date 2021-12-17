@@ -62,11 +62,11 @@ class ObsRecord(pd.DataFrame):
 
     def get_prior_Hx(self):
         """Return prior Hx array (n_obs, n_ens)"""
-        return self._get_model_Hx(self, 'prior')
+        return self._get_model_Hx('prior')
 
     def get_posterior_Hx(self):
         """Return posterior Hx array (n_obs, n_ens)"""
-        return self._get_model_Hx(self, 'posterior')
+        return self._get_model_Hx('posterior')
 
     def get_truth_Hx(self):
         return self['truth'].values
