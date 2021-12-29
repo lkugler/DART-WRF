@@ -17,13 +17,13 @@ Functions return a SLURM ID which can be used to trigger the start of another fu
 
 
 ## Workflow
-### Configure your experiment
+#### Configure your experiment
 Define simulation specific variables in [`config/cfg.py`](https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py).
 Define paths for python, ncks, etc. in [`config/clusters.py`](https://github.com/lkugler/DART-WRF/blob/master/config/clusters.py).
 Dependencies are `numpy, pandas, scipy, xarray, netCDF4`. Install non-standard packages with `pip install docopt slurmpy --user`.
 Workflow is defined using meta-routines (functions) like `run_ENS` which are defined in `scheduler.py`.
 
-### Prepare initial conditions (from input_sounding)
+#### Prepare initial conditions (from input_sounding)
 1) Define starting time: 
 `begin = dt.datetime(2008, 7, 30, 6)`
 2) WRF needs directories with certain files:
@@ -43,21 +43,23 @@ id = run_ENS(begin=begin,  # start integration from here
 ```
 where `begin` & `end` are `dt.datetime` objects.
 
-
-### Prepare initial conditions from a previous run (wrfrst/wrfout)
-If you want to assimilate at 9z then you need to set initial conditions from prior: path is `str`, times are `dt.datetime`.
-
-`id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)`
-
-### Assimilate
+### Assimilation experiment
+#### Assimilate
 To assimilate at time `time` use this command:
 
 `id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)`
 
-### Update initial conditions from Data Assimilation
-To update the model state after an assimilation, you need to update the WRF restart files by running
+#### Update initial conditions from Data Assimilation
+In order to continue after assimilation you need the posterior = prior (1) + increments (2)
+
+1. Set prior with this function:
+
+`id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)`
+where path is `str`, times are `dt.datetime`.
+
+2. To update the model state with assimilation increments, you need to update the WRF restart files by running
 `id = update_IC_from_DA(time, depends_on=id)`
-After this, the wrfrst files are copied to the WRF's run directories and you can continue to run the ENS after assimilation using
+After this, the wrfrst files are updated with assimilation increments (filter_restart) and copied to the WRF's run directories so you can continue to run the ENS after assimilation using
 
 ```
 id = run_ENS(begin=time,  # start integration from here
