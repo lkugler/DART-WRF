@@ -185,17 +185,23 @@ class ObsRecord(pd.DataFrame):
                     print("index y from", j, 'to', j + win_obs)
                     print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs])
 
-                # average the subset
-                # metadata are assumed to be equal
+                # select the subset of pd.DataFrame
                 obs_box = self.iloc[i_obs_box]
 
+                # average the subset
+                # metadata are assumed to be equal
                 obs_mean = obs_box.iloc[0]
-                # despite its name, 'observations' is a single value
+
+                # average spread and other values
                 for key in obs_box:
                     if key in ['loc3d', 'kind', 'metadata', 'time']:
                         pass
-                    elif 'spread' in key:  # mean of std deviations
+                    elif 'spread' in key:
+                        # stdev of mean of values = sqrt(mean of variances)
                         obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
+                    elif key == 'variance':
+                        # variance of mean = sum(variances)/n^2
+                        obs_mean.at[key] = obs_box[key].sum()/obs_box[key].size**2
                     else:
                         obs_mean.at[key] = obs_box[key].mean()
 
