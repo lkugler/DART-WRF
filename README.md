@@ -17,27 +17,61 @@ Functions return a SLURM ID which can be used to trigger the start of another fu
 
 
 ## Workflow
-### Configure your experiment
+#### Configure your experiment
 Define simulation specific variables in [`config/cfg.py`](https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py).
 Define paths for python, ncks, etc. in [`config/clusters.py`](https://github.com/lkugler/DART-WRF/blob/master/config/clusters.py).
 Dependencies are `numpy, pandas, scipy, xarray, netCDF4`. Install non-standard packages with `pip install docopt slurmpy --user`.
+Workflow is defined using meta-routines (functions) like `run_ENS` which are defined in `scheduler.py`.
 
-### Prepare initial conditions (from input_sounding)
+#### Prepare initial conditions (from input_sounding)
 1) Define starting time: 
-`begin = dt.datetime(2008, 7, 30, 7)`
+`begin = dt.datetime(2008, 7, 30, 6)`
 2) WRF needs directories with certain files:
 `id = prepare_WRFrundir(begin)` 
 3) Create 3D initial conditions from input_sounding etc.:
 `id = run_ideal(depends_on=id)` 
 
 ### Run free forecast
-...
+Let's say you want to run a free forecast starting at 6z, which you want to use as prior for an assimilation at 9z. Then you need can use the above defined 3 steps to create initial conditions.
+Then you can run an ensemble forecast using:
+```
+id = run_ENS(begin=begin,  # start integration from here
+             end=end,      # integrate until here
+             input_is_restart=False,
+             output_restart_interval=(end-begin).total_seconds()/60,
+             depends_on=id)
+```
+where `begin` & `end` are `dt.datetime` objects.
 
-### Prepare initial conditions from a previous run (wrfrst/wrfout)
-`prepare_IC_from_prior` (set initial state to prior wrfrst/out)
+### Assimilation experiment
+#### Assimilate
+To assimilate observations at dt.datetime `time` use this command:
 
-### Update initial conditions from Data Assimilation
-`update_IC_from_DA` (overwrite assimilated variables in initial state)
+`id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)`
+
+#### Update initial conditions from Data Assimilation
+In order to continue after assimilation you need the posterior = prior (1) + increments (2)
+
+1. Set prior with this function:
+
+`id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)`
+
+where path is `str`, times are `dt.datetime`.
+
+2. To update the model state with assimilation increments, you need to update the WRF restart files by running
+
+`id = update_IC_from_DA(time, depends_on=id)`
+
+After this, the wrfrst files are updated with assimilation increments (filter_restart) and copied to the WRF's run directories so you can continue to run the ENS after assimilation using
+
+```
+id = run_ENS(begin=time,  # start integration from here
+             end=time + timedelta_integrate,  # integrate until here
+             restart_path=cluster.archivedir+prior_init_time.strftime('/%Y-%m-%d_%H:%M/'),
+             output_restart_interval=timedelta_btw_assim.total_seconds()/60,
+             depends_on=id)
+```
+where times are `dt.datetime`; `timedelta` variables are `dt.timedelta`.
 
 ### Examples
 [`scheduler.py`](https://github.com/lkugler/DART-WRF/blob/master/scheduler.py) 
