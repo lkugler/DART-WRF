@@ -45,7 +45,7 @@ where `begin` & `end` are `dt.datetime` objects.
 
 ### Assimilation experiment
 #### Assimilate
-To assimilate at time `time` use this command:
+To assimilate observations at dt.datetime `time` use this command:
 
 `id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)`
 
@@ -55,10 +55,13 @@ In order to continue after assimilation you need the posterior = prior (1) + inc
 1. Set prior with this function:
 
 `id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)`
+
 where path is `str`, times are `dt.datetime`.
 
 2. To update the model state with assimilation increments, you need to update the WRF restart files by running
+
 `id = update_IC_from_DA(time, depends_on=id)`
+
 After this, the wrfrst files are updated with assimilation increments (filter_restart) and copied to the WRF's run directories so you can continue to run the ENS after assimilation using
 
 ```
