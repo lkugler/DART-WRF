@@ -3,7 +3,7 @@
 high level control script
 submitting jobs into SLURM queue
 """
-import os, sys, shutil, glob
+import os, sys, shutil, glob, warnings
 import datetime as dt
 from slurmpy import Slurm
 
@@ -86,12 +86,6 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
     Then run whole timespan with 5 minutes interval.
 
     if input_is_restart:  # start WRF in restart mode
-      if restart_path:  
-        # restart from a wrfrst file in restart_path directory
-        # e.g. when restarting from a state in an archivedir (from any existing experiment)
-      else: 
-        # restart from wrfrst files that are already in run_WRF directories
-        # e.g. after updateIC, it puts wrfrst in run_WRF directories
     """
     id = depends_on
     restart_flag = '.false.' if not input_is_restart else '.true.'
@@ -108,8 +102,6 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
     #             str(hist_interval),
     #             '--radt='+str(radt),
     #             '--restart='+restart_flag,]
-    #     if restart_path:  # restart from a wrfrst file in restart_path directory
-    #         args.append('--rst_inname='+restart_path) 
     #     id = s.run(' '.join(args), depends_on=[id])
 
     #     s = my_Slurm("runWRF1", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
@@ -134,8 +126,6 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
                 str(hist_interval),
                 '--radt='+str(radt),
                 '--restart='+restart_flag,]
-    # if restart_path:
-    #     args.append('--rst_inname='+restart_path)
     if output_restart_interval:
         args.append('--restart_interval='+str(int(float(output_restart_interval))))
 
@@ -235,20 +225,19 @@ if __name__ == "__main__":
     id = None
 
     init_time = dt.datetime(2008, 7, 30, 12)
-    time = dt.datetime(2008, 7, 30, 13)
+    time = dt.datetime(2008, 7, 30, 12,30)
 
     id = prepare_WRFrundir(init_time)
+    #id = run_ideal(depends_on=id)
 
     #prior_path_exp = cluster.archivedir  # 
-    #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem_rst'
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P1_noDA'
+    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_Pwbub5_40mem'
     #id = wrfinput_insert_wbubble(depends_on=id)
     
     prior_init_time = init_time
     prior_valid_time = time
-    id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
-    while time <= dt.datetime(2008, 7, 30, 14):
+    while time <= dt.datetime(2008, 7, 30, 13,30):
 
         # usually we take the prior from the current time
         # but one could use a prior from a different time from another run
@@ -265,13 +254,12 @@ if __name__ == "__main__":
 
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
-        if time == dt.datetime(2008, 7, 30, 14): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(hours=1)
+        if time == dt.datetime(2008, 7, 30, 13,30): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
+            timedelta_integrate = dt.timedelta(hours=2)
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
                     end=time + timedelta_integrate,  # integrate until here
-                    restart_path=cluster.archivedir+prior_init_time.strftime('/%Y-%m-%d_%H:%M/'),
                     output_restart_interval=timedelta_btw_assim.total_seconds()/60,
                     depends_on=id)
 

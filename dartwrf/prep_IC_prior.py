@@ -21,6 +21,7 @@ def create_wrfrst_in_WRF_rundir(time, prior_init_time, prior_path_exp):
     """copies wrfrst to run_WRF directory (for next WRF run)
     """
     # for documentation: Which prior was used? -> write into txt file
+    os.makedirs(cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/'), exist_ok=True)
     os.system('echo "'+prior_path_exp+'\n'+prior_init_time.strftime('/%Y-%m-%d_%H:%M/')
                 +'\n'+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')+'" > '
                 +cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/')+'link_to_prior.txt')
