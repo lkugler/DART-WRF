@@ -434,9 +434,8 @@ def is_assim_error_parametrized(obscfg):
     else:
         return False
 
-def get_parametrized_error(obscfg, df_obs):
-    """Calculate the parametrized error for an ObsRecord
-    This can be all observations or just a subset of all
+def get_parametrized_error(obscfg):
+    """Calculate the parametrized error for an ObsConfig (one obs type)
 
     Args
         obscfg ()
@@ -449,6 +448,8 @@ def get_parametrized_error(obscfg, df_obs):
     # run obs operator (through filter program)
     # creates obs_seq.final containing truth & prior Hx
     run_Hx(time, obscfg)
+    osf = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.final")
+    df_obs = osf.df
 
     if hasattr(exp, "superob_km"):
         print("superobbing to", exp.superob_km, "km")
@@ -554,8 +555,7 @@ if __name__ == "__main__":
         mask_kind = oso.df.kind == kind
 
         if is_assim_error_parametrized(obscfg):
-
-            assim_err = get_parametrized_error(obscfg, oso.df[mask_kind])
+            assim_err = get_parametrized_error(obscfg)
 
             oso.df[mask_kind] = assim_err**2
         else:
@@ -566,6 +566,8 @@ if __name__ == "__main__":
 
     print(" 3) assimilate ")
     archive_osq_out(time)
+    
+    set_DART_nml()
     assimilate()
 
     archive_filteroutput(time)

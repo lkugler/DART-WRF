@@ -379,7 +379,7 @@ class ObsSeq(object):
             x, y, z, z_coord = lines[line_loc].split()
             out["loc3d"] = float(x), float(y), float(z), int(z_coord)
             out["kind"] = int(lines[line_kind].strip())
-            out["metadata"] = lines[line_kind + 1 : -3]
+            out["metadata"] = lines[line_kind + 1 : -2]
             out["time"] = tuple(lines[-2].split())
             out["variance"] = float(lines[-1].strip())
             return out
@@ -406,8 +406,7 @@ class ObsSeq(object):
         return list_of_obsdict
 
     def to_pandas(self):
-        """Create xr.Dataset containing observations
-        Variables = observation types
+        """Create pd.DataFrame with rows=observations
         """
         obs_dict_list = self.obs_to_dict()
 
