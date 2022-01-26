@@ -454,7 +454,7 @@ def get_parametrized_error(obscfg):
     if hasattr(exp, "superob_km"):
         print("superobbing to", exp.superob_km, "km")
         t = time_module.time()
-        df_obs.superob(window_km=exp.superob_km)
+        df_obs = df_obs.superob(window_km=exp.superob_km)
         print("superob took", int(time_module.time() - t), "seconds")
 
     Hx_prior = df_obs.get_prior_Hx().T
@@ -543,7 +543,7 @@ if __name__ == "__main__":
 
     if hasattr(exp, "superob_km"):
         print("superobbing to", exp.superob_km, "km")
-        oso.superob(window_km=exp.superob_km)
+        oso.df = oso.df.superob(window_km=exp.superob_km)
         copy(cluster.dartrundir + "/obs_seq.out", cluster.dartrundir + "/obs_seq.out-orig")
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
@@ -556,7 +556,7 @@ if __name__ == "__main__":
 
         if is_assim_error_parametrized(obscfg):
             assim_err = get_parametrized_error(obscfg)
-
+            
             oso.df[mask_kind] = assim_err**2
         else:
             # overwrite with user-defined values
