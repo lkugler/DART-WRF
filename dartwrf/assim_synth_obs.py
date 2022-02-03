@@ -467,7 +467,6 @@ def set_obserr_assimilate_in_obsseqout(obsseqout, outfile="./obs_seq.out"):
     for obscfg in exp.observations:
         kind_str = obscfg['kind']
         kind = osq.obs_kind_nrs[kind_str]
-        print('kind=',kind)
 
         # modify each kind separately, one after each other
         mask_kind = obsseqout.df.kind == kind

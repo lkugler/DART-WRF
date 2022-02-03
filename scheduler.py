@@ -15,13 +15,25 @@ slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'
 print('logging to', log_dir)
 print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
+class Shellslurm():
+    def __init__(self, *args, **kwargs):
+        pass
+    def run(self, *args, **kwargs):
+        print(args[0])
+        os.system(args[0])
+
 def my_Slurm(*args, cfg_update=dict(), **kwargs):
     """Shortcut to slurmpy's class; keep certain default kwargs
     and only update some with kwarg `cfg_update`
     see https://github.com/brentp/slurmpy
     """
+    debug = True  # run without SLURM, locally on headnode
+    if debug:
+        return Shellslurm(*args)
     return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), 
                  log_dir=log_dir, scripts_dir=slurm_scripts_dir, **kwargs)
+
+
 
 def backup_scripts():
     os.makedirs(cluster.archivedir, exist_ok=True)
@@ -245,7 +257,7 @@ if __name__ == "__main__":
         prior_valid_time = time
 
         id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
-
+        sys.exit()
         # 1) Set posterior = prior
         id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
