@@ -481,7 +481,7 @@ def set_obserr_assimilate_in_obsseqout(obsseqout, outfile="./obs_seq.out"):
             # overwrite with user-defined values
             obsseqout.df.loc[mask_kind, 'variance'] = obscfg["error_assimilate"]**2
 
-    obsseqout.to_dart(outfile+'2')
+    obsseqout.to_dart(outfile)
 
 
 if __name__ == "__main__":
