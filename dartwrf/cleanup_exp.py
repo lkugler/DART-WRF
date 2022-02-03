@@ -1,4 +1,4 @@
-import os, glob
+import os, glob, shutil
 from config.cfg import exp, cluster
 from utils import try_remove
 
@@ -10,7 +10,7 @@ from utils import try_remove
 """
 keep_last_init_wrfrst = True
 
-print('removing files for exp', exp)
+print('removing files for exp', exp.expname)
 
 # 1) wrfrst
 inits = reversed(sorted(glob.glob(cluster.archivedir+'/20??-??-??_??:??')))
@@ -27,9 +27,8 @@ for k, init in enumerate(inits):
             try_remove(f)
 
 # 2) run_DART/exp
-os.removedirs(cluster.dartrundir)
+shutil.rmtree(cluster.dartrundir, ignore_errors=True)
 
 # 3) run_WRF/exp
-for iens in range(1, exp.n_ens+1):
-    os.removedirs(cluster.wrf_rundir(iens))
-    print(cluster.wrf_rundir(iens), 'removed.')
+shutil.rmtree(cluster.wrf_rundir_base+'/'+exp.expname, ignore_errors=True)
+print(cluster.wrf_rundir_base+'/'+exp.expname, 'removed.')

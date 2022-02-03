@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from config.cfg import exp, cluster
-from utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
+from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
 
 
 def plot_box(m, lat, lon, label="", **kwargs):
