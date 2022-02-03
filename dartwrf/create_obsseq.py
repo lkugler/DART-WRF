@@ -10,34 +10,31 @@ from pysolar.solar import get_altitude, get_azimuth
 
 
 def obskind_read():
-    raw_obskind_dart = """
-                    5 RADIOSONDE_TEMPERATURE
-                    6 RADIOSONDE_SPECIFIC_HUMIDITY
-                    12 AIRCRAFT_U_WIND_COMPONENT
-                    13 AIRCRAFT_V_WIND_COMPONENT
-                    14 AIRCRAFT_TEMPERATURE
-                    16 ACARS_U_WIND_COMPONENT
-                    17 ACARS_V_WIND_COMPONENT
-                    18 ACARS_TEMPERATURE
-                    29 LAND_SFC_PRESSURE
-                    30 SAT_U_WIND_COMPONENT
-                    31 SAT_V_WIND_COMPONENT
-                    36 DOPPLER_RADIAL_VELOCITY
-                    37 RADAR_REFLECTIVITY
-                    83 GPSRO_REFRACTIVITY
-                    94 SYNOP_SURFACE_PRESSURE
-                    95 SYNOP_SPECIFIC_HUMIDITY
-                    96 SYNOP_TEMPERATURE
-                254 MSG_4_SEVIRI_RADIANCE
-                255 MSG_4_SEVIRI_TB
-                256 MSG_4_SEVIRI_BDRF"""
+    """Read dictionary of observation types + ID numbers ("kind") 
+    from DART f90 script
+    """
 
-    # lookup table for kind nr
-    alist = raw_obskind_dart.split()
-    assert len(alist) % 2 == 0, alist
+    definitionfile = cluster.dart_srcdir+'/../../../assimilation_code/modules/observations/obs_kind_mod.f90'
+    with open(definitionfile, 'r') as f:
+        kind_def_f = f.readlines()
+
     obskind_nrs = {}
-    for i in range(0, len(alist)-1, 2):
-        obskind_nrs[alist[i+1]] = alist[i]
+    for i, line in enumerate(kind_def_f):
+        if 'Integer definitions for DART OBS TYPES' in line:
+            # data starts below this line
+            i_start = i
+            break
+    for line in kind_def_f[i_start+1:]:
+        if 'MAX_DEFINED_TYPES_OF_OBS' in line:
+            # end of data
+            break
+        if '::' in line:
+            # a line looks like this
+            # integer, parameter, public ::       MSG_4_SEVIRI_TB =   261
+            data = line.split('::')[-1].split('=')
+            kind_str = data[0].strip()
+            kind_nr = int(data[1].strip())
+            obskind_nrs[kind_str] = kind_nr
     return obskind_nrs
 
 
@@ -215,7 +212,7 @@ obs_kind_definitions
 def preamble_multi(n_obs_3d_total, list_kinds):
     lines_obstypedef = ''
     for kind in list_kinds:
-        lines_obstypedef += '\n         '+obs_kind_nrs[kind]+' '+kind
+        lines_obstypedef += '\n         '+str(obs_kind_nrs[kind])+' '+kind
 
     n_obs_str = str(n_obs_3d_total)
     num_obstypes = str(len(list_kinds))
@@ -278,7 +275,7 @@ obdef
 loc3d
      """+lon_rad+"        "+lat_rad+"        "+str(obs['vert_coord'])+"     "+obs['vert_coord_sys']+"""
 kind
-         """+obs['kind_nr']+"""
+         """+str(obs['kind_nr'])+"""
 """+obs['appendix']+"""
 """+obs['secs_thatday']+"""     """+obs['dart_date_day']+"""
 """+str(obs['obserr_var'])
