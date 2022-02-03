@@ -21,7 +21,7 @@ def read_requirements(fname):
 
 setuptools.setup(
     name="dartwrf",
-    version="2021.12.14",
+    version="2022.02.03",
     author="Lukas Kugler",
     author_email="lukas.kugler@univie.ac.at",
     description="Observing system simulation experiments with WRF and DART",

@@ -182,7 +182,7 @@ def update_IC_from_DA(assim_time, depends_on=None):
 
 def create_satimages(init_time, depends_on=None):
     s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "60", "nodes": "1"})
-    id = s.run(cluster.python+' /home/fs71386/lkugler/RTTOV-WRF/run_init.py '+cluster.archivedir
+    id = s.run('/home/fs71386/lkugler/RTTOV-WRF/withmodules /home/fs71386/lkugler/RTTOV-WRF/run_init.py '+cluster.archivedir
                +init_time.strftime('/%Y-%m-%d_%H:%M/'),
           depends_on=[depends_on])
     return id
@@ -203,7 +203,7 @@ def gen_obsseq(depends_on=None):
 
 def verify(depends_on=None):
     s = my_Slurm("verify-"+exp.expname, cfg_update={"time": "240", "mail-type": "FAIL,END", 
-                 "ntasks": "96",  "ntasks-per-node": "96", "ntasks-per-core": "2"})
+                 "ntasks": "40",  "ntasks-per-node": "40", "ntasks-per-core": "1"})
     s.run(cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/analyze_fc.py '+exp.expname+' has_node',
           depends_on=[depends_on])
 
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     id = None
 
     init_time = dt.datetime(2008, 7, 30, 12)
-    time = dt.datetime(2008, 7, 30, 12,30)
+    time = dt.datetime(2008, 7, 30, 12, 30)
 
     id = prepare_WRFrundir(init_time)
     #id = run_ideal(depends_on=id)
@@ -254,13 +254,15 @@ if __name__ == "__main__":
 
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
+        output_restart_interval = timedelta_btw_assim.total_seconds()/60
         if time == dt.datetime(2008, 7, 30, 13,30): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(hours=2)
+            timedelta_integrate = dt.timedelta(hours=3)
+            output_restart_interval = 9999
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
                     end=time + timedelta_integrate,  # integrate until here
-                    output_restart_interval=timedelta_btw_assim.total_seconds()/60,
+                    output_restart_interval=output_restart_interval,
                     depends_on=id)
 
         # as we have WRF output, we can use own exp path as prior
