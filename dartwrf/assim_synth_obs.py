@@ -5,10 +5,10 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from config.cfg import exp, cluster
-from utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
-import create_obsseq as osq
-import wrfout_add_geo
-import obsseq
+from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print
+import dartwrf.create_obsseq as osq
+from dartwrf import wrfout_add_geo
+from dartwrf import obsseq
 
 earth_radius_km = 6370
 
@@ -18,8 +18,8 @@ y_oe = [1, 4.5, 10, 12, 13]  # adjusted observation error
 oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
 
 
-def oe_73(ci):
-    if ci < 13:
+def OE_model_harnisch_WV73(ci):
+    if ci >= 0 and ci < 16:
         return oe_73_linear(ci)
     else:
         return 13.0
@@ -291,21 +291,20 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
     Returns
         np.array        Observation error std-deviation with dim (observations)
     """
-
     debug = False
     n_obs = len(Hx_nature)
     OEs = np.ones(n_obs)
     for iobs in range(n_obs):
-
         bt_y = Hx_nature[iobs]
         bt_x_ens = Hx_prior[:, iobs]
+        
+        # compute Cloud impact for every pair (ensemble, truth)
         CIs = [cloudimpact_73(bt_x, bt_y) for bt_x in bt_x_ens]
         mean_CI = np.mean(CIs)
-
-        oe_nature = oe_73(mean_CI)
+        oe_model = OE_model_harnisch_WV73(mean_CI)
         if debug:
-            print("oe_nature:", oe_nature, ", bt_y:", bt_y, ", mean_CI:", mean_CI)
-        OEs[iobs] = oe_nature
+            print("BT_nature=", bt_y, "=> mean_CI=", mean_CI, "=> OE_assim=", oe_model)
+        OEs[iobs] = oe_model
     return OEs
 
 
@@ -464,6 +463,26 @@ def get_parametrized_error(obscfg):
     # since the assimilation is done on the averaged grid
     return calc_obserr_WV73(Hx_truth, Hx_prior)
 
+def set_obserr_assimilate_in_obsseqout(obsseqout, outfile="./obs_seq.out"):
+    for obscfg in exp.observations:
+        kind_str = obscfg['kind']
+        kind = osq.obs_kind_nrs[kind_str]
+        print('kind=',kind)
+
+        # modify each kind separately, one after each other
+        mask_kind = obsseqout.df.kind == kind
+
+        if is_assim_error_parametrized(obscfg):
+            assim_err = get_parametrized_error(obscfg)            
+            obsseqout.df.loc[mask_kind, 'variance'] = assim_err**2
+            assert np.allclose(assim_err, obsseqout.df['variance']**2)
+
+        else:
+            # overwrite with user-defined values
+            obsseqout.df.loc[mask_kind, 'variance'] = obscfg["error_assimilate"]**2
+
+    obsseqout.to_dart(outfile+'2')
+
 
 if __name__ == "__main__":
     """Assimilate observations (different obs types)
@@ -548,21 +567,8 @@ if __name__ == "__main__":
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     ################################################
-    print(" 2) define observation-errors for assimilation ")
-
-    for obscfg in exp.observations:
-        kind = obscfg['kind']
-        mask_kind = oso.df.kind == kind
-
-        if is_assim_error_parametrized(obscfg):
-            assim_err = get_parametrized_error(obscfg)
-            
-            oso.df[mask_kind] = assim_err**2
-        else:
-            # overwrite with user-defined values
-            oso.df[mask_kind] = obscfg["error_assimilate"]**2
-
-    oso.to_dart(cluster.dartrundir + "/obs_seq.out")
+    print(" 2) assign observation-errors for assimilation ")
+    set_obserr_assimilate_in_obsseqout(oso, outfile=cluster.dartrundir + "/obs_seq.out")
 
     print(" 3) assimilate ")
     archive_osq_out(time)
