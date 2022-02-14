@@ -1,6 +1,7 @@
-import filecmp
-from config.cfg import exp, cluster
+import os, filecmp, shutil
+import numpy as np
 
+from config.cfg import exp, cluster
 from dartwrf import obsseq
 
 
@@ -29,4 +30,4 @@ def test_osf():
     # TODO: compare with given truth
 
 if __name__ == '__main__':
-    test_osf()
+    pass

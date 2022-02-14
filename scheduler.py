@@ -27,7 +27,7 @@ def my_Slurm(*args, cfg_update=dict(), **kwargs):
     and only update some with kwarg `cfg_update`
     see https://github.com/brentp/slurmpy
     """
-    debug = True  # run without SLURM, locally on headnode
+    debug = False  # run without SLURM, locally on headnode
     if debug:
         return Shellslurm(*args)
     return Slurm(*args, slurm_kwargs=dict(cluster.slurm_cfg, **cfg_update), 
@@ -214,16 +214,10 @@ def gen_obsseq(depends_on=None):
 
 
 def verify(depends_on=None):
-    s = my_Slurm("verify-"+exp.expname, cfg_update={"time": "240", "mail-type": "FAIL,END", 
-                 "ntasks": "40",  "ntasks-per-node": "40", "ntasks-per-core": "1"})
-    s.run(cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/analyze_fc.py '+exp.expname+' has_node',
+    s = my_Slurm("verify-"+exp.expname, cfg_update={"time": "240", "mail-type": "FAIL,END", "ntasks": "1", 
+            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    s.run(cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/analyze_fc.py '+exp.expname+' has_node plot',
           depends_on=[depends_on])
-
-
-def cleanup_storage(depends_on=None):
-    my_Slurm('cleanup', cfg_update={"time": "2"}).run(
-        cluster.python+' '+cluster.scripts_rundir+'/cleanup_exp.py '+exp.expname, 
-        depends_on=[depends_on])
 
 
 ################################
@@ -237,19 +231,19 @@ if __name__ == "__main__":
     id = None
 
     init_time = dt.datetime(2008, 7, 30, 12)
-    time = dt.datetime(2008, 7, 30, 12, 30)
+    time = dt.datetime(2008, 7, 30, 13)
 
     id = prepare_WRFrundir(init_time)
     #id = run_ideal(depends_on=id)
 
     #prior_path_exp = cluster.archivedir  # 
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_Pwbub5_40mem'
+    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P1_noDA'
     #id = wrfinput_insert_wbubble(depends_on=id)
     
     prior_init_time = init_time
     prior_valid_time = time
 
-    while time <= dt.datetime(2008, 7, 30, 13,30):
+    while time <= dt.datetime(2008, 7, 30, 14):
 
         # usually we take the prior from the current time
         # but one could use a prior from a different time from another run
@@ -257,7 +251,7 @@ if __name__ == "__main__":
         prior_valid_time = time
 
         id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
-        sys.exit()
+
         # 1) Set posterior = prior
         id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
@@ -267,8 +261,8 @@ if __name__ == "__main__":
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
         output_restart_interval = timedelta_btw_assim.total_seconds()/60
-        if time == dt.datetime(2008, 7, 30, 13,30): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(hours=3)
+        if time == dt.datetime(2008, 7, 30, 14): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
+            timedelta_integrate = dt.timedelta(hours=1)
             output_restart_interval = 9999
 
         # 3) Run WRF ensemble
@@ -288,7 +282,5 @@ if __name__ == "__main__":
         # update time variables
         prior_init_time = time - timedelta_btw_assim
 
-
-    cleanup_storage(id)
     id = gen_obsseq(id)
     verify(id)
