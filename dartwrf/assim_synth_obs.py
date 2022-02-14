@@ -12,18 +12,15 @@ from dartwrf import obsseq
 
 earth_radius_km = 6370
 
-# Kelvin, fit of Fig 7b, Harnisch 2016
-x_ci = [0, 5, 10.5, 13, 16]  # average cloud impact
-y_oe = [1, 4.5, 10, 12, 13]  # adjusted observation error
-oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
-
-
 def OE_model_harnisch_WV73(ci):
     if ci >= 0 and ci < 16:
+        # Kelvin, fit of Fig 7b, Harnisch 2016
+        x_ci = [0, 5, 10.5, 13, 16]  # average cloud impact [K]
+        y_oe = [1, 4.5, 10, 12, 13]  # adjusted observation error [K]
+        oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
         return oe_73_linear(ci)
     else:
         return 13.0
-
 
 def cloudimpact_73(bt_mod, bt_obs):
     """
@@ -150,15 +147,15 @@ def set_DART_nml(just_prior_values=False):
         "<list_cutoffs>": ", ".join(list_cov_loc_radian),
     }
 
-    # if cov_loc_vert_km:
-    options["<horiz_dist_only>"] = ".true."
-
-    cov_loc_vert_km, cov_loc_horiz_km = exp.cov_loc_vert_km_horiz_km
-    vert_norm_hgt = to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km)
-    options["<vert_norm_hgt>"] = str(vert_norm_hgt)
-    # else:
-    #     options['<horiz_dist_only>'] = '.true.'
-    #     options['<vert_norm_hgt>'] = '50000.0'  # dummy value
+    # Note: only one value of vertical localization possible
+    if hasattr(exp, 'cov_loc_vert_km_horiz_km'):
+        options["<horiz_dist_only>"] = ".false."
+        cov_loc_vert_km, cov_loc_horiz_km = exp.cov_loc_vert_km_horiz_km
+        vert_norm_hgt = to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km)
+        options["<vert_norm_hgt>"] = str(vert_norm_hgt)
+    else:
+        options["<horiz_dist_only>"] = ".true."
+        options["<vert_norm_hgt>"] = "99999.0"  # dummy value
 
     for key, value in options.items():
         sed_inplace(cluster.dartrundir + "/input.nml", key, value)
@@ -474,7 +471,7 @@ def set_obserr_assimilate_in_obsseqout(obsseqout, outfile="./obs_seq.out"):
         if is_assim_error_parametrized(obscfg):
             assim_err = get_parametrized_error(obscfg)            
             obsseqout.df.loc[mask_kind, 'variance'] = assim_err**2
-            assert np.allclose(assim_err, obsseqout.df['variance']**2)
+            #assert np.allclose(assim_err, obsseqout.df['variance']**2)
 
         else:
             # overwrite with user-defined values
