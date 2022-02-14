@@ -1,34 +1,26 @@
-import os, glob, shutil
-from config.cfg import exp, cluster
+import os, sys, glob, shutil
 from utils import try_remove
 
-"""Run this script after an experiment to reduce cluster disk usage.
+"""Run this script to reduce wrfrst files
 
-1) remove wrfrst
-2) remove run_DART folders from exp
-3) remove run_WRF files from exp
+Example call:
+    python ./cleanup_exp.py
 """
 keep_last_init_wrfrst = True
 
-print('removing files for exp', exp.expname)
-
-# 1) wrfrst
-inits = reversed(sorted(glob.glob(cluster.archivedir+'/20??-??-??_??:??')))
-for k, init in enumerate(inits):
-    rst_files = glob.glob(init+'/*/wrfrst_*')
-
-    if k == 0:  # last init of exp
-        
-        if not keep_last_init_wrfrst:
-            for f in rst_files:
-                try_remove(f)
-    else:
-        for f in rst_files:
-            try_remove(f)
-
-# 2) run_DART/exp
-shutil.rmtree(cluster.dartrundir, ignore_errors=True)
-
-# 3) run_WRF/exp
-shutil.rmtree(cluster.wrf_rundir_base+'/'+exp.expname, ignore_errors=True)
-print(cluster.wrf_rundir_base+'/'+exp.expname, 'removed.')
+datadir = '/gpfs/data/fs71386/lkugler/sim_archive/'
+#exp = sys.argv[1]
+for exp in os.listdir(datadir):
+    
+    print('removing files for exp', exp)
+    
+    inits = glob.glob(datadir+exp+'/20??-??-??_??:??')
+    for init in inits:
+        for iens in range(1, 41):
+            rst_files = sorted(glob.glob(init+'/'+str(iens)+'/wrfrst_*'))
+            #print(rst_files)
+            if len(rst_files)>1:
+                for f in sorted(rst_files)[:-1]:
+                    try_remove(f)
+                    print(f, 'removed')
+    
