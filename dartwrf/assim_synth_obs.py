@@ -305,14 +305,14 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
     return OEs
 
 
-def run_perfect_model_obs():
+def run_perfect_model_obs(nproc=12):
     print("generating observations - running ./perfect_model_obs")
     os.chdir(cluster.dartrundir)
 
     try_remove(cluster.dartrundir + "/obs_seq.out")
     if not os.path.exists(cluster.dartrundir + "/obs_seq.in"):
         raise RuntimeError("obs_seq.in does not exist in " + cluster.dartrundir)
-    os.system("mpirun -np 12 ./perfect_model_obs > log.perfect_model_obs")
+    os.system("mpirun -np "+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
     if not os.path.exists(cluster.dartrundir + "/obs_seq.out"):
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dartrundir,
@@ -554,6 +554,9 @@ if __name__ == "__main__":
     if False:  # only refl < 6 dBz
         # oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
         oso.df = oso.df[oso.df['truth'].values < 6]
+        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+    if True:
+        oso.df.loc[oso.df['observations'].values < 0.293, ('observations')] = 0.293  # set reflectance to sky clear
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     if hasattr(exp, "superob_km"):
