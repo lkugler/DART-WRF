@@ -7,6 +7,12 @@ from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_re
 
 
 def plot_box(m, lat, lon, label="", **kwargs):
+    """"Draw bounding box
+
+    Args:
+        m (mpl_toolkits.basemap.Basemap)
+        lat, lon (np.array)     2-dimensional arrays of longitudes, latitudes
+    """
 
     m.drawgreatcircle(
         lon[0, -1], lat[0, -1], lon[0, 0], lat[0, 0], del_s=20, zorder=4, **kwargs
@@ -102,16 +108,31 @@ class ObsRecord(pd.DataFrame):
         lats = np.empty(len(self), np.float32)
         lons = lats.copy()
 
-        for i_obs, values in self.loc3d.items():
+        for i, (i_obs, values) in enumerate(self.loc3d.items()):
             x, y, z, z_coord = values
 
             # convert radian to degrees lon/lat
             lon = rad_to_degrees(x)
             lat = rad_to_degrees(y)
-            lons[i_obs] = lon
-            lats[i_obs] = lat
+            lons[i] = lon
+            lats[i] = lat
 
         return pd.DataFrame(index=self.index, data=dict(lat=lats, lon=lons))
+
+    def get_from_cartesian_grid(self, i, j):
+        """Get the observation using cartesian grid indices (ix, iy)
+        """
+        # indices of observations (starting from 0)
+        i_obs_grid = self.index.values
+
+        # number of obs in one direction
+        nx = int(len(i_obs_grid) ** 0.5)
+
+        # indices to the pandas.DataFrame
+        i_obs_grid = i_obs_grid.reshape(nx, nx)
+
+        # find indices of observations within pandas.DataFrame
+        return self.iloc[i_obs_grid[i, j].ravel()]
 
     def superob(self, window_km):
         """Select subset, average, overwrite existing obs with average
@@ -150,22 +171,27 @@ class ObsRecord(pd.DataFrame):
             dist_km_lon = deg_lon * km_per_degrees * np.cos(center_lat * np.pi / 180)
             return dist_km_lat, dist_km_lon
 
-        # assume cartesian grid of observations
+        # indices of observations (starting from 0)
         i_obs_grid = self.index.values
+
+        # get the observation indices on a cartesian grid (ix, iy)
         nx = int(len(i_obs_grid) ** 0.5)
         i_obs_grid = i_obs_grid.reshape(nx, nx)
 
         # loop through columns/rows
         # avoid loop in (lat,lon) space as coordinates are non-cartesian
-        # i.e. first column of observations does not have same longitude
+        # i.e. first column of observations has different longitudes!
 
         # determine obs density (approx)
+        # TODO: error prone section
+        # from IPython import embed; embed()
         coords = self.get_lon_lat()
         dx_obs_lat_deg = coords.lat.diff().max()
         km_lat, _ = calc_km_from_deg(dx_obs_lat_deg, np.nan, 45)
         obs_spacing_km = int(km_lat)
 
-        # how many observations in x/y direction?
+        # how many observations in x/y direction in one superob box
+        # in total there are win_obs**2 many observations inside
         win_obs = int(window_km / obs_spacing_km)
         if debug:
             print('window_km=', window_km)
@@ -173,11 +199,12 @@ class ObsRecord(pd.DataFrame):
             print("window (#obs in x/y)=", win_obs)
 
         out = self.drop(self.index)  # this df will be filled
+        boxes = []
 
-        for i in range(0, nx - win_obs, win_obs):
-            for j in range(0, nx - win_obs, win_obs):
+        for i in range(0, nx+1 - win_obs, win_obs):
+            for j in range(0, nx+1 - win_obs, win_obs):
 
-                # find indices of observations which lie in the superob box
+                # find indices of observations within superob window
                 i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs].ravel()
 
                 if debug:
@@ -185,8 +212,20 @@ class ObsRecord(pd.DataFrame):
                     print("index y from", j, 'to', j + win_obs)
                     print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs])
 
-                # select the subset of pd.DataFrame
-                obs_box = self.iloc[i_obs_box]
+                # find observations within superob window
+                obs_box = self.get_from_cartesian_grid(slice(i, i + win_obs),
+                                                       slice(j, j + win_obs))
+                # from IPython import embed; embed()
+                # save boundary of box to list, for plotting later
+                eps = dx_obs_lat_deg/2  # for plotting
+                eps2 = eps*0.8  # for plotting
+                lat1, lon1 = self.get_from_cartesian_grid(i, j).get_lon_lat().values[0]
+                lat2, lon2 = self.get_from_cartesian_grid(i+win_obs-1, j).get_lon_lat().values[0]
+                lat3, lon3 = self.get_from_cartesian_grid(i, j+win_obs-1).get_lon_lat().values[0]
+                lat4, lon4 = self.get_from_cartesian_grid(i+win_obs-1, j+win_obs-1).get_lon_lat().values[0]
+
+                boxes.append(([lat1-eps2, lat2+eps2, lat3-eps2, lat4+eps2],
+                              [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
 
                 # average the subset
                 # metadata are assumed to be equal
@@ -205,6 +244,20 @@ class ObsRecord(pd.DataFrame):
                     else:
                         obs_mean.at[key] = obs_box[key].mean()
 
+                # define location of superobservation
+                if win_obs % 2 == 0:
+                    # even number of observations in x-direction
+                    # there is no center obs
+                    raise NotImplementedError()
+                else:
+                    # odd number of observations in x-direction
+                    # -> there is an observation in the middle
+                    # take the location of that obs
+                    # int(win_obs/2) is the index of the center element when indices start at 0
+                    i_obs_center = i_obs_grid[i + int(win_obs/2),
+                                              j + int(win_obs/2)]
+                    obs_mean.at['loc3d'] = self.iloc[i_obs_center]['loc3d']
+
                 if debug:
                     print("pre_avg:", obs_box.head())
                     print("avg:", obs_mean)
@@ -213,13 +266,17 @@ class ObsRecord(pd.DataFrame):
 
         n_pre_superob = len(self)
         n_post_superob = len(out)
+        out.attrs['boxes'] = boxes
 
         # assume square of obs
         n_windows_x = int(n_pre_superob**.5/win_obs)  # in x-direction
         n_target_post = n_windows_x**2  # number of windows
         print('superob from', n_pre_superob, 'obs to', n_post_superob, 'obs')
-        assert n_post_superob == n_target_post, RuntimeError()
+        if n_post_superob != n_target_post:
+            raise RuntimeError('expected', n_target_post, 'superobservations, but created', 
+                                n_post_superob)
 
+        out.attrs['df_pre_superob'] = self  # original data
         self = out  # overwrite dataframe
         return self  # output itself (allows to write it to a new name)
 
@@ -347,7 +404,8 @@ class ObsSeq(object):
                     obs_end = i
                     obs_list.append(content[obs_begin : obs_end + 1])
 
-            assert len(obs_list) > 1
+            if not len(obs_list) > 1:
+                warnings.warn('len(obs_list)='+str(len(obs_list)))
 
             # consistency check to ensure that all observations have been detected
             if len(obs_list) != self.num_obs:
@@ -525,7 +583,8 @@ class ObsSeq(object):
         write_file(outstr, output_path=f)
 
 
-    def plot(self, box=None):
+    def plot(self, f_out="./map_obs_superobs.png"):
+        print('plotting obs...')
         import matplotlib as mpl
 
         mpl.use("agg")
@@ -561,48 +620,57 @@ class ObsSeq(object):
         m.drawcoastlines(color="white")
         m.drawcountries(color="white")
 
-        plot_box(m, lat, lon, label="domain", color="green", lw=4)
+        plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
 
         # OBSERVATIONS
-        coords = self.get_lon_lat()
+        original_df = self.df.attrs['df_pre_superob']
+        coords = original_df.get_lon_lat()
         lats = coords.lat.values
         longs = coords.lon.values
         coords = zip(lats, longs)
 
+        label="observed pixel"
         for lati, long in coords:
-            m.plot(
-                long,
-                lati,
-                ".",
-                markersize=5,
+            m.plot(long, lati, ".",
+                markersize=0.4, #4,
                 latlon=True,
-                color="red",
+                color="grey",
+                label=label,
                 zorder=4,
             )
+            label=''
 
-        m.plot(
-            [],
-            [],
-            "s",
-            markersize=0.3,
-            label="observations",
-            color="red",
-            zorder=4,
-        )
+        # after superob
+        coords = self.df.get_lon_lat()
+        lats = coords.lat.values
+        longs = coords.lon.values
+        coords = zip(lats, longs)
 
-        if box:
-            lats = box["lat"]
-            longs = box["lon"]
-            lats, longs = np.meshgrid(lats, longs)
-            print(lats, longs)
+        label = 'superobservation'
+        for lati, long in coords:
+            m.plot(long, lati, ".",
+                markersize=0.5, #5,
+                latlon=True,
+                color="red",
+                label=label,
+                zorder=4,
+            )
+            label = ''
 
-            plot_box(m, lats, longs, label="superob", color="white", lw=1)
+
+        #from IPython import embed; embed()
+        if self.df.attrs['boxes']:
+            label = 'superob'
+            for lats, lons in self.df.attrs['boxes']:
+                lats, lons = np.meshgrid(lats, lons)
+
+                plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
+                label = ''
 
         plt.legend()
         plt.tight_layout()
-        f = "/home/fs71386/lkugler/data/analysis/map_obs_superobs.png"
-        plt.savefig(f, dpi=300)
-        print(f, "saved.")
+        plt.savefig(f_out, dpi=600)
+        print(f_out, "saved.")
 
 
 if __name__ == "__main__":
