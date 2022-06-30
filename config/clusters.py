@@ -77,7 +77,7 @@ vsc.archive_base = '/gpfs/data/fs71386/lkugler/sim_archive/'
 
 # paths used as input
 vsc.srcdir = '/gpfs/data/fs71386/lkugler/compile/WRF/WRF-4.3/run'
-vsc.dart_srcdir = '/gpfs/data/fs71386/lkugler/compile/DART/DART-9.11.9/models/wrf/work'
+vsc.dart_srcdir = '/gpfs/data/fs71386/lkugler/compile/DART/DART/models/wrf/work'
 vsc.rttov_srcdir = '/gpfs/data/fs71386/lkugler/compile/RTTOV13/rtcoef_rttov13/'
 vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/dartwrf/'
 

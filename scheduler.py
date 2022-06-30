@@ -52,10 +52,10 @@ def backup_scripts():
 def prepare_WRFrundir(init_time):
     """Create WRF/run directories and wrfinput files
     """
-    s = my_Slurm("prep_wrfrundir", cfg_update={"time": "5", "mail-type": "BEGIN"})
-    id = s.run(cluster.python+' '+cluster.scripts_rundir+'/prepare_wrfrundir.py '
-                +init_time.strftime('%Y-%m-%d_%H:%M'))
-    return id
+    cmd = cluster.python+' '+cluster.scripts_rundir+'/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
+    print(cmd)
+    os.system(cmd)
+    # return id
 
 def run_ideal(depends_on=None):
     """Run ideal for every ensemble member"""
@@ -200,7 +200,7 @@ def update_IC_from_DA(assim_time, depends_on=None):
 
 
 def create_satimages(init_time, depends_on=None):
-    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "60", "nodes": "1"})
+    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "80", "nodes": "1"})
     id = s.run('/home/fs71386/lkugler/RTTOV-WRF/withmodules /home/fs71386/lkugler/RTTOV-WRF/run_init.py '+cluster.archivedir
                +init_time.strftime('/%Y-%m-%d_%H:%M/'),
           depends_on=[depends_on])
@@ -220,12 +220,23 @@ def gen_obsseq(depends_on=None):
     return id
 
 
-def verify(depends_on=None):
-    s = my_Slurm("verify-"+exp.expname, cfg_update={"time": "240", "mail-type": "FAIL,END", "ntasks": "1", 
+def verify_sat(depends_on=None):
+    s = my_Slurm("verif-SAT-"+exp.expname, cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "1", 
             "ntasks-per-node": "1", "ntasks-per-core": "1"})
-    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat wrf verif1d FSS BS'
+    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
+def verify_wrf(depends_on=None):
+    s = my_Slurm("verif-WRF-"+exp.expname, cfg_update={"time": "180", "mail-type": "FAIL,END", "ntasks": "1", 
+            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
+    s.run(cmd, depends_on=[depends_on])
+
+def verify_fast(depends_on=None):
+    s = my_Slurm("verif-fast-"+exp.expname, cfg_update={"time": "30", "mail-type": "FAIL", "ntasks": "1",
+            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
+    s.run(cmd, depends_on=[depends_on])
 
 ################################
 if __name__ == "__main__":
@@ -237,21 +248,37 @@ if __name__ == "__main__":
     backup_scripts()
     id = None
 
-    init_time = dt.datetime(2008, 7, 30, 12)
-    time = dt.datetime(2008, 7, 30, 12, 30)
+    if False:  # warm bubble
+        prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
-    id = prepare_WRFrundir(init_time)
-    #id = run_ideal(depends_on=id)
+        init_time = dt.datetime(2008, 7, 30, 12)
+        time = dt.datetime(2008, 7, 30, 12,30)
+        last_assim_time = dt.datetime(2008, 7, 30, 13,30)
+        forecast_until = dt.datetime(2008, 7, 30, 18)
+    
+        prepare_WRFrundir(init_time)
+        id = run_ideal(depends_on=id)
+        id = wrfinput_insert_wbubble(depends_on=id)    
+
+    if True:  # random
+        prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P2_noDA'
+
+        init_time = dt.datetime(2008, 7, 30, 12)
+        time = dt.datetime(2008, 7, 30, 13)
+        last_assim_time = dt.datetime(2008, 7, 30, 14)
+        forecast_until = dt.datetime(2008, 7, 30, 18)
+
+        prepare_WRFrundir(init_time)
+        id = run_ideal(depends_on=id)
+
 
     #prior_path_exp = cluster.archivedir  # 
-    #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P2_noDA'
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P3_wbub7_noDA'
-    #id = wrfinput_insert_wbubble(depends_on=id)
+    #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5+su_noDA'
     
     prior_init_time = init_time
     prior_valid_time = time
 
-    while time <= dt.datetime(2008, 7, 30, 13, 30):
+    while time <= last_assim_time:
 
         # usually we take the prior from the current time
         # but one could use a prior from a different time from another run
@@ -269,9 +296,9 @@ if __name__ == "__main__":
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
         output_restart_interval = timedelta_btw_assim.total_seconds()/60
-        if time == dt.datetime(2008, 7, 30, 13,30): #this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = dt.timedelta(hours=4.5)
-            output_restart_interval = 9999
+        if time == last_assim_time: #this_forecast_init.minute in [0,]:  # longer forecast every full hour
+            timedelta_integrate = forecast_until - last_assim_time  # dt.timedelta(hours=4)
+            output_restart_interval = 9999 #timedelta_btw_assim.total_seconds()/60 # 9999
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
@@ -291,4 +318,6 @@ if __name__ == "__main__":
         prior_init_time = time - timedelta_btw_assim
 
     id = gen_obsseq(id)
-    verify(id_sat)
+    verify_sat(id_sat)
+    verify_wrf(id)
+    verify_fast(id)

@@ -1,3 +1,8 @@
+"""Read, modify and save DART obs_seq files.
+
+Not usable for creating obs_seq, since it does not know which metadata is necessary for each type
+"""
+
 import os, sys, shutil, warnings
 import numpy as np
 import pandas as pd

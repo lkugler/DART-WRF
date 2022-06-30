@@ -48,7 +48,7 @@
    aerosl_type            = 1
    add_clouds             = .true.
    ice_scheme             = 1
-   use_icede              = .false.
+   use_icede              = .true.
    idg_scheme             = 1
    user_aer_opt_param     = .false.
    user_cld_opt_param     = .false.

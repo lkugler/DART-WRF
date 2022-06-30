@@ -1,6 +1,10 @@
 import os, sys, shutil, glob
 import builtins as __builtin__
 #copy = shutil.copy
+import subprocess
+
+def shell(cmd):
+    subprocess.check_output(cmd.split(' '), shell=True)
 
 def print(*args):
     __builtin__.print(*args, flush=True)
@@ -20,9 +24,6 @@ def try_remove(f):
 
 def mkdir(path):
     os.system('mkdir -p '+path)
-
-def mkdir_srvx8(path):
-    os.system('ssh a1254888@srvx8.img.univie.ac.at mkdir -p '+path)
 
 def script_to_str(path):
     return open(path, 'r').read()
