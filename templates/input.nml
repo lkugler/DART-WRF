@@ -57,7 +57,7 @@
    output_sd                = .true.
    write_all_stages_at_end  = .false.
 
-   inf_flavor                  = 0,                      4,
+   inf_flavor                  = 0,                      <post_inflation>,
    inf_initial_from_restart    = .true.,                 .false.,
    inf_sd_initial_from_restart = .true.,                 .false.,
    inf_initial                 = 1.00,                    0.90,
@@ -107,7 +107,7 @@
    cutoff                          = <cov_loc_radian>,
    sort_obs_inc                    = .false.,
    spread_restoration              = .false.,
-   sampling_error_correction       = .true.,
+   sampling_error_correction       = <sampling_error_correction>,
    adaptive_localization_threshold = -1,
    output_localization_diagnostics = .false.,
    localization_diagnostics_file   = 'localization_diagnostics',
