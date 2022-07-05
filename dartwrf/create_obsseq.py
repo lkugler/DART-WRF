@@ -281,100 +281,100 @@ kind
 """+str(obs['obserr_var'])
 
 
-def create_obsseq_in_separate_obs(time_dt, obscfg, obs_errors=False,
-                     archive_obs_coords=False):
-    """Create obs_seq.in of one obstype
+# def create_obsseq_in_separate_obs(time_dt, obscfg, obs_errors=False,
+#                      archive_obs_coords=False):
+#     """Create obs_seq.in of one obstype
 
-    Args:
-        time_dt (dt.datetime): time of observation
-        obscfg (dict)
-        obs_errors (int, np.array) : values of observation errors (standard deviations)
-            e.g. 0 = use zero error
-        archive_obs_coords (str, False): path to folder
+#     Args:
+#         time_dt (dt.datetime): time of observation
+#         obscfg (dict)
+#         obs_errors (int, np.array) : values of observation errors (standard deviations)
+#             e.g. 0 = use zero error
+#         archive_obs_coords (str, False): path to folder
 
-    channel_id (int): SEVIRI channel number
-        see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
+#     channel_id (int): SEVIRI channel number
+#         see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
         
-    coords (list of 2-tuples with (lat,lon))
-    obserr_std (np.array): shape (n_obs,), one value for each observation, 
-        gaussian error with this std-dev is added to the truth at observation time
-    archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
-    """
+#     coords (list of 2-tuples with (lat,lon))
+#     obserr_std (np.array): shape (n_obs,), one value for each observation, 
+#         gaussian error with this std-dev is added to the truth at observation time
+#     archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
+#     """
 
-    n_obs = obscfg['n_obs']
-    coords = calc_obs_locations(n_obs, 
-                coords_from_domaincenter=False, 
-                distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
-                fpath_coords=archive_obs_coords)
+#     n_obs = obscfg['n_obs']
+#     coords = calc_obs_locations(n_obs, 
+#                 coords_from_domaincenter=False, 
+#                 distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
+#                 fpath_coords=archive_obs_coords)
 
-    kind = obscfg['kind']
-    sat_channel = obscfg.get('sat_channel', False)
+#     kind = obscfg['kind']
+#     sat_channel = obscfg.get('sat_channel', False)
 
-    # determine vertical coordinates
-    if not sat_channel:
-        if 'SYNOP' in kind:
-            vert_coord_sys = "-1"  # meters AGL
-            vert_coords = [2, ]
-        else:
-            vert_coord_sys = "3"  # meters AMSL
-            vert_coords = obscfg['heights']
-    else:
-        vert_coord_sys = "-2"  # undefined height
-        vert_coords = ["-888888.0000000000", ]
+#     # determine vertical coordinates
+#     if not sat_channel:
+#         if 'SYNOP' in kind:
+#             vert_coord_sys = "-1"  # meters AGL
+#             vert_coords = [2, ]
+#         else:
+#             vert_coord_sys = "3"  # meters AMSL
+#             vert_coords = obscfg['heights']
+#     else:
+#         vert_coord_sys = "-2"  # undefined height
+#         vert_coords = ["-888888.0000000000", ]
 
-    coords = append_hgt_to_coords(coords, vert_coords)
-    n_obs_3d = len(coords)
+#     coords = append_hgt_to_coords(coords, vert_coords)
+#     n_obs_3d = len(coords)
 
-    # define obs error
-    obserr_std = np.zeros(n_obs_3d) 
-    if obs_errors:
-        obserr_std += obs_errors
+#     # define obs error
+#     obserr_std = np.zeros(n_obs_3d) 
+#     if obs_errors:
+#         obserr_std += obs_errors
 
-    # other stuff for obsseq.in
-    obs_kind_nr = obs_kind_nrs[kind]
-    line_obstypedef = '         '+obs_kind_nr+' '+kind
+#     # other stuff for obsseq.in
+#     obs_kind_nr = obs_kind_nrs[kind]
+#     line_obstypedef = '         '+obs_kind_nr+' '+kind
 
-    time_dt = add_timezone_UTC(time_dt)
-    dart_date_day, secs_thatday = get_dart_date(time_dt)
-    print('secs, days:', secs_thatday, dart_date_day)
+#     time_dt = add_timezone_UTC(time_dt)
+#     dart_date_day, secs_thatday = get_dart_date(time_dt)
+#     print('secs, days:', secs_thatday, dart_date_day)
 
-    if sat_channel:
-        sun_az = str(get_azimuth(lat0, lon0, time_dt))
-        sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
-        print('sunzen', sun_zen, 'sunazi', sun_az)
+#     if sat_channel:
+#         sun_az = str(get_azimuth(lat0, lon0, time_dt))
+#         sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
+#         print('sunzen', sun_zen, 'sunazi', sun_az)
 
-        appendix = """visir
-   """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
-   """+sun_zen+"""
-          12           4          21           """+str(sat_channel)+"""
-  -888888.000000000
-           1"""
-    else:
-        appendix = ''
+#         appendix = """visir
+#    """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
+#    """+sun_zen+"""
+#           12           4          21           """+str(sat_channel)+"""
+#   -888888.000000000
+#            1"""
+#     else:
+#         appendix = ''
 
-    txt = preamble(n_obs_3d, line_obstypedef)
+#     txt = preamble(n_obs_3d, line_obstypedef)
 
-    for i_obs in range(n_obs_3d):
-        last = False
-        if i_obs == int(n_obs_3d)-1:
-            last = True  # last_observation
+#     for i_obs in range(n_obs_3d):
+#         last = False
+#         if i_obs == int(n_obs_3d)-1:
+#             last = True  # last_observation
 
-        txt += write_section(dict(i=i_obs+1,
-                                  kind_nr=obs_kind_nr,
-                                  dart_date_day=dart_date_day,
-                                  secs_thatday=secs_thatday,
-                                  lon=coords[i_obs][1],
-                                  lat=coords[i_obs][0],
-                                  vert_coord=coords[i_obs][2],
-                                  vert_coord_sys=vert_coord_sys,
-                                  obserr_var=obserr_std[i_obs]**2,
-                                  appendix=appendix),
-                             last=last)
+#         txt += write_section(dict(i=i_obs+1,
+#                                   kind_nr=obs_kind_nr,
+#                                   dart_date_day=dart_date_day,
+#                                   secs_thatday=secs_thatday,
+#                                   lon=coords[i_obs][1],
+#                                   lat=coords[i_obs][0],
+#                                   vert_coord=coords[i_obs][2],
+#                                   vert_coord_sys=vert_coord_sys,
+#                                   obserr_var=obserr_std[i_obs]**2,
+#                                   appendix=appendix),
+#                              last=last)
 
-    write_file(txt, output_path=cluster.dartrundir+'/obs_seq.in')
+#     write_file(txt, output_path=cluster.dartrundir+'/obs_seq.in')
 
 
-def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coords=False):
+def create_obsseqin_alltypes(time_dt, list_obscfg, archive_obs_coords=False):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
@@ -391,7 +391,7 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
     txt = ''
     
     i_obs_total = 0
-    for istage, obscfg in enumerate(list_obscfg):
+    for i_cfg, obscfg in enumerate(list_obscfg):
         n_obs = obscfg['n_obs']
 
         coords = calc_obs_locations(n_obs, 
@@ -408,7 +408,8 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
         coords = append_hgt_to_coords(coords, vert_coords)
         n_obs_3d_thistype = len(coords)
 
-        obserr_std = np.zeros(n_obs_3d_thistype) + obs_errors
+        # user defined generation error
+        obserr_std = np.zeros(n_obs_3d_thistype) + obscfg["error_generate"]
 
         sat_info = write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt)
 
@@ -417,7 +418,7 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
             last = False
 
             is_last_obs_in_type = (i_obs == int(n_obs_3d_thistype)-1)
-            is_last_obstype = (istage == len(list_obscfg)-1)
+            is_last_obstype = (i_cfg == len(list_obscfg)-1)
 
             if is_last_obs_in_type and is_last_obstype:
                 last = True
@@ -445,8 +446,8 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, obs_errors, archive_obs_coord
 
 if __name__ == '__main__':
     # for testing
-    time_dt = dt.datetime(2008, 7, 30, 9, 0)
-    n_obs = 22801  # radar: n_obs for each observation height level
+    time_dt = dt.datetime(2008, 7, 30, 7, 0)
+    n_obs = 22500  # radar: n_obs for each observation height level
 
     vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
             kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs,
@@ -481,7 +482,7 @@ if __name__ == '__main__':
 
     #create_obsseq_in(time_dt, radar, archive_obs_coords=False) #'./coords_stage1.pkl')
 
-    create_obsseqin_alltypes(time_dt, [wv73], obs_errors=False, archive_obs_coords=False) #'./obs_coords.pkl')
+    create_obsseqin_alltypes(time_dt, [vis], archive_obs_coords=False) #'./obs_coords.pkl')
 
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
