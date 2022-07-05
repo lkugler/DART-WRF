@@ -37,11 +37,7 @@ def update_initials_in_WRF_rundir(time):
             with nc.Dataset(filter_out, 'r') as ds_filter:
                 with nc.Dataset(ic_file, 'r+') as ds_new:
 
-                    # assumes T = THM (dry potential temperature as prognostic variable)
-                    if use_wrfrst:
-                        ds_new.variables['THM_2'][:] = ds_filter.variables['T'][:]
-                    else:
-                        ds_new.variables['THM'][:] = ds_filter.variables['T'][:]
+                    ds_new.variables['T'][:] = ds_filter.variables['THM'][:]
 
                     # update all other variables
                     for var in update_vars:
@@ -51,6 +47,7 @@ def update_initials_in_WRF_rundir(time):
                             var_new = var+'_2'  # e.g. U_2, W_2, THM_2
                         
                         ds_new.variables[var_new][:] = ds_filter.variables[var][:]
+                        print('updated', var_new, 'from', var)
 
                 print(ic_file, 'created, updated from', filter_out)
 
