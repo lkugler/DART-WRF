@@ -124,20 +124,11 @@ class ObsRecord(pd.DataFrame):
 
         return pd.DataFrame(index=self.index, data=dict(lat=lats, lon=lons))
 
-    def get_from_cartesian_grid(self, i, j):
-        """Get the observation using cartesian grid indices (ix, iy)
+    def get_from_cartesian_grid(self, i, j, k):
+        """Get the observation using cartesian grid indices (ix, iy, iz)
         """
-        # indices of observations (starting from 0)
-        i_obs_grid = self.index.values
-
-        # number of obs in one direction
-        nx = int(len(i_obs_grid) ** 0.5)
-
-        # indices to the pandas.DataFrame
-        i_obs_grid = i_obs_grid.reshape(nx, nx)
-
         # find indices of observations within pandas.DataFrame
-        return self.iloc[i_obs_grid[i, j].ravel()]
+        return self.iloc[self.i_obs_grid[i, j, k].ravel()]
 
     def superob(self, window_km):
         """Select subset, average, overwrite existing obs with average
@@ -156,11 +147,6 @@ class ObsRecord(pd.DataFrame):
                                         25x25 km with 5 km obs density
                                         = average 5 x 5 observations
         """
-        debug = False
-        radius_earth_meters = 6.371 * 1e6
-        m_per_degrees = np.pi * radius_earth_meters / 180  # m per degree latitude
-        km_per_degrees = m_per_degrees / 1000
-
         def calc_deg_from_km(distance_km, center_lat):
             """Approximately calculate distance in degrees from meters
             Input: distance in km; degree latitude
@@ -176,16 +162,11 @@ class ObsRecord(pd.DataFrame):
             dist_km_lon = deg_lon * km_per_degrees * np.cos(center_lat * np.pi / 180)
             return dist_km_lat, dist_km_lon
 
-        # indices of observations (starting from 0)
-        i_obs_grid = self.index.values
 
-        # get the observation indices on a cartesian grid (ix, iy)
-        nx = int(len(i_obs_grid) ** 0.5)
-        i_obs_grid = i_obs_grid.reshape(nx, nx)
-
-        # loop through columns/rows
-        # avoid loop in (lat,lon) space as coordinates are non-cartesian
-        # i.e. first column of observations has different longitudes!
+        debug = False
+        radius_earth_meters = 6.371 * 1e6
+        m_per_degrees = np.pi * radius_earth_meters / 180  # m per degree latitude
+        km_per_degrees = m_per_degrees / 1000
 
         # determine obs density (approx)
         # TODO: error prone section
@@ -203,79 +184,108 @@ class ObsRecord(pd.DataFrame):
             print('obs spacing=', obs_spacing_km)
             print("window (#obs in x/y)=", win_obs)
 
+        # superob in case of multiple layers, only implemented for single obstype
+        nlayers = 1
+        if len(exp.observations) == 1:
+            obscfg = exp.observations[0]
+            if 'heights' in obscfg:
+                nlayers = len(obscfg['heights'])
+        self.nlayers = nlayers
+        
+        i_obs_grid = self.index.values  # indices of observations (starting from 0)
+
+        # get the observation indices from obs_seq (list)
+        # onto a cartesian grid (ix, iy, iz)
+        gridpoints_per_layer = len(i_obs_grid)/nlayers
+        nx = int(gridpoints_per_layer ** 0.5)
+        self.nx = nx
+        i_obs_grid = i_obs_grid.reshape(nx, nx, nlayers)
+        self.i_obs_grid = i_obs_grid
+
+        # loop through columns/rows
+        # avoid loop in (lat,lon) space as coordinates are non-cartesian
+        # i.e. first column of observations has different longitudes!
+
         out = self.drop(self.index)  # this df will be filled
         boxes = []
 
         for i in range(0, nx+1 - win_obs, win_obs):
             for j in range(0, nx+1 - win_obs, win_obs):
+                for k in range(0, nlayers):
+                    if debug: print(i,j,k)
 
-                # find indices of observations within superob window
-                i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs].ravel()
+                    # find indices of observations within superob window
+                    # i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs, k].ravel()
 
-                if debug:
-                    print("index x from", i, 'to', i + win_obs)
-                    print("index y from", j, 'to', j + win_obs)
-                    print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs])
+                    if debug:
+                        print("index x from", i, 'to', i + win_obs)
+                        print("index y from", j, 'to', j + win_obs)
+                        print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs, k])
 
-                # find observations within superob window
-                obs_box = self.get_from_cartesian_grid(slice(i, i + win_obs),
-                                                       slice(j, j + win_obs))
-                # from IPython import embed; embed()
-                # save boundary of box to list, for plotting later
-                eps = dx_obs_lat_deg/2  # for plotting
-                eps2 = eps*0.8  # for plotting
-                lat1, lon1 = self.get_from_cartesian_grid(i, j).get_lon_lat().values[0]
-                lat2, lon2 = self.get_from_cartesian_grid(i+win_obs-1, j).get_lon_lat().values[0]
-                lat3, lon3 = self.get_from_cartesian_grid(i, j+win_obs-1).get_lon_lat().values[0]
-                lat4, lon4 = self.get_from_cartesian_grid(i+win_obs-1, j+win_obs-1).get_lon_lat().values[0]
+                    # find observations within superob window
+                    obs_box = self.get_from_cartesian_grid(slice(i, i + win_obs),
+                                                           slice(j, j + win_obs),
+                                                           k)
 
-                boxes.append(([lat1-eps2, lat2+eps2, lat3-eps2, lat4+eps2],
-                              [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
+                    
+                    # save boundary of box to list, for plotting later
+                    eps = dx_obs_lat_deg/2  # for plotting
+                    eps2 = eps*0.8  # for plotting
+                    lat1, lon1 = self.get_from_cartesian_grid(i, j, k).get_lon_lat().values[0]
+                    lat2, lon2 = self.get_from_cartesian_grid(i+win_obs-1, j, k).get_lon_lat().values[0]
+                    lat3, lon3 = self.get_from_cartesian_grid(i, j+win_obs-1, k).get_lon_lat().values[0]
+                    lat4, lon4 = self.get_from_cartesian_grid(i+win_obs-1, j+win_obs-1, k).get_lon_lat().values[0]
 
-                # average the subset
-                # metadata are assumed to be equal
-                obs_mean = obs_box.iloc[0]
+                    boxes.append(([lat1-eps2, lat2+eps2, lat3-eps2, lat4+eps2],
+                                [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
 
-                # average spread and other values
-                for key in obs_box:
-                    if key in ['loc3d', 'kind', 'metadata', 'time']:
-                        pass
-                    elif 'spread' in key:
-                        # stdev of mean of values = sqrt(mean of variances)
-                        obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
-                    elif key == 'variance':
-                        # variance of mean = sum(variances)/n^2
-                        obs_mean.at[key] = obs_box[key].sum()/obs_box[key].size**2
+                    # average the subset
+                    # metadata are assumed to be equal
+                    obs_mean = obs_box.iloc[0]
+
+                    # average spread and other values
+                    for key in obs_box:
+                        if key in ['loc3d', 'kind', 'metadata', 'time']:
+                            pass
+                        elif 'spread' in key:
+                            # stdev of mean of values = sqrt(mean of variances)
+                            obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
+                        elif key == 'variance':
+                            # variance of mean = sum(variances)/n^2
+                            obs_mean.at[key] = obs_box[key].sum()/obs_box[key].size**2
+                        else:
+                            obs_mean.at[key] = obs_box[key].mean()
+
+                    # define location of superobservation
+                    if win_obs % 2 == 0:
+                        # even number of observations in x-direction
+                        # there is no center obs
+                        raise NotImplementedError()
                     else:
-                        obs_mean.at[key] = obs_box[key].mean()
+                        # odd number of observations in x-direction
+                        # -> there is an observation in the middle
+                        # take the location of that obs
+                        # int(win_obs/2) is the index of the center element when indices start at 0
+                        i_obs_center = i_obs_grid[i + int(win_obs/2), j + int(win_obs/2), k]
+                        obs_mean.at['loc3d'] = self.iloc[i_obs_center]['loc3d']
 
-                # define location of superobservation
-                if win_obs % 2 == 0:
-                    # even number of observations in x-direction
-                    # there is no center obs
-                    raise NotImplementedError()
-                else:
-                    # odd number of observations in x-direction
-                    # -> there is an observation in the middle
-                    # take the location of that obs
-                    # int(win_obs/2) is the index of the center element when indices start at 0
-                    i_obs_center = i_obs_grid[i + int(win_obs/2),
-                                              j + int(win_obs/2)]
-                    obs_mean.at['loc3d'] = self.iloc[i_obs_center]['loc3d']
+                    # check if all obs share the same vertical position
+                    heights_in_box = np.array([a[2] for a in obs_box['loc3d']])
+                    assert np.allclose(heights_in_box, obs_mean['loc3d'][2])
 
-                if debug:
-                    print("pre_avg:", obs_box.head())
-                    print("avg:", obs_mean)
+                    if debug:
+                        print("pre_avg:", obs_box.head())
+                        print("avg:", obs_mean)
 
-                out = out.append(obs_mean)
+                    out = out.append(obs_mean)
 
         n_pre_superob = len(self)
         n_post_superob = len(out)
         out.attrs['boxes'] = boxes
 
-        # assume square of obs
-        n_windows_x = int(n_pre_superob**.5/win_obs)  # in x-direction
-        n_target_post = n_windows_x**2  # number of windows
+        # quick after check - does the output obs number match with the expected number?
+        n_windows_x = int((n_pre_superob/nlayers)**.5/win_obs)  # assume square of obs
+        n_target_post = n_windows_x**2 * nlayers  # number of windows
         print('superob from', n_pre_superob, 'obs to', n_post_superob, 'obs')
         if n_post_superob != n_target_post:
             raise RuntimeError('expected', n_target_post, 'superobservations, but created', 
