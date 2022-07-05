@@ -4,7 +4,8 @@ import builtins as __builtin__
 import subprocess
 
 def shell(cmd):
-    subprocess.check_output(cmd.split(' '), shell=True)
+    # subprocess.check_output(cmd.split(' '), shell=True)
+    os.system(cmd)
 
 def print(*args):
     __builtin__.print(*args, flush=True)
