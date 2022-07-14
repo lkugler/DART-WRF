@@ -311,7 +311,7 @@ def calc_obserr_WV73(Hx_nature, Hx_prior):
         OEs[iobs] = oe_model
     return OEs
 
-def run_perfect_model_obs(nproc=6):
+def run_perfect_model_obs(nproc=12):
     print("generating observations - running ./perfect_model_obs")
     os.chdir(cluster.dartrundir)
 
@@ -325,7 +325,7 @@ def run_perfect_model_obs(nproc=6):
             "\n look for " + cluster.dartrundir + "/log.perfect_model_obs")
 
 
-def assimilate(nproc=12):
+def assimilate(nproc=48):
     print("time now", dt.datetime.now())
     print("running filter")
     os.chdir(cluster.dartrundir)
@@ -493,25 +493,41 @@ def qc_obs(oso, outfile='./obs_seq.out'):
         # creates obs_seq.final containing truth & prior Hx
         osf = run_Hx(time, obscfg)
         df_final = osf.df
-        #from IPython import embed; embed()
-
-        Hx_prior = df_final.get_prior_Hx().T
-        Hx_prior_mean = np.mean(Hx_prior, axis=0)
-        #Hx_prior_spread = df_final['prior ensemble spread'].values
-        #Hx_prior_spread[Hx_prior_spread < 1e-9] = 1e-9
         obs = oso.df.observations.values
         n_obs_orig = len(obs)
 
-        obs_dist_to_priormean = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
-        oso.df = oso.df[obs_dist_to_priormean > 0.1]
-        print('removed', n_obs_orig-len(oso.df), 'observations with fgd smaller than .1') 
+        if obscfg.get("sat_channel") == 1:
 
-        # obs_dist_to_priormean = abs(obs - Hx_prior_mean)
-        # oso.df = oso.df[obs_dist_to_priormean > 5]
-        # print('removed', n_obs_orig-len(oso.df), 'observations with abs(FGD) smaller than 5')
+            print('removing obs with abs(FGD) smaller than prior ens spread')
+            Hx_prior = df_final.get_prior_Hx().T
+            Hx_prior_mean = np.mean(Hx_prior, axis=0)
+            Hx_prior_spread = df_final['prior ensemble spread'].values
+            #Hx_prior_spread[Hx_prior_spread < 1e-9] = 1e-9
 
+            abs_FGD = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
+            oso.df = oso.df[abs_FGD > Hx_prior_spread]
+
+            # obs_dist_to_priormean = abs(obs - Hx_prior_mean)
+            # oso.df = oso.df[obs_dist_to_priormean > 5]
+            # print('removed', n_obs_orig-len(oso.df), 'observations with abs(FGD) smaller than 5')
+
+        elif obscfg.get("sat_channel") == 6:  # WV73
+
+            print('removing obs with abs(FGD) smaller than 5')
+            obs = oso.df.observations.values
+            n_obs_orig = len(obs)
+
+            Hx_prior = df_final.get_prior_Hx().T
+            Hx_prior_mean = np.mean(Hx_prior, axis=0)
+            abs_FGD = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
+            oso.df = oso.df[abs_FGD > 5]
+        else:
+            raise NotImplementedError('no obs QC implemented for this obs type')
+        
+        print('QC removed', n_obs_orig-len(oso.df), 'observations') 
         oso.to_dart(outfile)
         print('saved', outfile)
+
 
 if __name__ == "__main__":
     """Assimilate observations
@@ -569,8 +585,12 @@ if __name__ == "__main__":
         # oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
         oso.df = oso.df[oso.df['truth'].values < 6]
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
-    if False:  # set reflectance < surface albedo to surface albedo
-        oso.df.loc[oso.df['observations'].values < 0.293, ('observations')] = 0.293
+
+    if True:  # set reflectance < surface albedo to surface albedo
+        if_vis_obs = oso.df['kind'].values == 262
+        if_obs_below_surface_albedo = oso.df['observations'].values < 0.2928
+
+        oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = 0.2928
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
     if hasattr(exp, "superob_km"):
@@ -579,7 +599,7 @@ if __name__ == "__main__":
         copy(cluster.dartrundir + "/obs_seq.out", cluster.dartrundir + "/obs_seq.out-orig")
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
-    # qc_obs(oso, outfile=cluster.dartrundir + "/obs_seq.out")
+    #qc_obs(oso, outfile=cluster.dartrundir + "/obs_seq.out")
 
     ################################################
     print(" 3) assign observation-errors for assimilation ")
