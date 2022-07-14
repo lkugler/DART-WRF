@@ -7,7 +7,7 @@ class ExperimentConfiguration(object):
         pass
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.21_P2_rr_REFL_obs2-10_loc20_oe10"
+exp.expname = "exp_v1.21_P2_rr_WV-qc_obs10_loc20"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.n_nodes = 10
@@ -33,10 +33,10 @@ exp.input_profile = '/gpfs/data/fs71386/lkugler/initial_profiles/wrf/ens/2022-03
 # localize vertically, if it has a vertical position
 # needs a horizontal scale too, to calculate the vertical normalization
 # since you can not specify different vertical localizations for diff. variables
-exp.cov_loc_vert_km_horiz_km = (2, 20)  
-exp.superob_km = 10
+exp.cov_loc_vert_km_horiz_km = (3, 20)  
+#exp.superob_km = 10
 
-n_obs = 22500  # 22500: 2km, 5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
+n_obs = 961  # 22500: 2km, 5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
 
 vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
@@ -55,15 +55,21 @@ ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
 
 radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
              kind='RADAR_REFLECTIVITY', n_obs=n_obs, 
-             error_generate=2.5, error_assimilate=10,
+             error_generate=2.5, error_assimilate=2.5,
              heights=np.arange(2000, 14001, 2000),
              cov_loc_radius_km=20)
 
 t = dict(plotname='Temperature', plotunits='[K]',
          kind='RADIOSONDE_TEMPERATURE', n_obs=n_obs,
          error_generate=0.2, error_assimilate=0.4,
-         heights=np.arange(1000, 17001, 2000),
-         cov_loc_radius_km=20)
+         heights=[5000,], #np.arange(1000, 17001, 2000),
+         cov_loc_radius_km=4)
+
+q = dict(plotname='Specific humidity', plotunits='[kg/kg]',
+         kind='RADIOSONDE_SPECIFIC_HUMIDITY', n_obs=n_obs,
+         error_generate=0., error_assimilate=0.001,
+         heights=[1000], #np.arange(1000, 17001, 2000),
+         cov_loc_radius_km=0.1)
 
 t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
            kind='SYNOP_TEMPERATURE', n_obs=n_obs, 
@@ -76,7 +82,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [radar]
+exp.observations = [wv73]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 
