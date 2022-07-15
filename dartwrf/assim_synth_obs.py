@@ -577,35 +577,34 @@ if __name__ == "__main__":
 
     run_perfect_model_obs()  # create observations
 
-    print(" 2) obs preprocessing")
+    print(" 2.1) obs preprocessing")
 
     oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
 
-    if False:  # only refl < 6 dBz
-        # oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
-        oso.df = oso.df[oso.df['truth'].values < 6]
-        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
-
     if True:  # set reflectance < surface albedo to surface albedo
+        print(" 2.2) removing obs below surface albedo ")
         if_vis_obs = oso.df['kind'].values == 262
         if_obs_below_surface_albedo = oso.df['observations'].values < 0.2928
 
         oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = 0.2928
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
-    if hasattr(exp, "superob_km"):
-        print("superobbing to", exp.superob_km, "km")
+    if getattr(exp, "superob_km", False):
+        print(" 2.3) superobbing to", exp.superob_km, "km")
         oso.df = oso.df.superob(window_km=exp.superob_km)
         copy(cluster.dartrundir + "/obs_seq.out", cluster.dartrundir + "/obs_seq.out-orig")
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
 
-    #qc_obs(oso, outfile=cluster.dartrundir + "/obs_seq.out")
 
     ################################################
-    print(" 3) assign observation-errors for assimilation ")
+    print(" 2.4) assign observation-errors for assimilation ")
     set_obserr_assimilate_in_obsseqout(oso, outfile=cluster.dartrundir + "/obs_seq.out")
 
-    print(" 4) assimilate ")
+    if getattr(exp, "reject_smallFGD", False):
+        print(" 2.5) QC of observations ")
+        qc_obs(oso, outfile=cluster.dartrundir + "/obs_seq.out")
+
+    print(" 3) assimilate ")
     archive_osq_out(time)
     
     set_DART_nml()

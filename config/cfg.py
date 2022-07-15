@@ -7,17 +7,21 @@ class ExperimentConfiguration(object):
         pass
 
 exp = ExperimentConfiguration()
-exp.expname = "exp_v1.21_P2_rr_WV-qc_obs10_loc20"
+exp.expname = "exp_v1.21_P3_wbub7_VIS_obs10_loc20"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.n_nodes = 10
 exp.inflation = True
 exp.sec = True
+exp.reject_smallFGD = False
+exp.cov_loc_vert_km_horiz_km = (3, 20)
+exp.superob_km = False
+
 
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P5+su_nat2/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_Pwbub5_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P4_nat/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 #exp.input_profile = '/home/fs71386/lkugler/wrf_profiles/data/wrf/ens/2021-05-04/raso.nat.001.wrfprof'
@@ -33,8 +37,6 @@ exp.input_profile = '/gpfs/data/fs71386/lkugler/initial_profiles/wrf/ens/2022-03
 # localize vertically, if it has a vertical position
 # needs a horizontal scale too, to calculate the vertical normalization
 # since you can not specify different vertical localizations for diff. variables
-exp.cov_loc_vert_km_horiz_km = (3, 20)  
-#exp.superob_km = 10
 
 n_obs = 961  # 22500: 2km, 5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn # radar: n_obs for each observation height level
 
@@ -82,7 +84,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [wv73]
+exp.observations = [vis]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 
