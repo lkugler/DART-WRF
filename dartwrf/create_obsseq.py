@@ -454,10 +454,15 @@ if __name__ == '__main__':
             error_generate=0.03, error_assimilate=0.06,
             cov_loc_radius_km=32)
 
+    wv62 = dict(plotname='Brightness temperature WV 6.2µm', plotunits='[K]',
+                kind='MSG_4_SEVIRI_TB', sat_channel=5, n_obs=n_obs, 
+                error_generate=1., error_assimilate=False, 
+                cov_loc_radius_km=20)
+
     wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
                 kind='MSG_4_SEVIRI_TB', sat_channel=6, n_obs=n_obs,
                 error_generate=1., error_assimilate=False,
-                cov_loc_radius_km=32)
+                cov_loc_radius_km=20)
 
     ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
                 kind='MSG_4_SEVIRI_TB', sat_channel=9, n_obs=n_obs,
@@ -482,7 +487,7 @@ if __name__ == '__main__':
 
     #create_obsseq_in(time_dt, radar, archive_obs_coords=False) #'./coords_stage1.pkl')
 
-    create_obsseqin_alltypes(time_dt, [vis], archive_obs_coords=False) #'./obs_coords.pkl')
+    create_obsseqin_alltypes(time_dt, [wv62], archive_obs_coords=False) #'./obs_coords.pkl')
 
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
