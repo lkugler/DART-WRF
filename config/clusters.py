@@ -67,8 +67,9 @@ vsc.name = 'vsc'
 vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
 vsc.python_enstools = '/home/fs71386/lkugler/miniconda3/envs/enstools/bin/python'
 vsc.ncks = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/ncks'
-vsc.ideal = '/home/fs71386/lkugler/compile/bin/ideal-v4.2.2_v1.16.exe'
-vsc.wrfexe = '/home/fs71386/lkugler/compile/bin/wrf-v4.3_v1.19.exe'
+vsc.ideal = '/home/fs71386/lkugler/compile/bin/ideal-v4.2.2_v1.22.exe'
+vsc.wrfexe = '/home/fs71386/lkugler/compile/bin/wrf-v4.3_v1.22.exe'
+vsc.container = '/home/fs71386/lkugler/run_container.sh python.gcc9.5.0.vsc4.sif'
 
 # paths for data output
 vsc.wrf_rundir_base = '/gpfs/data/fs71386/lkugler/run_WRF/'  # path for temporary files
@@ -85,7 +86,7 @@ vsc.scriptsdir = '/home/fs71386/lkugler/DART-WRF/dartwrf/'
 vsc.namelist = vsc.scriptsdir+'/../templates/namelist.input'
 vsc.run_WRF = '/home/fs71386/lkugler/DART-WRF/dartwrf/run_ens.vsc.sh'
 
-vsc.slurm_cfg = {"account": "p71386", "partition": "mem_0384", "qos": "p71386_0384",
+vsc.slurm_cfg = {"account": "p71386", "partition": "skylake_0384", "qos": "p71386_0384",
                  "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 

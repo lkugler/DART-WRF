@@ -3,18 +3,20 @@ import builtins as __builtin__
 #copy = shutil.copy
 import subprocess
 
-def shell(cmd):
-    # subprocess.check_output(cmd.split(' '), shell=True)
-    os.system(cmd)
+def shell(args):
+    print(args)
+    subprocess.run(args.split(' ')) #, shell=True) #, stderr=subprocess.STDOUT) 
+    #os.system(args)
 
 def print(*args):
     __builtin__.print(*args, flush=True)
 
-def copy(src, dst):
-    try:
-        os.remove(dst)
-    except:
-        pass
+def copy(src, dst, remove_if_exists=True):
+    if remove_if_exists:
+        try:
+            os.remove(dst)
+        except:
+            pass
     shutil.copy(src, dst)
 
 def try_remove(f):

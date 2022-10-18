@@ -248,7 +248,7 @@ if __name__ == "__main__":
     backup_scripts()
     id = None
 
-    if False:  # warm bubble
+    if True:  # warm bubble
         prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
@@ -257,10 +257,10 @@ if __name__ == "__main__":
         forecast_until = dt.datetime(2008, 7, 30, 18)
     
         prepare_WRFrundir(init_time)
-        id = run_ideal(depends_on=id)
-        id = wrfinput_insert_wbubble(depends_on=id)    
+        # id = run_ideal(depends_on=id)
+        # id = wrfinput_insert_wbubble(depends_on=id)    
 
-    if True:  # random
+    if False:  # random
         prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P2_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
@@ -269,11 +269,10 @@ if __name__ == "__main__":
         forecast_until = dt.datetime(2008, 7, 30, 18)
 
         prepare_WRFrundir(init_time)
-        id = run_ideal(depends_on=id)
+        # id = run_ideal(depends_on=id)
 
-
-    #prior_path_exp = cluster.archivedir  # 
-    #prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5+su_noDA'
+    # prior_path_exp = cluster.archivedir
+    # prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5+su_noDA'
     
     prior_init_time = init_time
     prior_valid_time = time
@@ -286,7 +285,7 @@ if __name__ == "__main__":
         prior_valid_time = time
 
         id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
-        
+
         # 1) Set posterior = prior
         id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
@@ -298,7 +297,7 @@ if __name__ == "__main__":
         output_restart_interval = timedelta_btw_assim.total_seconds()/60
         if time == last_assim_time: #this_forecast_init.minute in [0,]:  # longer forecast every full hour
             timedelta_integrate = forecast_until - last_assim_time  # dt.timedelta(hours=4)
-            output_restart_interval = 9999 #timedelta_btw_assim.total_seconds()/60 # 9999
+            output_restart_interval = 9999  # timedelta_btw_assim.total_seconds()/60 # 9999
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
