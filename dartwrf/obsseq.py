@@ -77,7 +77,13 @@ class ObsRecord(pd.DataFrame):
 
     def get_posterior_Hx(self):
         """Return posterior Hx array (n_obs, n_ens)"""
-        return self._get_model_Hx('posterior')
+        try:
+            return self._get_model_Hx('posterior')
+        except Exception as e:
+            # this is useful if we evaluate a 'posterior state'
+            # then the variable is called 'prior' while it really is a posterior
+            warnings.warn(str(e)+' returning prior from this file instead!')
+            return self._get_model_Hx('prior')
 
     def get_truth_Hx(self):
         return self['truth'].values
@@ -691,12 +697,15 @@ class ObsSeq(object):
 if __name__ == "__main__":
     # for testing purposes
 
-    obs = ObsSeq(cluster.scriptsdir + "/../tests/obs_seq.orig.out")
-    print(type(obs))
+    # f = cluster.scriptsdir + "/../tests/obs_seq.orig.out"
+    f = "/home/fs71386/lkugler/data/sim_archive/exp_v1.21_P3_wbub7_VIS_obs2-10_loc20/obs_seq_out/2008-07-30_12:30_obs_seq.out-orig"
+    obs = ObsSeq(f)
 
     # select a subset (lat-lon)
-    obs.df = obs.df[:].superob(window_km=50)
-    print(type(obs.df))
+    obs.df = obs.df.superob(window_km=10)
+    # print(type(obs.df))
+
+    obs.plot(f_out="./map_obs_superobs.png")
 
     # write to obs_seq.out in DART format
-    obs.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+    # obs.to_dart(f=cluster.dartrundir + "/obs_seq.out")

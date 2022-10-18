@@ -103,7 +103,7 @@
 # localization radius, where the influence of an obs decreases
 # to ~half at 300 km, and ~0 at the edges of the area.
 &assim_tools_nml
-   filter_kind                     = 1,
+   filter_kind                     = <filter_kind>,
    cutoff                          = <cov_loc_radian>,
    sort_obs_inc                    = .false.,
    spread_restoration              = .false.,
