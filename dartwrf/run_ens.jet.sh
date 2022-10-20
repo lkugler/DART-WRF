@@ -1,8 +1,8 @@
 module purge
-module load 
-export SLURM_STEP_GRES=none
+module load intel-parallel-studio/composer.2020.2-intel-20.0.2-zuot22y \
+ netcdf-fortran/4.5.3-intel-20.0.2-irdm5gq
+#export SLURM_STEP_GRES=none
 
-##  $SLURM_ARRAY_TASK_ID
 echo "SLURM_ARRAY_TASK_ID:"$SLURM_ARRAY_TASK_ID
 EXPNAME=<exp.expname> 
 

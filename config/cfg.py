@@ -1,6 +1,6 @@
 import numpy as np
 from config import clusters  # from . = problem in archivedir
-cluster = clusters.vsc  # change cluster configuration here
+cluster = clusters.jet  # change cluster configuration here
 
 class ExperimentConfiguration(object):
     def __init__(self):

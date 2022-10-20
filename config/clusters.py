@@ -90,3 +90,32 @@ vsc.slurm_cfg = {"account": "p71386", "partition": "skylake_0384", "qos": "p7138
                  "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
+jet = ClusterConfig()
+jet.name = 'jet'
+
+# binaries
+jet.python = '/jetfs/home/lkugler/miniconda3/bin/python'
+jet.python_verif = '/jetfs/home/lkugler/miniconda3/envs/ensdask/bin/python'
+jet.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-20.0.2/nco-4.9.3-dhlqiyog7howjmaleyfhm6lkt7ra37xf/bin/ncks'
+jet.ideal = '/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
+jet.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
+jet.container = ''
+
+# paths for data output
+jet.wrf_rundir_base = '/jetfs/home/lkugler/data/run_WRF/'  # path for temporary files
+jet.dart_rundir_base = '/jetfs/home/lkugler/data/run_DART/'  # path for temporary files
+jet.archive_base = '/jetfs/home/lkugler/data/sim_archive/'
+
+# paths used as input
+jet.srcdir = '/jetfs/home/lkugler/data/compile/WRF-4.3/run'
+jet.dart_srcdir = '/jetfs/home/lkugler/data/compile/DART-9.11.9/DART/models/wrf/work'
+jet.rttov_srcdir = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/'
+jet.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
+
+# templates/run scripts
+jet.namelist = jet.scriptsdir+'/../templates/namelist.input'
+jet.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
+
+jet.slurm_cfg = {"account": "", "partition": "compute",
+                 "nodes": "1", "ntasks": "1", "ntasks-per-node": "40", "ntasks-per-core": "1",
+                 "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}

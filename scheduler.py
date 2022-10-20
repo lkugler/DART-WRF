@@ -223,19 +223,19 @@ def gen_obsseq(depends_on=None):
 def verify_sat(depends_on=None):
     s = my_Slurm("verif-SAT-"+exp.expname, cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "1", 
             "ntasks-per-node": "1", "ntasks-per-core": "1"})
-    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
+    cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
 def verify_wrf(depends_on=None):
     s = my_Slurm("verif-WRF-"+exp.expname, cfg_update={"time": "180", "mail-type": "FAIL,END", "ntasks": "1", 
             "ntasks-per-node": "1", "ntasks-per-core": "1"})
-    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
+    cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
 def verify_fast(depends_on=None):
     s = my_Slurm("verif-fast-"+exp.expname, cfg_update={"time": "30", "mail-type": "FAIL", "ntasks": "1",
             "ntasks-per-node": "1", "ntasks-per-core": "1"})
-    cmd = cluster.python_enstools+' /home/fs71386/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
+    cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
     s.run(cmd, depends_on=[depends_on])
 
 ################################
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     id = None
 
     if True:  # warm bubble
-        prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P3_wbub7_noDA'
+        prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
         time = dt.datetime(2008, 7, 30, 12,30)
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         # id = wrfinput_insert_wbubble(depends_on=id)    
 
     if False:  # random
-        prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P2_noDA'
+        prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
         time = dt.datetime(2008, 7, 30, 13)
