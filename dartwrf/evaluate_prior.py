@@ -6,6 +6,7 @@ import numpy as np
 from config.cfg import exp, cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
 from dartwrf import assim_synth_obs as aso
+
 from osselyze.utils import get_prior_config
 
 if __name__ == "__main__":

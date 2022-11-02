@@ -237,8 +237,8 @@ def create_obs_seq_in(time_dt, list_obscfg,
 
         assert len(coords) == n_obs, (len(coords), n_obs)  # check if functions did what they supposed to
         for lat, lon in coords:
-            assert lat < 90 & lat > -90
-            assert lon < 180 & lon > -180
+            assert (lat < 90) & (lat > -90)
+            assert (lon < 180) & (lon > -180)
 
         kind = obscfg['kind']
         print('obstype', kind)

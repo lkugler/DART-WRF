@@ -7,7 +7,6 @@ from config.cfg import exp, cluster
 from dartwrf import assim_synth_obs as aso
 
 
-
 if __name__ == "__main__":
 
      assim_time = dt.datetime.strptime(sys.argv[1], "%Y-%m-%d_%H:%M")

@@ -5,10 +5,10 @@ import numpy as np
 
 from config.cfg import exp, cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
+from dartwrf.obs import error_models as err
 import dartwrf.create_obsseq as osq
 from dartwrf import wrfout_add_geo
 from dartwrf import obsseq
-from dartwrf.obs import error_models as err
 
 earth_radius_km = 6370
 

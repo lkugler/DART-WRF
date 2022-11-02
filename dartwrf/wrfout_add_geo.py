@@ -9,6 +9,7 @@ Example call:
 """
 import os, sys
 import netCDF4 as nc
+
 from config.cfg import exp, cluster
 
 fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
