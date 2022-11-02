@@ -5,8 +5,8 @@ import subprocess
 
 def shell(args):
     print(args)
-    subprocess.run(args.split(' ')) #, shell=True) #, stderr=subprocess.STDOUT) 
-    #os.system(args)
+    #subprocess.run(args.split(' ')) #, shell=True) #, stderr=subprocess.STDOUT) 
+    os.system(args)
 
 def print(*args):
     __builtin__.print(*args, flush=True)

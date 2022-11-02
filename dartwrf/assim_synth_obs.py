@@ -76,9 +76,7 @@ def link_nature_to_dart_truth(time):
 def prepare_nature_dart(time):
     print("linking nature to DART & georeferencing")
     link_nature_to_dart_truth(time)
-    wrfout_add_geo.run(
-        cluster.dartrundir + "/../geo_em.d01.nc", cluster.dartrundir + "/wrfout_d01"
-    )
+    wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -114,7 +112,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
                     cluster.dartrundir+"/wrfout_d01 "+ wrfout_dart)
 
         # this seems to be necessary (else wrong level selection)
-        wrfout_add_geo.run(cluster.dartrundir + "/../geo_em.d01.nc", wrfout_dart)
+        wrfout_add_geo.run(cluster.geo_em, wrfout_dart)
 
     write_list_of_inputfiles_prior()
     write_list_of_outputfiles()
@@ -168,7 +166,7 @@ def run_perfect_model_obs(nproc=12, verbose=True):
             "obs_seq.out does not exist in " + cluster.dartrundir,
             "\n look for " + cluster.dartrundir + "/log.perfect_model_obs")
 
-def filter(nproc=48):
+def filter(nproc=12):
     print("time now", dt.datetime.now())
     print("running filter")
     os.chdir(cluster.dartrundir)
@@ -223,15 +221,15 @@ def get_parametrized_error(obscfg, osf_prior):
     """Calculate the parametrized error for an ObsConfig (one obs type)
 
     Args
-        obscfg ()
-        df_obs (obsseq.ObsRecord):      contains observations from obs_seq.out
+        obscfg (object):                configuration of observations
+        osf_prior (obsseq.ObsRecord):   contains truth and prior values from obs_seq.final
+                                        (output of ./final in evaluate-mode (no posterior))
 
     Returns
         np.array            observation error std-dev for assimilation
     """
-    df_obs = osf_prior
-    Hx_prior = df_obs.get_prior_Hx().T
-    Hx_truth = df_obs.get_truth_Hx()
+    Hx_prior = osf_prior.get_prior_Hx().T
+    Hx_truth = osf_prior.get_truth_Hx()
 
     # compute the obs error for assimilation on the averaged grid
     # since the assimilation is done on the averaged grid
@@ -246,6 +244,17 @@ def get_parametrized_error(obscfg, osf_prior):
 
 
 def set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile="./obs_seq.out"):
+    """"Overwrite existing variance values in obs_seq.out files
+    
+    Args:
+        oso (ObsSeq) :  python representation of obs_seq.out file, 
+                        will be modified and written to file
+        osf_prior (ObsSeq): python representation of obs_seq.final (output of filter in evaluate-mode without posterior)
+                            contains prior values; used for parameterized errors
+
+    Returns:
+        None    (writes to file)
+    """
     for obscfg in exp.observations:
         kind_str = obscfg['kind']
         kind = osq.obs_kind_nrs[kind_str]
@@ -358,10 +367,11 @@ def generate_obsseq_out(time):
 
     def ensure_physical_vis(oso):  # set reflectance < surface albedo to surface albedo
         print(" 2.2) removing obs below surface albedo ")
-        if_vis_obs = oso.df['kind'].values == 262
-        if_obs_below_surface_albedo = oso.df['observations'].values < 0.2928
+        clearsky_albedo = 0.2928
 
-        oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = 0.2928
+        if_vis_obs = oso.df['kind'].values == 262
+        if_obs_below_surface_albedo = oso.df['observations'].values < clearsky_albedo
+        oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = clearsky_albedo
         oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
         return oso
 
@@ -384,7 +394,7 @@ def generate_obsseq_out(time):
     dir_obsseq=cluster.archivedir + "/obs_seq_out/"
     os.makedirs(dir_obsseq, exist_ok=True)
 
-    osq.create_obsseqin_alltypes(time, exp.observations)
+    osq.create_obs_seq_in(time, exp.observations)
     run_perfect_model_obs()  # generate observation, draws from gaussian
 
     print(" 2.1) obs preprocessing")
@@ -411,16 +421,19 @@ def get_obsseq_out(time):
         print(f_obsseq, 'copied to', cluster.dartrundir+'/obs_seq.out')
         oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
     else:
+        # decision to NOT use existing obs_seq.out file
+        
         # did we already generate observations?
-        f_oso_thisexp = cluster.archivedir+'/obs_seq_out/'+time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-        if os.path.isfile(f_oso_thisexp):
-            # oso exists
-            copy(f_oso_thisexp, cluster.dartrundir+'/obs_seq.out')
-            print('copied existing obsseqout from', f_oso_thisexp)
-            oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
-        else: 
-            # we need to generate observations
-            oso = generate_obsseq_out(time)
+        # f_oso_thisexp = cluster.archivedir+'/obs_seq_out/'+time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
+        # if os.path.isfile(f_oso_thisexp):
+        #     # oso exists
+        #     copy(f_oso_thisexp, cluster.dartrundir+'/obs_seq.out')
+        #     print('copied existing obsseqout from', f_oso_thisexp)
+        #     oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+        # else: 
+
+        # generate observations with new observation noise
+        oso = generate_obsseq_out(time)
 
     return oso
 
@@ -453,7 +466,7 @@ if __name__ == "__main__":
     options = []
     if len(sys.argv) >4:
         options = sys.argv[5:]
-    nproc = 6 if 'headnode' in options else 48
+    nproc = 6 if 'headnode' in options else 12
 
     archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
     os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
@@ -471,7 +484,7 @@ if __name__ == "__main__":
 
     print("prepare prior ensemble")
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
-
+    
     ################################################
     print(" 1) get observations with specified obs-error")
     oso = get_obsseq_out(time)

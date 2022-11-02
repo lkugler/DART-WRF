@@ -75,8 +75,8 @@ do
     mv $rundir/rsl.out.0000 $rundir/rsl.out.input
 done
 """
-    s = my_Slurm("ideal", cfg_update={"ntasks": str(exp.n_ens), "nodes": "1",
-                                      "time": "10", "mem-per-cpu": "2G"})
+    s = my_Slurm("ideal", cfg_update={"ntasks": str(exp.n_ens),
+                                      "time": "10", "mem": "100G"})
     id = s.run(cmd, depends_on=[depends_on])
     return id
 
@@ -141,13 +141,13 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
     if output_restart_interval:
         args.append('--restart_interval='+str(int(float(output_restart_interval))))
 
-    s = my_Slurm("preWRF2", cfg_update=dict(time="2"))
+    s = my_Slurm("preWRF", cfg_update=dict(time="2"))
     id = s.run(' '.join(args), depends_on=[id])
 
     time_in_simulation_hours = (end-begin).total_seconds()/3600
     runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
-    s = my_Slurm("runWRF2", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
-                "time": str(runtime_wallclock_mins_expected), "mem-per-cpu": "2G"})
+    s = my_Slurm("WRF", cfg_update={"array": "1-"+str(exp.n_nodes), "ntasks": "10", "nodes": "1",
+                "time": str(runtime_wallclock_mins_expected), "mem": "140G"})
     cmd = script_to_str(cluster.run_WRF).replace('<exp.expname>', exp.expname
                                        ).replace('<cluster.wrf_rundir_base>', cluster.wrf_rundir_base)
     id = s.run(cmd, depends_on=[id])
@@ -166,8 +166,8 @@ def assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp,
     if not os.path.exists(prior_path_exp):
         raise IOError('prior_path_exp does not exist: '+prior_path_exp)
 
-    id = my_Slurm("Assim", cfg_update={"nodes": "1", "ntasks": "96", "time": "60",
-                             "mem": "300G", "ntasks-per-node": "96", "ntasks-per-core": "2"}
+    id = my_Slurm("Assim", cfg_update={"ntasks": "12", "time": "60",
+                             "mem": "200G", "ntasks-per-node": "12", "ntasks-per-core": "2"}
             ).run(cluster.python+' '+cluster.scripts_rundir+'/assim_synth_obs.py '
                +assim_time.strftime('%Y-%m-%d_%H:%M ')
                +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
@@ -200,8 +200,8 @@ def update_IC_from_DA(assim_time, depends_on=None):
 
 
 def create_satimages(init_time, depends_on=None):
-    s = my_Slurm("pRTTOV", cfg_update={"ntasks": "48", "time": "80", "nodes": "1"})
-    id = s.run('/home/fs71386/lkugler/RTTOV-WRF/withmodules /home/fs71386/lkugler/RTTOV-WRF/run_init.py '+cluster.archivedir
+    s = my_Slurm("RTTOV", cfg_update={"ntasks": "12", "time": "80", "mem": "200G"})
+    id = s.run(cluster.python_verif+' ~/RTTOV-WRF/run_init.py '+cluster.archivedir
                +init_time.strftime('/%Y-%m-%d_%H:%M/'),
           depends_on=[depends_on])
     return id
@@ -221,20 +221,20 @@ def gen_obsseq(depends_on=None):
 
 
 def verify_sat(depends_on=None):
-    s = my_Slurm("verif-SAT-"+exp.expname, cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "1", 
-            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    s = my_Slurm("verif-SAT-"+exp.expname, cfg_update={"time": "60", "mail-type": "FAIL,END", "ntasks": "20", 
+            "ntasks-per-node": "20", "ntasks-per-core": "1", "mem": "100G",})
     cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
 def verify_wrf(depends_on=None):
-    s = my_Slurm("verif-WRF-"+exp.expname, cfg_update={"time": "180", "mail-type": "FAIL,END", "ntasks": "1", 
-            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    s = my_Slurm("verif-WRF-"+exp.expname, cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "20", 
+                 "ntasks-per-node": "20", "ntasks-per-core": "1", "mem": "250G"})
     cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
 def verify_fast(depends_on=None):
-    s = my_Slurm("verif-fast-"+exp.expname, cfg_update={"time": "30", "mail-type": "FAIL", "ntasks": "1",
-            "ntasks-per-node": "1", "ntasks-per-core": "1"})
+    s = my_Slurm("verif-fast-"+exp.expname, cfg_update={"time": "10", "mail-type": "FAIL", "ntasks": "1",
+        "ntasks-per-node": "1", "ntasks-per-core": "1"})
     cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
     s.run(cmd, depends_on=[depends_on])
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
         prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
-        time = dt.datetime(2008, 7, 30, 12,30)
+        time = dt.datetime(2008, 7, 30, 12, 30)
         last_assim_time = dt.datetime(2008, 7, 30, 13,30)
         forecast_until = dt.datetime(2008, 7, 30, 18)
     
@@ -285,7 +285,7 @@ if __name__ == "__main__":
         prior_valid_time = time
 
         id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
-
+        
         # 1) Set posterior = prior
         id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
@@ -304,19 +304,19 @@ if __name__ == "__main__":
                     end=time + timedelta_integrate,  # integrate until here
                     output_restart_interval=output_restart_interval,
                     depends_on=id)
-
+        
         # as we have WRF output, we can use own exp path as prior
         prior_path_exp = cluster.archivedir       
  
         id_sat = create_satimages(time, depends_on=id)
-
+        
         # increment time
         time += timedelta_btw_assim
 
         # update time variables
         prior_init_time = time - timedelta_btw_assim
 
-    id = gen_obsseq(id)
+    #id = gen_obsseq(id)
     verify_sat(id_sat)
     verify_wrf(id)
     verify_fast(id)

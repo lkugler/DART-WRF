@@ -58,8 +58,8 @@ def OE_model_harnisch_WV62(ci):
         # Kelvin, fit of Fig 7a, Harnisch 2016
         x_ci = [0, 2.5, 4.5, 5.5, 7.5]  # average cloud impact [K]
         y_oe = [1.2, 3, 5, 6, 6.5]  # adjusted observation error [K]
-        oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
-        return oe_73_linear(ci)
+        oe_linear = interp1d(x_ci, y_oe, assume_sorted=True)
+        return oe_linear(ci)
     else:  # assign highest observation error
         return 6.5
 
@@ -69,8 +69,10 @@ def OE_model_harnisch_WV73(ci):
         # Kelvin, fit of Fig 7b, Harnisch 2016
         x_ci = [0, 5, 10.5, 13, 16]  # average cloud impact [K]
         y_oe = [1, 4.5, 10, 12, 13]  # adjusted observation error [K]
-        oe_73_linear = interp1d(x_ci, y_oe, assume_sorted=True)
-        return oe_73_linear(ci)
+        
+        #y_oe = [1.2, 3, 5, 6, 6.5]  # OE for WV62 !!!!
+        oe_linear = interp1d(x_ci, y_oe, assume_sorted=True)
+        return oe_linear(ci)
     else:  # assign highest observation error
         return 13.0
 

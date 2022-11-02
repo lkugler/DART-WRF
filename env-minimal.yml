@@ -1,0 +1,26 @@
+name: DART
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cdo
+  - docopt
+  - hdf5
+  - ipython
+  - matplotlib
+  - nco
+  - netcdf-fortran
+  - netcdf4
+  - numpy
+  - pandas
+  - pip
+  - python
+  - python-dateutil
+  - pytz
+  - proj4
+  - scipy
+  - setuptools
+  - wrf-python
+  - xarray
+  - yaml
+  - pysolar
