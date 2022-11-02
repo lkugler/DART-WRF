@@ -41,19 +41,13 @@ def obskind_read():
 
 #####################
 # Global variables
+obs_kind_nrs = obskind_read()  # DART internal indices
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
 lon0 = 0.
-
-# position on Earth for DART, domain center when coords_from_domaincenter=True
-lat0_center = 45.
-lon0_center = 0.
-
 sat_az = "180.0"
 sat_zen = "45.0"
-
-obs_kind_nrs = obskind_read()
 
 
 def degr_to_rad(degr):

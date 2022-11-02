@@ -18,8 +18,6 @@ lon0_center = 0.
 
 radius_earth_meters = 6.371*1E6
 
-
-
 def square_array_from_domaincenter(n_obs, distance_between_obs_km):
     """
     Create equally spaced grid for satellite observations every 4 km
@@ -45,7 +43,7 @@ def square_array_from_domaincenter(n_obs, distance_between_obs_km):
             dx_4km_in_degree = distance_between_obs_meters/m_per_degree_x
             lon = lon0_center + ix*dx_4km_in_degree
             coords.append((lat, lon))
-
+    return coords
 
 def evenly_on_grid(n_obs, omit_covloc_radius_on_boundary=True):
     """Observations spread evenly over domain
@@ -91,4 +89,4 @@ def evenly_on_grid(n_obs, omit_covloc_radius_on_boundary=True):
         for j in range(n_obs_x):
             coords.append((lats[skip_gridpoints+i*gridpoints_between_obs, skip_gridpoints+j*gridpoints_between_obs],
                             lons[skip_gridpoints+i*gridpoints_between_obs, skip_gridpoints+j*gridpoints_between_obs]))
-
+    return coords
