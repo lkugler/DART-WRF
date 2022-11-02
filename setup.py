@@ -21,7 +21,7 @@ def read_requirements(fname):
 
 setuptools.setup(
     name="dartwrf",
-    version="2022.02.03",
+    version="2022.11.02",
     author="Lukas Kugler",
     author_email="lukas.kugler@univie.ac.at",
     description="Observing system simulation experiments with WRF and DART",
@@ -35,5 +35,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8.3",
-    install_requires=read_requirements("environment.yml"),
+    install_requires=read_requirements("env-minimal.yml"),
 )
