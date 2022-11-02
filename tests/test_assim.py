@@ -1,5 +1,4 @@
 import os, shutil
-import numpy as np
 import datetime as dt
 
 from dartwrf import obsseq, assim_synth_obs
@@ -12,32 +11,35 @@ class ExperimentConfiguration(object):
 exp = ExperimentConfiguration()
 exp.expname = "test"
 
-wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
+obscfg_wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
                 kind='MSG_4_SEVIRI_TB', sat_channel=6, n_obs=4,
                 error_generate=1., error_assimilate=False,
                 cov_loc_radius_km=32)
-exp.observations = [wv73]
+exp.observations = [obscfg_wv73]
 
 time = dt.datetime(2008,7,30,12)
 
 
 def test_overwrite_OE_assim():
     # checks if modified entries are correctly written to DART files
-    input1 = cluster.scriptsdir + "/../tests/obs_seq.orig.out"
-    input2 = cluster.scriptsdir + "/../tests/obs_seq.out"
+    input_template = cluster.scriptsdir + "/../tests/obs_seq.orig.out"
+    input_temporary = cluster.scriptsdir + "/../tests/obs_seq.out"
+    # TODO: MISSING FILE
+    # input_osf = cluster.scriptsdir + "/../tests/obs_seq.final"
     output = cluster.scriptsdir + "/../tests/obs_seq.test.out"
-    shutil.copy(input1, input2)
+    shutil.copy(input_template, input_temporary)
 
-    oso = obsseq.ObsSeq(input2)
+    oso = obsseq.ObsSeq(input_temporary)
+    osf = obsseq.ObsSeq(input_osf)
 
-    assim_synth_obs.set_obserr_assimilate_in_obsseqout(time, exp, oso, outfile=output)
+    assim_synth_obs.set_obserr_assimilate_in_obsseqout(oso, osf, outfile=output)
 
     var_orig = oso.df['variance']
 
     oso_test = obsseq.ObsSeq(output)  # read in again
     assert oso_test.df['variance'].iloc[0] == var_orig
     os.remove(output)
-    os.remove(input2)
+    os.remove(input_temporary)
 
 if __name__ == '__main__':
     test_overwrite_OE_assim()

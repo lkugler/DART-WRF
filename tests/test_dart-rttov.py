@@ -14,62 +14,68 @@ import proplot as plt
 import xarray as xr
 
 n_obs = 22500
-vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
+vis = dict(plotname='VIS06',  plotunits='[1]',
         kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs, 
-        error_generate=0, error_assimilate=0.05,
+        error_generate=0, error_assimilate=0.12,
         cov_loc_radius_km=20)
-wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
+wv62 = dict(plotname='WV62',  plotunits='[K]',
+            kind='MSG_4_SEVIRI_TB', sat_channel=5, n_obs=n_obs, 
+            error_generate=0, error_assimilate=False, 
+            cov_loc_radius_km=20)
+wv73 = dict(plotname='WV73',  plotunits='[K]',
             kind='MSG_4_SEVIRI_TB', sat_channel=6, n_obs=n_obs, 
             error_generate=0, error_assimilate=False, 
             cov_loc_radius_km=20)
 
+vsc = True if 'jet' not in os.uname().nodename else False
+if vsc:
+    datadir = '/gpfs/data/fs71386/lkugler/sim_archive/'
+    img_dir = '/gpfs/data/fs71386/lkugler/analysis/'
+else:
+    datadir = '/jetfs/home/lkugler/data/sim_archive/'
+    img_dir = '/jetfs/home/lkugler/analysis_plots/'
+
+dartrundir = datadir+'/../run_DART/test_jet'
+
 def test_rttov():
 
     times = pd.date_range(start=dt.datetime(2008, 7, 30, 13,30),
-                              end=dt.datetime(2008, 7, 30, 15,30),
-                              freq=dt.timedelta(minutes=15))
+                              end=dt.datetime(2008, 7, 30, 14,30),
+                              freq=dt.timedelta(minutes=30))
 
-    case = 'exp_v1.18_P1_nature'
-    # case = 'exp_v1.19_P3_wbub7_nat'
-    for obsvar in ['VIS06']: #'WV73',
+    case = 'exp_v1.19_P3_wbub7_nat'
+
+
+    for obscfg in [wv73, vis, wv62]:
 
         for time in times:
 
-            fname = '/home/fs71386/lkugler/data/analysis/'+case+'/dart-rttov-compare_'+obsvar+time.strftime('_%H:%M')+'-2.png'
+            fname = img_dir+'/'+case+'/dart-rttov-compare_'+obscfg['plotname']+time.strftime('_%H:%M')+'.png'
 
-            # if os.path.isfile(fname):
-            #     print(fname, 'skipping...')
-            #     continue
-
-            ds = xr.open_dataset('/home/fs71386/lkugler/data/sim_archive/'+case+'/2008-07-30_06:00/1/'+time.strftime('RT2_wrfout_d01_2008-07-30_%H:%M:00.nc'))
-            # 
-            da = ds[obsvar].squeeze()
+            ds = xr.open_dataset(datadir+'/'+case+'/2008-07-30_12:00/1/'+time.strftime('RT_wrfout_d01_2008-07-30_%H:%M:00.nc'))
+            if obscfg['plotname'] not in ds.data_vars:
+                raise KeyError(obscfg['plotname']+' not in dataset')
+            da = ds[obscfg['plotname']].squeeze()
 
 
-            shutil.copy('/home/fs71386/lkugler/data/sim_archive/'+case+'/2008-07-30_06:00/1/'+time.strftime('wrfout_d01_2008-07-30_%H:%M:00'), 
-                        cluster.dartrundir + "/wrfout_d01")
+            shutil.copy(datadir+'/'+case+'/2008-07-30_12:00/1/'+time.strftime('wrfout_d01_2008-07-30_%H:%M:00'), 
+                        dartrundir + "/wrfout_d01")
 
-            wrfout_add_geo.run(
-                cluster.dartrundir + "/../geo_em.d01.nc", cluster.dartrundir + "/wrfout_d01"
-            )
+            wrfout_add_geo.run(datadir+ "/geo_em.d01.nc", dartrundir + "/wrfout_d01")
            
 
-            error_generate = np.zeros(n_obs)
-            if obsvar == 'VIS06':
-                osq.create_obsseqin_alltypes(time, [vis])
-            else:
-                osq.create_obsseqin_alltypes(time, [wv73])
+            osq.create_obsseqin_alltypes(time, [obscfg])
             aso.set_DART_nml()
-            aso.run_perfect_model_obs() 
+            aso.run_perfect_model_obs(nproc=1) 
 
 
-            obs = obsseq.ObsSeq(cluster.dartrundir+'/obs_seq.out')
+            obs = obsseq.ObsSeq(dartrundir+'/obs_seq.out')
             obs_map = obs.df.truth.values.reshape(150,150)
 
 
             fig, ax = plt.subplots(ncols=2)
 
-            if obsvar == 'VIS06':
+            if obscfg['plotname'] == 'VIS06':
                 norm = mpl.colors.Normalize(vmin=0, vmax=1)
                 levels = plt.arange(0, 1, .05)
             else:
@@ -89,66 +95,20 @@ def test_rttov():
 
 
             fig, ax = plt.subplots()
-
-            # norm = mpl.colors.Normalize(vmin=0, vmax=1)
-            # levels = plt.arange(0, 1, .05)
-            # norm = mpl.colors.Normalize(vmin=210, vmax=260)
-            # levels = plt.arange(200, 260, 5)
-
             diff =  da.values[25:175,25:175] - obs_map
 
-            ax[0].pcolormesh(diff, norm=norm, levels=levels)
+            ax[0].pcolormesh(diff, cmap='RdBu_r')
             ax[0].set_title('pyRTTOV - DART-RTTOV')
             fig.colorbar(m1, loc='r')
             fig.suptitle(time.strftime('%H:%M'))
             
-            fname = '/home/fs71386/lkugler/data/analysis/'+case+'/dart-rttov-compare_'+obsvar+time.strftime('_%H:%M')+'-diff.png'
+            fname = img_dir+'/'+case+'/dart-rttov-compare_'+obscfg['plotname']+time.strftime('_%H:%M')+'-diff.png'
             fig.savefig(fname)
             print(fname)
 
-            #from IPython import embed; embed()
 
-            
-            # shutil.copy(cluster.dartrundir+'/obs_seq.out', 
-            #     '/home/fs71386/lkugler/data/analysis/'+case+time.strftime('/obs_seq_'+obsvar+'_%H:%M.out'))
-
-
-            # fig, ax = plt.subplots()
-            # m = ax.pcolormesh(obs_map)
-            # ax.colorbar(m, loc='r')
-            # ax.set_title(time.strftime('%H:%M'))
-            # fname = '/home/fs71386/lkugler/data/analysis/exp_v1.18_P1_nature/dart-rttov-output_'+time.strftime('%H:%M')+'.png'
-            # fig.savefig(fname)
-            # print(fname)
 
 
 if __name__ == '__main__':
     test_rttov()
     pass
-    # case = 'test_IR+VIS'
-    # time = dt.datetime(2008,7,30,13,30)
-
-
-
-    # error_generate = np.zeros(n_obs)
-    # osq.create_obsseqin_alltypes(time, [vis])
-    # aso.set_DART_nml()
-    # aso.run_perfect_model_obs() 
-
-
-    # obs = obsseq.ObsSeq(cluster.dartrundir+'/obs_seq.out')
-    # obs_map = obs.df.truth.values.reshape(150,150)
-
-
-    # ds = xr.open_dataset('/home/fs71386/lkugler/data/run_DART/test_IR+VIS/RT_wrfout_d01_cloudy.nc')
-    # da = ds['VIS06'].squeeze()
-    # pyrttov = da.values[25:175,25:175]
-
-    # diff = pyrttov - obs_map
-
-    # i, j = np.unravel_index(diff.argmax(), (150,150))
-    # print(i,j)
-
-    # print(pyrttov[i,j], obs_map[i,j])
-
-    # from IPython import embed; embed()
