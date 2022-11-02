@@ -5,9 +5,10 @@ according to which observations are generated and subsequently assimilated.
 import os, sys, warnings
 import numpy as np
 import datetime as dt
-from config.cfg import exp, cluster
 from pysolar.solar import get_altitude, get_azimuth
 
+from config.cfg import exp, cluster
+from dartwrf.obs import calculate_obs_locations as col
 
 def obskind_read():
     """Read dictionary of observation types + ID numbers ("kind") 
@@ -56,13 +57,25 @@ obs_kind_nrs = obskind_read()
 
 
 def degr_to_rad(degr):
-    """Convert to DART convention = radians"""
+    """Convert to DART convention (radians)
+    2*pi = 360 degrees
+    
+    Args:
+        degr (float) : degrees east of Greenwich
+        
+    Returns 
+        float
+    """
     if degr < 0:
         degr += 360
     return degr/360*2*np.pi
 
 
 def round_to_day(dtobj):
+    """Overwrite hours, minutes, seconds to 0
+    Args:
+        dtobj (dt.datetime)
+    """
     return dtobj.replace(second=0, minute=0, hour=0)
 
 
@@ -71,7 +84,13 @@ def add_timezone_UTC(t):
 
 
 def get_dart_date(time_dt):
-    # assumes input is UTC!
+    """Convert datetime.datetime into DART time format
+    
+    Assumes that input is UTC!
+    
+    Returns
+        str, str
+    """
     days_since_010120 = 145731
     ref_day = dt.datetime(2000, 1, 1, tzinfo=dt.timezone.utc)
     dart_date_day = str((time_dt - ref_day).days + days_since_010120)
@@ -79,101 +98,12 @@ def get_dart_date(time_dt):
     return dart_date_day, secs_thatday
 
 
-def calc_obs_locations(n_obs, coords_from_domaincenter=True, 
-                       distance_between_obs_km=9999, cov_loc_radius_km=32, fpath_coords=False):
-    """Calculate coordinate pairs for locations
-
-    Args:
-        n_obs (int):
-            number of observations (must be a square of an integer: 4, 9, 1000, ...)
-        coords_from_domaincenter (bool):
-            if False: spread observations evenly
-            if True: spread from domaincenter, `distance_between_obs_km` apart
-        distance_between_obs_km (int):
-            only used when coords_from_domaincenter=True
-        fpath_obs_locations (False or str):
-            write an obs_coords.pkl, can be used to check observation locations
-            if str, write to file
-
-    Returns:
-        list of (lat, lon) tuples
-    """
-    radius_earth_meters = 6.371*1E6
-
-    coords = []
-    if coords_from_domaincenter:
-        """
-        Create equally spaced grid for satellite observations every 4 km
-        e.g. ny,nx = 10
-        -> obs locations are from -5 to +5 times dy in south_north direction
-        and from -5 to +5 times dx in west_east direction
-        """
-        nx, ny = int(np.sqrt(n_obs)), int(np.sqrt(n_obs))
-
-        m_per_degree = 2*np.pi*radius_earth_meters/360
-        distance_between_obs_meters = distance_between_obs_km*1000.
-        dy_4km_in_degree = distance_between_obs_meters/m_per_degree
-
-        for iy in range(int(-ny/2), int(ny/2+1)):
-            for ix in range(int(-nx/2), int(nx/2+1)):
-
-                lat = lat0_center + iy*dy_4km_in_degree
-                m_per_degree_x = 2*np.pi*radius_earth_meters*np.sin(lat/180*np.pi)/360
-                dx_4km_in_degree = distance_between_obs_meters/m_per_degree_x
-                lon = lon0_center + ix*dx_4km_in_degree
-                coords.append((lat, lon))
-    else:
-        """Observations spread evenly over domain
-        but: leave out a distance to the border of the domain
-        so that the assimilation increments are zero on the boundary
-        distance to boundary = 1.5x localization-radius
-        """
-        fcoords = cluster.dartrundir+'/../geo_em.d01.nc'
-        import xarray as xr
-        ds = xr.open_dataset(fcoords)
-
-        lons = ds.XLONG_M.isel(Time=0).values
-        lats = ds.XLAT_M.isel(Time=0).values
-        n_obs_x = int(np.sqrt(n_obs))
-        nx = len(ds.south_north)  # number of gridpoints in one direction
-        model_dx_km = exp.model_dx/1000
-        print('assuming', model_dx_km, 'km model grid')
-
-        omit_covloc_radius_on_boundary = True
-        if omit_covloc_radius_on_boundary:  #  in order to avoid an increment step on the boundary
-            skip_km = 50  # cov_loc_radius_km*1.5
-            skip_gridpoints = int(skip_km/model_dx_km)  # skip this many gridpoints on each side
-
-            gridpoints_left = nx - 2*skip_gridpoints
-            # now spread observations evenly across the space left
-            gridpoints_between_obs = int(gridpoints_left/(n_obs_x-1))
-        else:
-            gridpoints_between_obs = int(nx/n_obs_x)  # number of gridpoints / number of observations in one direction
-            skip_gridpoints = int(gridpoints_between_obs/2)    # to center the observations in the domain
-        
-        km_between_obs = gridpoints_between_obs*model_dx_km
-        print('observation density: one observation every', km_between_obs, 'km /', 
-        gridpoints_between_obs,'gridpoints \n', 'leaving a domain boundary on each side of', 
-        skip_gridpoints, 'gridpoints or', skip_gridpoints*model_dx_km, 'km')
-        # skip_gridpoints = space we have to leave out on the boundary of the domain
-        # in order to have the observations centered in the domain
-
-        for i in range(n_obs_x):
-            for j in range(n_obs_x):
-                coords.append((lats[skip_gridpoints+i*gridpoints_between_obs, skip_gridpoints+j*gridpoints_between_obs],
-                               lons[skip_gridpoints+i*gridpoints_between_obs, skip_gridpoints+j*gridpoints_between_obs]))
-    try:
-        if fpath_coords:
-            import pickle
-            os.makedirs(os.path.dirname(fpath_coords), exist_ok=True)
-            with open(fpath_coords, 'wb') as f:
-                pickle.dump(coords, f)
-                print(fpath_coords, 'saved.')
-    except Exception as e:
-        warnings.warn(str(e))
-    assert len(coords) == n_obs, (len(coords), n_obs)
-    return coords
-
+def write_tuple_to_pickle(fpath_out, tuple):
+    import pickle
+    os.makedirs(os.path.dirname(fpath_out), exist_ok=True)
+    with open(fpath_out, 'wb') as f:
+        pickle.dump(tuple, f)
+    print(fpath_out, 'saved.')
 
 def write_file(msg, output_path='./'):
     try:
@@ -198,18 +128,9 @@ def append_hgt_to_coords(coords, heights):
     return coords2
 
 
-def preamble(n_obs, line_obstypedef):
-    n_obs_str = str(n_obs)
-    return """ obs_sequence
-obs_kind_definitions
-           1
-"""+line_obstypedef+"""
-  num_copies:            0  num_qc:            0
-  num_obs:            """+n_obs_str+"  max_num_obs:            "+n_obs_str+"""
-  first:            1  last:            """+n_obs_str
-
-
-def preamble_multi(n_obs_3d_total, list_kinds):
+def preamble(n_obs_3d_total, list_kinds):
+    """Writes the header of an obs_seq.out file
+    """
     lines_obstypedef = ''
     for kind in list_kinds:
         lines_obstypedef += '\n         '+str(obs_kind_nrs[kind])+' '+kind
@@ -239,6 +160,8 @@ def determine_vert_coords(sat_channel, kind, obscfg):
 
 
 def write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt):
+    """Writes metadata str for an observation inside obs_seq.out
+    """
     if sat_channel:
         sun_az = str(get_azimuth(lat0, lon0, time_dt))
         sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
@@ -255,10 +178,11 @@ def write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt):
 
 
 def write_section(obs, last=False):
-    """
+    """Returns the str of one observation inside an obs_seq.out file
+
     Args:
-    obs (object)
-    last (bool): True if this is the last observation in the obs_seq file
+        obs (object)
+        last (bool): True if this is the last observation in the obs_seq file
     """
     lon_rad = str(degr_to_rad(obs['lon']))
     lat_rad = str(degr_to_rad(obs['lat']))
@@ -281,129 +205,52 @@ kind
 """+str(obs['obserr_var'])
 
 
-# def create_obsseq_in_separate_obs(time_dt, obscfg, obs_errors=False,
-#                      archive_obs_coords=False):
-#     """Create obs_seq.in of one obstype
-
-#     Args:
-#         time_dt (dt.datetime): time of observation
-#         obscfg (dict)
-#         obs_errors (int, np.array) : values of observation errors (standard deviations)
-#             e.g. 0 = use zero error
-#         archive_obs_coords (str, False): path to folder
-
-#     channel_id (int): SEVIRI channel number
-#         see https://nwp-saf.eumetsat.int/downloads/rtcoef_rttov12/ir_srf/rtcoef_msg_4_seviri_srf.html
-        
-#     coords (list of 2-tuples with (lat,lon))
-#     obserr_std (np.array): shape (n_obs,), one value for each observation, 
-#         gaussian error with this std-dev is added to the truth at observation time
-#     archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
-#     """
-
-#     n_obs = obscfg['n_obs']
-#     coords = calc_obs_locations(n_obs, 
-#                 coords_from_domaincenter=False, 
-#                 distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
-#                 fpath_coords=archive_obs_coords)
-
-#     kind = obscfg['kind']
-#     sat_channel = obscfg.get('sat_channel', False)
-
-#     # determine vertical coordinates
-#     if not sat_channel:
-#         if 'SYNOP' in kind:
-#             vert_coord_sys = "-1"  # meters AGL
-#             vert_coords = [2, ]
-#         else:
-#             vert_coord_sys = "3"  # meters AMSL
-#             vert_coords = obscfg['heights']
-#     else:
-#         vert_coord_sys = "-2"  # undefined height
-#         vert_coords = ["-888888.0000000000", ]
-
-#     coords = append_hgt_to_coords(coords, vert_coords)
-#     n_obs_3d = len(coords)
-
-#     # define obs error
-#     obserr_std = np.zeros(n_obs_3d) 
-#     if obs_errors:
-#         obserr_std += obs_errors
-
-#     # other stuff for obsseq.in
-#     obs_kind_nr = obs_kind_nrs[kind]
-#     line_obstypedef = '         '+obs_kind_nr+' '+kind
-
-#     time_dt = add_timezone_UTC(time_dt)
-#     dart_date_day, secs_thatday = get_dart_date(time_dt)
-#     print('secs, days:', secs_thatday, dart_date_day)
-
-#     if sat_channel:
-#         sun_az = str(get_azimuth(lat0, lon0, time_dt))
-#         sun_zen = str(90. - get_altitude(lat0, lon0, time_dt))
-#         print('sunzen', sun_zen, 'sunazi', sun_az)
-
-#         appendix = """visir
-#    """+sat_az+"""        """+sat_zen+"""        """+sun_az+"""
-#    """+sun_zen+"""
-#           12           4          21           """+str(sat_channel)+"""
-#   -888888.000000000
-#            1"""
-#     else:
-#         appendix = ''
-
-#     txt = preamble(n_obs_3d, line_obstypedef)
-
-#     for i_obs in range(n_obs_3d):
-#         last = False
-#         if i_obs == int(n_obs_3d)-1:
-#             last = True  # last_observation
-
-#         txt += write_section(dict(i=i_obs+1,
-#                                   kind_nr=obs_kind_nr,
-#                                   dart_date_day=dart_date_day,
-#                                   secs_thatday=secs_thatday,
-#                                   lon=coords[i_obs][1],
-#                                   lat=coords[i_obs][0],
-#                                   vert_coord=coords[i_obs][2],
-#                                   vert_coord_sys=vert_coord_sys,
-#                                   obserr_var=obserr_std[i_obs]**2,
-#                                   appendix=appendix),
-#                              last=last)
-
-#     write_file(txt, output_path=cluster.dartrundir+'/obs_seq.in')
-
-
-def create_obsseqin_alltypes(time_dt, list_obscfg, archive_obs_coords=False):
+def create_obs_seq_in(time_dt, list_obscfg, 
+                             output_path=cluster.dartrundir+'/obs_seq.in'):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
         time_dt (dt.datetime): time of observation
-        list_obscfg (list of dict)
+        list_obscfg (list of dict) :    configuration for observation types
+            must have keys: 
+                - n_obs (int) : number of observations (must be a square of an integer: 4, 9, 1000, ...)
+                - obs_locations (str or tuple) in ['square_array_from_domaincenter', 'square_array_evenly_on_grid', ] 
+                                                or list of (lat, lon) coordinate tuples, in degrees north/east
+                - error_generate (float)
+                - error_assimilate (float or False) : False -> parameterized
+                - cov_loc_radius_km (float)
+
         obs_errors (np.array): contains observation errors, one for each observation
-        archive_obs_coords (bool, str): False or str (filepath where `obs_seq.in` will be saved)
     """
     print('creating obs_seq.in:')
     time_dt = add_timezone_UTC(time_dt)
     dart_date_day, secs_thatday = get_dart_date(time_dt)
-    # print('secs, days:', secs_thatday, dart_date_day)
 
     txt = ''
-    
     i_obs_total = 0
     for i_cfg, obscfg in enumerate(list_obscfg):
         n_obs = obscfg['n_obs']
 
-        coords = calc_obs_locations(n_obs, 
-                    coords_from_domaincenter=False, 
-                    distance_between_obs_km=obscfg.get('distance_between_obs_km', False), 
-                    cov_loc_radius_km=obscfg['cov_loc_radius_km'],
-                    fpath_coords=archive_obs_coords)
+        if obscfg['obs_locations'] == 'square_array_from_domaincenter':
+            coords = col.square_array_from_domaincenter(n_obs, 
+                                                        obscfg['distance_between_obs_km'])  # <---- must have variable
+
+        elif obscfg['obs_locations'] == 'square_array_evenly_on_grid':
+            coords = col.evenly_on_grid(n_obs)
+
+        else:  # obs_locations given by iterable
+            coords = obscfg['obs_locations']
+
+        assert len(coords) == n_obs, (len(coords), n_obs)  # check if functions did what they supposed to
+        for lat, lon in coords:
+            assert lat < 90 & lat > -90
+            assert lon < 180 & lon > -180
 
         kind = obscfg['kind']
         print('obstype', kind)
         sat_channel = obscfg.get('sat_channel', False)
 
+        # add observation locations in the vertical at different levels
         vert_coord_sys, vert_coords = determine_vert_coords(sat_channel, kind, obscfg)
         coords = append_hgt_to_coords(coords, vert_coords)
         n_obs_3d_thistype = len(coords)
@@ -437,57 +284,62 @@ def create_obsseqin_alltypes(time_dt, list_obscfg, archive_obs_coords=False):
             
     n_obs_total = i_obs_total
     list_kinds = [a['kind'] for a in list_obscfg]
-    pretxt = preamble_multi(n_obs_total, list_kinds)
+    pretxt = preamble(n_obs_total, list_kinds)
 
     alltxt = pretxt + txt
-    write_file(alltxt, output_path=cluster.dartrundir+'/obs_seq.in')
-
+    write_file(alltxt, output_path=output_path)
 
 
 if __name__ == '__main__':
     # for testing
-    time_dt = dt.datetime(2008, 7, 30, 7, 0)
-    n_obs = 22500  # radar: n_obs for each observation height level
+    time_dt = dt.datetime(2008, 7, 30, 13, 0)
+
 
     vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
-            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, n_obs=n_obs,
+            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, 
+            n_obs=961, obs_locations='square_array_evenly_on_grid',
             error_generate=0.03, error_assimilate=0.06,
             cov_loc_radius_km=32)
 
-    wv62 = dict(plotname='Brightness temperature WV 6.2µm', plotunits='[K]',
-                kind='MSG_4_SEVIRI_TB', sat_channel=5, n_obs=n_obs, 
-                error_generate=1., error_assimilate=False, 
-                cov_loc_radius_km=20)
+    # wv62 = dict(plotname='Brightness temperature WV 6.2µm', plotunits='[K]',
+    #             kind='MSG_4_SEVIRI_TB', sat_channel=5, 
+    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
+    #             error_generate=1., error_assimilate=False, 
+    #             cov_loc_radius_km=20)
 
-    wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
-                kind='MSG_4_SEVIRI_TB', sat_channel=6, n_obs=n_obs,
-                error_generate=1., error_assimilate=False,
-                cov_loc_radius_km=20)
+    # wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
+    #             kind='MSG_4_SEVIRI_TB', sat_channel=6, 
+    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
+    #             error_generate=1., error_assimilate=False,
+    #             cov_loc_radius_km=20)
 
-    ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
-                kind='MSG_4_SEVIRI_TB', sat_channel=9, n_obs=n_obs,
-                error_generate=5., error_assimilate=10.,
-                cov_loc_radius_km=32)
+    # ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
+    #             kind='MSG_4_SEVIRI_TB', sat_channel=9, 
+    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
+    #             error_generate=5., error_assimilate=10.,
+    #             cov_loc_radius_km=32)
 
     radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
-                kind='RADAR_REFLECTIVITY', n_obs=n_obs,
+                kind='RADAR_REFLECTIVITY',             
+                n_obs=1, obs_locations=[(45,0),],
                 error_generate=2.5, error_assimilate=5.,
                 heights=np.arange(1000, 15001, 1000),
-                cov_loc_radius_km=32, cov_loc_vert_km=4)
+                cov_loc_radius_km=20, cov_loc_vert_km=4)
 
-    t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
-            kind='SYNOP_TEMPERATURE', n_obs=n_obs,
-            error_generate=0.1, error_assimilate=1.,
-            cov_loc_radius_km=20, cov_loc_vert_km=3)
+    # t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
+    #         kind='SYNOP_TEMPERATURE',             
+    #         n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
+    #         error_generate=0.1, error_assimilate=1.,
+    #         cov_loc_radius_km=20, cov_loc_vert_km=3)
 
-    psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
-                kind='SYNOP_SURFACE_PRESSURE', n_obs=n_obs,
-                error_generate=50., error_assimilate=100.,
-                cov_loc_radius_km=32, cov_loc_vert_km=5)
+    # psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
+    #             kind='SYNOP_SURFACE_PRESSURE', 
+    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
+    #             error_generate=50., error_assimilate=100.,
+    #             cov_loc_radius_km=32, cov_loc_vert_km=5)
 
-    #create_obsseq_in(time_dt, radar, archive_obs_coords=False) #'./coords_stage1.pkl')
 
-    create_obsseqin_alltypes(time_dt, [wv62], archive_obs_coords=False) #'./obs_coords.pkl')
+    create_obs_seq_in(time_dt, [radar])
 
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
