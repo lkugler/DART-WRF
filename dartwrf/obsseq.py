@@ -136,6 +136,27 @@ class ObsRecord(pd.DataFrame):
         # find indices of observations within pandas.DataFrame
         return self.iloc[self.i_obs_grid[i, j, k].ravel()]
 
+    def determine_nlayers(self):
+        nlayers = 1  # first guess
+
+        if len(exp.observations) == 1:
+            # obscfg = exp.observations[0]
+            # if 'heights' in obscfg:
+            #     nlayers = len(obscfg['heights'])
+
+            heights = [loc_xyz[2] for loc_xyz in self['loc3d']]
+            heights = sorted(heights)
+            h0 = heights[0]
+            for i, h in enumerate(heights):
+                if h != h0:
+                    break
+            obs_per_layer = i  # if it fails at 1, there is 1 obs per layer
+
+            nlayers = int(len(self)/obs_per_layer)
+        else:
+            warnings.warn('I can only guess the number of layers from this file.')
+        return nlayers
+
     def superob(self, window_km):
         """Select subset, average, overwrite existing obs with average
 
@@ -191,14 +212,10 @@ class ObsRecord(pd.DataFrame):
             print("window (#obs in x/y)=", win_obs)
 
         # superob in case of multiple layers, only implemented for single obstype
-        nlayers = 1
-        if len(exp.observations) == 1:
-            obscfg = exp.observations[0]
-            if 'heights' in obscfg:
-                nlayers = len(obscfg['heights'])
-        self.nlayers = nlayers
+        nlayers = self.determine_nlayers()
         
-        i_obs_grid = self.index.values  # indices of observations (starting from 0)
+        # indices of observations (starting from 0)
+        i_obs_grid = self.index.values  
 
         # get the observation indices from obs_seq (list)
         # onto a cartesian grid (ix, iy, iz)
