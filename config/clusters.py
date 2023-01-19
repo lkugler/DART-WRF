@@ -62,6 +62,7 @@ class ClusterConfig(object):
 
 vsc = ClusterConfig()
 vsc.name = 'vsc' 
+srvx1.max_nproc = 20
 
 # binaries
 vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
@@ -92,6 +93,7 @@ vsc.slurm_cfg = {"account": "p71386", "partition": "skylake_0384", "qos": "p7138
 
 jet = ClusterConfig()
 jet.name = 'jet'
+srvx1.max_nproc = 12
 
 # binaries
 jet.python = '/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
@@ -118,5 +120,38 @@ jet.namelist = jet.scriptsdir+'/../templates/namelist.input'
 jet.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
 
 jet.slurm_cfg = {"account": "lkugler", "partition": "compute",
+                 "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",
+                 "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
+
+
+srvx1 = ClusterConfig()
+srvx1.name = 'srvx1'
+srvx1.max_nproc = 6
+
+# binaries
+srvx1.python = '/mnt/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
+srvx1.python_verif = '/jetfs/home/lkugler/miniconda3/envs/enstools/bin/python'
+srvx1.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-20.0.2/nco-4.9.3-dhlqiyog7howjmaleyfhm6lkt7ra37xf/bin/ncks'
+srvx1.ideal = '/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
+srvx1.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
+srvx1.container = ''
+
+# paths for data output
+srvx1.wrf_rundir_base = '/jetfs/home/lkugler/data/run_WRF/'  # path for temporary files
+srvx1.dart_rundir_base = '/jetfs/home/lkugler/data/run_DART/'  # path for temporary files
+srvx1.archive_base = '/mnt/jetfs/scratch/lkugler/data/sim_archive/'
+
+# paths used as input
+srvx1.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
+srvx1.dart_srcdir = '/users/staff/lkugler/AdvDA23/DART/models/wrf/work'
+srvx1.rttov_srcdir = '/users/staff/lkugler/AdvDA23/RTTOV13/rtcoef_rttov13/'
+srvx1.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
+srvx1.geo_em = '/mnt/jetfs/scratch/lkugler/data/geo_em.d01.nc'
+
+# templates/run scripts
+srvx1.namelist = srvx1.scriptsdir+'/../templates/namelist.input'
+srvx1.run_WRF = srvx1.scriptsdir+'/run_ens.jet.sh'
+
+srvx1.slurm_cfg = {"account": "lkugler", "partition": "compute",
                  "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
