@@ -16,6 +16,7 @@ print('logging to', log_dir)
 print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
 class Shellslurm():
+    """Like Slurm class, but runs locally"""
     def __init__(self, *args, **kwargs):
         pass
     def run(self, *args, **kwargs):
