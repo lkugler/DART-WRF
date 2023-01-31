@@ -6,9 +6,8 @@ submitting jobs into SLURM queue
 import os, sys, shutil, glob, warnings
 import datetime as dt
 
+from dartwrf.utils import script_to_str, symlink, copy, create_job
 from config.cfg import exp, cluster
-from dartwrf.utils import script_to_str, symlink, copy
-from utils import create_job
 
 log_dir = cluster.archivedir+'/logs/'
 slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'

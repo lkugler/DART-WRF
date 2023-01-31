@@ -1,5 +1,6 @@
 import os, sys
 import datetime as dt
+from dartwrf import utils
 
 """Configuration name docs
 
@@ -39,30 +40,12 @@ slurm_cfg               python dictionary, containing options of SLURM
 """                 
 
 
-class ClusterConfig(object):
-    """Helper class, contains useful abbreviations to use in code later on"""
-    def __init__(self):
-        pass
-
-    @property
-    def archivedir(self):
-        return self.archive_base+'/'+self.expname
-
-    def wrf_rundir(self, iens):
-        return self.wrf_rundir_base+'/'+self.expname+'/'+str(iens)
-
-    @property
-    def scripts_rundir(self):
-        return self.archivedir+'/DART-WRF/'
-
-    @property
-    def dartrundir(self):
-        return self.dart_rundir_base+'/'+self.expname+'/'
 
 
-vsc = ClusterConfig()
+vsc = utils.ClusterConfig()
 vsc.name = 'vsc' 
-srvx1.max_nproc = 20
+vsc.max_nproc = 20
+vsc.use_slurm = True
 
 # binaries
 vsc.python = '/home/fs71386/lkugler/miniconda3/envs/DART/bin/python'
@@ -91,9 +74,10 @@ vsc.slurm_cfg = {"account": "p71386", "partition": "skylake_0384", "qos": "p7138
                  "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
-jet = ClusterConfig()
+jet = utils.ClusterConfig()
 jet.name = 'jet'
-srvx1.max_nproc = 12
+jet.max_nproc = 12
+jet.use_slurm = True
 
 # binaries
 jet.python = '/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
@@ -124,9 +108,10 @@ jet.slurm_cfg = {"account": "lkugler", "partition": "compute",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
 
-srvx1 = ClusterConfig()
+srvx1 = utils.ClusterConfig()
 srvx1.name = 'srvx1'
 srvx1.max_nproc = 6
+srvx1.use_slurm = False
 
 # binaries
 srvx1.python = '/mnt/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
