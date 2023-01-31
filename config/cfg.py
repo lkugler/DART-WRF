@@ -1,15 +1,11 @@
-from config import clusters
+from dartwrf import utils
+from config import clusters  # from . = problem in archivedir
 cluster = clusters.jet  # change cluster configuration here
 
-class ExperimentConfiguration(object):
-    def __init__(self):
-        pass
-
-exp = ExperimentConfiguration()
-exp.expname = "exp_v1.22_P2_rr_WV62_obs10_loc20_oe2"
+exp = utils.ExperimentConfiguration()
+exp.expname = "test_srvx1" #"exp_v1.22_P3_wbub7_WV62_obs10_loc20_oe1"
 exp.model_dx = 2000
 exp.n_ens = 40
-exp.size_jobarray = 40
 
 exp.filter_kind = 1
 exp.inflation = True
@@ -99,7 +95,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [wv62]
+exp.observations = [t]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 

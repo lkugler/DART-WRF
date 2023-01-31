@@ -8,14 +8,13 @@ import pandas as pd
 from slurmpy import Slurm
 
 from config.cfg import exp, cluster
-from dartwrf.utils import script_to_str, symlink
+from dartwrf.utils import script_to_str, symlink, backup_scripts
+from cycled_exp import *
 
 log_dir = cluster.archivedir+'/logs/'
 slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'
 print('logging to', log_dir)
 print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
-
-from scheduler import *
 
 ################################
 print('starting osse')

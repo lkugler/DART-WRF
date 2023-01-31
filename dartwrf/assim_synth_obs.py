@@ -472,7 +472,7 @@ if __name__ == "__main__":
     options = []
     if len(sys.argv) >4:
         options = sys.argv[5:]
-    nproc = 6 if 'headnode' in options else 12
+    nproc = cluster.max_nproc
 
     archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
     os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
