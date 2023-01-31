@@ -30,6 +30,8 @@ scriptsdir              path where DART-WRF scripts reside, e.g. /home/DART-WRF/
 
 namelist                path to a namelist template; strings like <hist_interval>, will be overwritten in scripts/prepare_namelist.py
 run_WRF                 path to script which runs WRF on a node of the cluster
+obs_impact_filename     path to obs_impact_filename (see DART guide; module assim_tools_mod and program obs_impact_tool)
+geo_em                  path to NetCDF file of WRF domain (see WRF guide)
 
 slurm_cfg               python dictionary, containing options of SLURM
                             defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
@@ -111,12 +113,13 @@ jet.srcdir = '/jetfs/home/lkugler/data/compile/WRF-4.3/run'
 jet.dart_srcdir = '/jetfs/home/lkugler/data/compile/DART/DART-10.5.3/models/wrf/work'
 jet.rttov_srcdir = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/'
 jet.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
-jet.geo_em = '/jetfs/home/lkugler/data/geo_em.d01.nc'
 
-# templates/run scripts
+# other inputs
+jet.geo_em = '/jetfs/home/lkugler/data/geo_em.d01.nc'
+jet.obs_impact_filename = jet.scriptsdir+'/../templates/impactfactor_T.txt'
 jet.namelist = jet.scriptsdir+'/../templates/namelist.input'
 jet.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
 
-jet.slurm_cfg = {"account": "lkugler", "partition": "compute",
+jet.slurm_cfg = {"account": "lkugler", "partition": "compute", #"nodelist": "jet07",
                  "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
