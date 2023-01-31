@@ -26,14 +26,20 @@ def set_DART_nml(just_prior_values=False):
     list_cov_loc_radius_km = [obscfg["cov_loc_radius_km"] for obscfg in exp.observations]
     list_cov_loc_radian = [str(to_radian_horizontal(a)) for a in list_cov_loc_radius_km]
 
-    if just_prior_values:
+    if just_prior_values:  # if not compute posterior
         template = cluster.scriptsdir + "/../templates/input.eval.nml"
     else:
         template = cluster.scriptsdir + "/../templates/input.nml"
     copy(template, cluster.dartrundir + "/input.nml")
 
-    # options keys are replaced in input.nml with values
+    # impact_factor
+    if exp.adjust_obs_impact:
+        copy(cluster.obs_impact_filename, cluster.dartrundir + "/control_impact_runtime.txt")
+
+    # The keys in `options` are placeholders in input.nml which will be replaced.
+    # How? This is defined here
     options = {
+        "<adjust_obs_impact>": '.true.' if exp.adjust_obs_impact else '.false.',
         "<filter_kind>": str(int(exp.filter_kind)),
         "<sampling_error_correction>": '.true.' if exp.sec else '.false.',
         "<post_inflation>": '4' if exp.inflation else '0',

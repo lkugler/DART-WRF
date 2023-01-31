@@ -105,6 +105,8 @@
 &assim_tools_nml
    filter_kind                     = <filter_kind>,
    cutoff                          = <cov_loc_radian>,
+   adjust_obs_impact               = <adjust_obs_impact>,
+   obs_impact_filename             = 'control_impact_runtime.txt',
    sort_obs_inc                    = .false.,
    spread_restoration              = .false.,
    sampling_error_correction       = <sampling_error_correction>,
