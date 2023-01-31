@@ -45,6 +45,7 @@ slurm_cfg               python dictionary, containing options of SLURM
 vsc = utils.ClusterConfig()
 vsc.name = 'vsc' 
 vsc.max_nproc = 20
+vsc.size_jobarray = 10  # 10 jobs with each 4 WRF processes per node
 vsc.use_slurm = True
 
 # binaries
@@ -78,6 +79,7 @@ jet = utils.ClusterConfig()
 jet.name = 'jet'
 jet.max_nproc = 12
 jet.use_slurm = True
+jet.size_jobarray = 40
 
 # binaries
 jet.python = '/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
@@ -111,6 +113,7 @@ jet.slurm_cfg = {"account": "lkugler", "partition": "compute",
 srvx1 = utils.ClusterConfig()
 srvx1.name = 'srvx1'
 srvx1.max_nproc = 6
+srvx1.size_jobarray = 40
 srvx1.use_slurm = False
 
 # binaries

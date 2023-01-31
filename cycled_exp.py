@@ -103,7 +103,7 @@ def run_ENS(begin, end, depends_on=None, first_minute=True,
 
     time_in_simulation_hours = (end-begin).total_seconds()/3600
     runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
-    s = create_job("WRF", cfg_update={"array": "1-"+str(exp.n_nodes), "ntasks": "10", "nodes": "1",
+    s = create_job("WRF", cfg_update={"array": "1-"+str(cluster.size_jobarray), "ntasks": "10", "nodes": "1",
                 "time": str(runtime_wallclock_mins_expected), "mem": "140G"})
     cmd = script_to_str(cluster.run_WRF).replace('<exp.expname>', exp.expname
                                        ).replace('<cluster.wrf_rundir_base>', cluster.wrf_rundir_base)
@@ -186,7 +186,7 @@ def verify_sat(depends_on=None):
 def verify_wrf(depends_on=None):
     s = create_job("verif-WRF-"+exp.expname, cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "20", 
                  "ntasks-per-node": "20", "ntasks-per-core": "1", "mem": "250G"})
-    cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
+    cmd = cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d verif3d FSS BS'
     s.run(cmd, depends_on=[depends_on])
 
 def verify_fast(depends_on=None):
@@ -273,7 +273,6 @@ if __name__ == "__main__":
         # update time variables
         prior_init_time = time - timedelta_btw_assim
 
-    #id = gen_obsseq(id)
     verify_sat(id_sat)
     verify_wrf(id)
     verify_fast(id)

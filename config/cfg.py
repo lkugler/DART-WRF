@@ -3,10 +3,9 @@ from config import clusters  # from . = problem in archivedir
 cluster = clusters.jet  # change cluster configuration here
 
 exp = utils.ExperimentConfiguration()
-exp.expname = "test_jet" #"exp_v1.22_P3_wbub7_WV62_obs10_loc20_oe1"
+exp.expname = "test_srvx1" #"exp_v1.22_P3_wbub7_WV62_obs10_loc20_oe1"
 exp.model_dx = 2000
 exp.n_ens = 40
-exp.n_nodes = 40
 
 exp.filter_kind = 1
 exp.inflation = True
