@@ -5,7 +5,7 @@ running the forecast model without assimilation
 import os, sys, shutil
 import datetime as dt
 
-from dartwrf import utils
+from dartwrf.utils_workflow import backup_scripts
 from config.cfg import exp, cluster
 
 log_dir = cluster.archivedir+'/logs/'
@@ -15,7 +15,7 @@ print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
 
 ###############################
-utils.backup_scripts()
+backup_scripts()
 
 
 prior_path_exp = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'

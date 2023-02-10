@@ -8,7 +8,8 @@ import pandas as pd
 from slurmpy import Slurm
 
 from config.cfg import exp, cluster
-from dartwrf.utils import script_to_str, symlink, backup_scripts
+from utils import backup_scripts
+from dartwrf.utils import script_to_str, symlink
 from cycled_exp import *
 
 log_dir = cluster.archivedir+'/logs/'
