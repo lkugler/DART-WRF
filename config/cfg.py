@@ -2,13 +2,14 @@ from dartwrf.utils_workflow import ExperimentConfiguration
 from config import clusters  # from . = problem in archivedir
 cluster = clusters.srvx1  # change cluster configuration here
 
-exp = ExperimentConfiguration()
-exp.expname = "test_srvx1" #"exp_v1.22_P3_wbub7_WV62_obs10_loc20_oe1"
+exp = utils.ExperimentConfiguration()
+exp.expname = "exp_v1.22_P2_rr_VIS+WV73_obs10_loc20_inf2"
 exp.model_dx = 2000
 exp.n_ens = 40
 
 exp.filter_kind = 1
-exp.inflation = True
+exp.prior_inflation = 2
+exp.post_inflation = 0
 exp.sec = True
 exp.reject_smallFGD = False
 exp.cov_loc_vert_km_horiz_km = (3, 20)
@@ -95,7 +96,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             cov_loc_radius_km=32)
 
 
-exp.observations = [t]
+exp.observations = [vis,wv73]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 

@@ -42,7 +42,8 @@ def set_DART_nml(just_prior_values=False):
         "<adjust_obs_impact>": '.true.' if exp.adjust_obs_impact else '.false.',
         "<filter_kind>": str(int(exp.filter_kind)),
         "<sampling_error_correction>": '.true.' if exp.sec else '.false.',
-        "<post_inflation>": '4' if exp.inflation else '0',
+        "<prior_inflation>": str(exp.prior_inflation),
+        "<post_inflation>": str(exp.post_inflation),
         "<n_ens>": str(int(exp.n_ens)),
         "<cov_loc_radian>": "0.00000001",  # dummy value, used for types not mentioned below
         "<list_obstypes>": "'" + "','".join(list_obstypes) + "'",
