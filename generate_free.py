@@ -12,15 +12,10 @@ from config.clusters import cluster
 from dartwrf.utils import script_to_str, symlink
 from cycled_exp import *
 
-log_dir = cluster.archivedir+'/logs/'
-slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'
-print('logging to', log_dir)
-print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
 ################################
 print('starting osse')
 
-cluster.backup_scripts()
 id = None
 
 

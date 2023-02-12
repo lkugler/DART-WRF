@@ -21,18 +21,32 @@ class ClusterConfig(object):
     """Collection of variables to use in code later on"""
     def __init__(self, exp):
         self.exp = exp
+        self.set_up = False
 
+    def setup(self):
+        # Set paths and backup scripts
+        self.log_dir = self.archivedir+'/logs/'
+        self.slurm_scripts_dir = self.archivedir+'/slurm-scripts/'
+        print('logging to', self.log_dir)
+        print('scripts, which are submitted to SLURM:', self.slurm_scripts_dir)
+
+        self.backup_scripts()
+        self.set_up = True
+
+    @property
     def archivedir(self):
         return self.archive_base+'/'+self.exp.expname
 
-    def wrf_rundir(self, iens):
-        return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)
-
+    @property
     def scripts_rundir(self):
         return self.archivedir+'/DART-WRF/'
 
+    @property
     def dartrundir(self):
         return self.dart_rundir_base+'/'+self.exp.expname+'/'
+
+    def wrf_rundir(self, iens):
+        return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)
 
     def create_job(self, *args, cfg_update=dict(), **kwargs):
         """Shortcut to slurmpy's class; keep certain default kwargs
@@ -41,13 +55,18 @@ class ClusterConfig(object):
 
         depending on cluster config : run either locally or via SLURM 
         """
+        if not self.set_up:
+            self.setup()
+
         if self.use_slurm:
             return Slurm(*args, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
-                     log_dir=log_dir, scripts_dir=slurm_scripts_dir, **kwargs)
+                        log_dir=self.log_dir, 
+                        scripts_dir=self.slurm_scripts_dir, 
+                        **kwargs)
         else:
             return Shellslurm(*args)
 
-    def backup_scripts():
+    def backup_scripts(self):
         """Copies scripts and configuration to archive dir output folder"""
         os.makedirs(self.archivedir, exist_ok=True)
     
@@ -57,17 +76,11 @@ class ClusterConfig(object):
             pass
         except:
             raise
-        try:
-            copy(os.path.basename(__file__), self.scripts_rundir+'/')
-        except Exception as e:
-            warnings.warn(str(e))
-    
-    def prepare_WRFrundir(init_time):
-        """Create WRF/run directories and wrfinput files
-        """
-        cmd = self.python+' '+self.scripts_rundir+'/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
-        print(cmd)
-        os.system(cmd)
+        # try:
+        #     copy(os.path.basename(__file__), self.scripts_rundir+'/')
+        # except Exception as e:
+        #     warnings.warn(str(e))
+        print('scripts have been copied to', self.archivedir)
 
 def shell(args):
     print(args)

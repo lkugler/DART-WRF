@@ -9,10 +9,12 @@ from dartwrf.utils import script_to_str
 from config.cfg import exp
 from config.clusters import cluster
 
-log_dir = cluster.archivedir+'/logs/'
-slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'
-print('logging to', log_dir)
-print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
+def prepare_WRFrundir(init_time):
+    """Create WRF/run directories and wrfinput files
+    """
+    cmd = cluster.python+' '+cluster.scripts_rundir+'/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
+    print(cmd)
+    os.system(cmd)
 
 def run_ideal(depends_on=None):
     """Run ideal for every ensemble member"""
@@ -202,7 +204,6 @@ if __name__ == "__main__":
     timedelta_integrate = dt.timedelta(minutes=15)
     timedelta_btw_assim = dt.timedelta(minutes=15)
 
-    cluster.backup_scripts()
     id = None
 
     if False:  # warm bubble
