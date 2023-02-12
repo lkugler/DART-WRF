@@ -1,6 +1,7 @@
 import os, sys, glob, warnings
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 import run_obs_diag as rod
 
 def listdir_dirs(path):

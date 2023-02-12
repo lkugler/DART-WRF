@@ -7,7 +7,8 @@ import datetime as dt
 import pandas as pd
 from slurmpy import Slurm
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from dartwrf.utils import script_to_str, symlink, backup_scripts
 from cycled_exp import *
 

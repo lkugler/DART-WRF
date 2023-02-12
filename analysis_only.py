@@ -6,7 +6,8 @@ import os, sys, shutil
 import datetime as dt
 
 from dartwrf import utils
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 
 log_dir = cluster.archivedir+'/logs/'
 slurm_scripts_dir = cluster.archivedir+'/slurm-scripts/'

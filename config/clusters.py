@@ -1,6 +1,7 @@
 import os, sys
 import datetime as dt
 from dartwrf import utils
+from config.cfg import exp
 
 """Configuration name docs
 
@@ -39,12 +40,9 @@ slurm_cfg               python dictionary, containing options of SLURM
                             this configuration can be overwritten later on, for example:
                             'dict(cluster.slurm_cfg, **cfg_update)' where
                             'cfg_update = {"nodes": "2"}'
-"""                 
+"""
 
-
-
-
-vsc = utils.ClusterConfig()
+vsc = utils.ClusterConfig(exp)
 vsc.name = 'vsc' 
 vsc.max_nproc = 20
 vsc.size_jobarray = 10  # 10 jobs with each 4 WRF processes per node
@@ -77,7 +75,7 @@ vsc.slurm_cfg = {"account": "p71386", "partition": "skylake_0384", "qos": "p7138
                  "nodes": "1", "ntasks": "1", "ntasks-per-node": "48", "ntasks-per-core": "1",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
-jet = utils.ClusterConfig()
+jet = utils.ClusterConfig(exp)
 jet.name = 'jet'
 jet.max_nproc = 12
 jet.use_slurm = True
@@ -113,7 +111,7 @@ jet.slurm_cfg = {"account": "lkugler", "partition": "compute", #"nodelist": "jet
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
 
 
-srvx1 = utils.ClusterConfig()
+srvx1 = utils.ClusterConfig(exp)
 srvx1.name = 'srvx1'
 srvx1.max_nproc = 6
 srvx1.size_jobarray = 40
@@ -146,3 +144,7 @@ srvx1.run_WRF = srvx1.scriptsdir+'/run_ens.jet.sh'
 srvx1.slurm_cfg = {"account": "lkugler", "partition": "compute",
                  "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}
+
+########
+# select cluster configuration here
+cluster = jet

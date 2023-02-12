@@ -1,15 +1,13 @@
 from dartwrf import utils
-from config import clusters  # from . = problem in archivedir
-cluster = clusters.jet  # change cluster configuration here
 
 exp = utils.ExperimentConfiguration()
-exp.expname = "exp_v1.22_P2_rr_VIS+WV73_obs10_loc20_inf2"
+exp.expname = "exp_v1.22_P2_rr_WV62_obs10_loc20_oe2" #"exp_v1.22_P2_rr_VIS+WV73_obs10_loc20_inf5"
 exp.model_dx = 2000
 exp.n_ens = 40
 
 exp.filter_kind = 1
-exp.prior_inflation = 2
-exp.post_inflation = 0
+exp.prior_inflation = 0
+exp.post_inflation = 4
 exp.sec = True
 exp.reject_smallFGD = False
 exp.cov_loc_vert_km_horiz_km = (3, 20)
@@ -95,10 +93,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             error_generate=50., error_assimilate=100.,
             cov_loc_radius_km=32)
 
-
-exp.observations = [vis,wv73]
+exp.observations = [wv62]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 
-# directory paths depend on the name of the experiment
-cluster.expname = exp.expname

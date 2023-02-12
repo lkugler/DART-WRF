@@ -4,7 +4,8 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from dartwrf.utils import copy, print
 import dartwrf.create_obsseq as osq
 from dartwrf import obsseq

@@ -1,5 +1,6 @@
 import os
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from utils import symlink, copy_scp_srvx8, copy, sed_inplace
 
 joinp = os.path.join

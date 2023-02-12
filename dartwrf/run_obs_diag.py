@@ -1,6 +1,7 @@
 import os, sys, shutil, glob
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from utils import symlink, copy, sed_inplace, append_file, shell
 
 rundir_program = '/home/fs71386/lkugler/data/run_DART/'

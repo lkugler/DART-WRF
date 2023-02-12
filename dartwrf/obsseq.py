@@ -7,7 +7,8 @@ import os, sys, shutil, warnings
 import numpy as np
 import pandas as pd
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
 
 

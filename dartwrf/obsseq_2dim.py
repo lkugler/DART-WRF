@@ -8,7 +8,8 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from dartwrf import assim_synth_obs as aso
 from dartwrf import obsseq
 

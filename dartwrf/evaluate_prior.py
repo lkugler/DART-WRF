@@ -3,7 +3,8 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
 from dartwrf import assim_synth_obs as aso
 

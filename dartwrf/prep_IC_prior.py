@@ -2,7 +2,8 @@ import os, sys, warnings, glob
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 from utils import copy, clean_wrfdir, try_remove
 
 """

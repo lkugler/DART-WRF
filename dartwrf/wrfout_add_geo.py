@@ -10,7 +10,8 @@ Example call:
 import os, sys
 import netCDF4 as nc
 
-from config.cfg import exp, cluster
+from config.cfg import exp
+from config.clusters import cluster
 
 fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
                 "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
