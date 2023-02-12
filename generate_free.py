@@ -9,7 +9,7 @@ from slurmpy import Slurm
 
 from config.cfg import exp
 from config.clusters import cluster
-from dartwrf.utils import script_to_str, symlink, backup_scripts
+from dartwrf.utils import script_to_str, symlink
 from cycled_exp import *
 
 log_dir = cluster.archivedir+'/logs/'
@@ -20,7 +20,7 @@ print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 ################################
 print('starting osse')
 
-backup_scripts()
+cluster.backup_scripts()
 id = None
 
 

@@ -23,7 +23,7 @@ exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.ou
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P5+su_nat2/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #exp.nature_wrfout = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_Pwbub5_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-exp.nature_wrfout = '/jetfs/home/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+exp.nature_wrfout = cluster.archive_base+'/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 #exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P4_nat/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 exp.input_profile = '/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'

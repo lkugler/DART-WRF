@@ -16,7 +16,7 @@ print('scripts, which are submitted to SLURM:', slurm_scripts_dir)
 
 
 ###############################
-utils.backup_scripts()
+backup_scripts()
 
 
 prior_path_exp = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
