@@ -200,6 +200,7 @@ def verify_fast(depends_on=None):
 ################################
 if __name__ == "__main__":
     print('starting osse')
+    cluster.setup()
 
     timedelta_integrate = dt.timedelta(minutes=15)
     timedelta_btw_assim = dt.timedelta(minutes=15)

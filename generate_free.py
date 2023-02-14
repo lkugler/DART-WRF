@@ -16,6 +16,7 @@ from cycled_exp import *
 ################################
 print('starting osse')
 
+cluster.setup()
 id = None
 
 

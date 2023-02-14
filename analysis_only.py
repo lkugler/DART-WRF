@@ -18,6 +18,8 @@ prior_valid_time = dt.datetime(2008,7,30,12,30)
 assim_time = prior_valid_time
 
 
+cluster.setup()
+
 os.system(
     cluster.python+' '+cluster.scripts_rundir+'/assim_synth_obs.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M ')
