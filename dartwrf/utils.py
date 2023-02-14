@@ -2,7 +2,6 @@ import os, sys, shutil, glob, warnings
 import builtins as __builtin__
 import subprocess
 import datetime as dt
-from slurmpy import Slurm
 
 class ExperimentConfiguration(object):
     """Collection of variables to use in code later on"""
@@ -59,6 +58,7 @@ class ClusterConfig(object):
             self.setup()
 
         if self.use_slurm:
+            from slurmpy import Slurm
             return Slurm(*args, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
                         log_dir=self.log_dir, 
                         scripts_dir=self.slurm_scripts_dir, 
