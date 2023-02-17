@@ -25,5 +25,5 @@ Contents
 
    usage
    api
-   example
+   docs/source/example
 
