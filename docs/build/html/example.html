@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>&lt;no title&gt; &#8212; DART-WRF 2023.2.17 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p>## Workflow
+#### Configure your experiment
+Define simulation specific variables in [<cite>config/cfg.py</cite>](<a class="reference external" href="https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py">https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py</a>).
+Define paths for python, ncks, etc. in [<cite>config/clusters.py</cite>](<a class="reference external" href="https://github.com/lkugler/DART-WRF/blob/master/config/clusters.py">https://github.com/lkugler/DART-WRF/blob/master/config/clusters.py</a>).
+Dependencies are <cite>numpy, pandas, scipy, xarray, netCDF4</cite>. Install non-standard packages with <cite>pip install docopt slurmpy –user</cite>.
+Workflow is defined using meta-routines (functions) like <cite>run_ENS</cite> which are defined in <cite>scheduler.py</cite>.</p>
+<p>#### Prepare initial conditions (from input_sounding)
+1) Define starting time:
+<cite>begin = dt.datetime(2008, 7, 30, 6)</cite>
+2) WRF needs directories with certain files:
+<cite>id = prepare_WRFrundir(begin)</cite>
+3) Create 3D initial conditions from input_sounding etc.:
+<cite>id = run_ideal(depends_on=id)</cite></p>
+<p>### Run free forecast
+Let’s say you want to run a free forecast starting at 6z, which you want to use as prior for an assimilation at 9z. Then you need can use the above defined 3 steps to create initial conditions.
+Then you can run an ensemble forecast using:
+<a href="#id1"><span class="problematic" id="id2">``</span></a>`
+id = run_ENS(begin=begin,  # start integration from here</p>
+<blockquote>
+<div><p>end=end,      # integrate until here
+input_is_restart=False,
+output_restart_interval=(end-begin).total_seconds()/60,
+depends_on=id)</p>
+</div></blockquote>
+<p><a href="#id3"><span class="problematic" id="id4">``</span></a>`
+where <cite>begin</cite> &amp; <cite>end</cite> are <cite>dt.datetime</cite> objects.</p>
+<p>### Assimilation experiment
+#### Assimilate
+To assimilate observations at dt.datetime <cite>time</cite> use this command:</p>
+<p><cite>id = assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)</cite></p>
+<p>#### Update initial conditions from Data Assimilation
+In order to continue after assimilation you need the posterior = prior (1) + increments (2)</p>
+<ol class="arabic simple">
+<li><p>Set prior with this function:</p></li>
+</ol>
+<p><cite>id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)</cite></p>
+<p>where path is <cite>str</cite>, times are <cite>dt.datetime</cite>.</p>
+<ol class="arabic simple" start="2">
+<li><p>To update the model state with assimilation increments, you need to update the WRF restart files by running</p></li>
+</ol>
+<p><cite>id = update_IC_from_DA(time, depends_on=id)</cite></p>
+<p>After this, the wrfrst files are updated with assimilation increments (filter_restart) and copied to the WRF’s run directories so you can continue to run the ENS after assimilation using</p>
+<p><a href="#id5"><span class="problematic" id="id6">``</span></a>`
+id = run_ENS(begin=time,  # start integration from here</p>
+<blockquote>
+<div><p>end=time + timedelta_integrate,  # integrate until here
+restart_path=cluster.archivedir+prior_init_time.strftime(‘/%Y-%m-%d_%H:%M/’),
+output_restart_interval=timedelta_btw_assim.total_seconds()/60,
+depends_on=id)</p>
+</div></blockquote>
+<p><a href="#id7"><span class="problematic" id="id8">``</span></a>`
+where times are <cite>dt.datetime</cite>; <cite>timedelta</cite> variables are <cite>dt.timedelta</cite>.</p>
+<p>### Examples
+[<cite>scheduler.py</cite>](<a class="reference external" href="https://github.com/lkugler/DART-WRF/blob/master/scheduler.py">https://github.com/lkugler/DART-WRF/blob/master/scheduler.py</a>)
+[<cite>generate_free.py</cite>](<a class="reference external" href="https://github.com/lkugler/DART-WRF/blob/master/generate_free.py">https://github.com/lkugler/DART-WRF/blob/master/generate_free.py</a>)</p>
+<p>## Finally</p>
+<p>### SLURM submissions
+<cite>scheduler.py</cite> submits jobs into the SLURM queue with dependencies, so that SLURM starts the jobs itself as soon as resources are available. Most jobs need only one node, but model integration is done in a SLURM job array across e.g. 10 nodes:
+<a href="#id9"><span class="problematic" id="id10">``</span></a>`
+$ squeue -u <cite>whoami</cite> –sort=i</p>
+<blockquote>
+<div><blockquote>
+<div><blockquote>
+<div><p>JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)</p>
+</div></blockquote>
+<p>1710274  mem_0384 prepwrfr  lkugler PD       0:00      1 (Priority)
+1710275  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+1710276  mem_0384 Assim-42  lkugler PD       0:00      1 (Dependency)
+1710277  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+1710278  mem_0384 IC-updat  lkugler PD       0:00      1 (Dependency)
+1710279  mem_0384 preWRF2-  lkugler PD       0:00      1 (Dependency)</p>
+</div></blockquote>
+<dl class="simple">
+<dt>1710280_[1-10]  mem_0384 runWRF2-  lkugler PD       0:00      1 (Dependency)</dt><dd><p>1710281  mem_0384 pRTTOV-6  lkugler PD       0:00      1 (Dependency)
+1710282  mem_0384 Assim-3a  lkugler PD       0:00      1 (Dependency)
+1710283  mem_0384 IC-prior  lkugler PD       0:00      1 (Dependency)
+1710284  mem_0384 IC-updat  lkugler PD       0:00      1 (Dependency)
+1710285  mem_0384 preWRF2-  lkugler PD       0:00      1 (Dependency)</p>
+</dd>
+<dt>1710286_[1-10]  mem_0384 runWRF2-  lkugler PD       0:00      1 (Dependency)</dt><dd><p>1710287  mem_0384 pRTTOV-7  lkugler PD       0:00      1 (Dependency)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><a href="#id11"><span class="problematic" id="id12">``</span></a><a href="#id13"><span class="problematic" id="id14">`</span></a></p>
+<p>### Easily switch between clusters
+Define cluster specific variables in <a href="#id15"><span class="problematic" id="id16">`</span></a>config/clusters.py <a href="#id17"><span class="problematic" id="id18">`</span></a>:
+<a href="#id19"><span class="problematic" id="id20">``</span></a><a href="#id21"><span class="problematic" id="id22">`</span></a>python</p>
+<p>clusterA = ClusterConfig()
+clusterA.name = ‘vsc’
+clusterA.userdir = ‘/home/pathA/myuser/’
+…
+clusterB = ClusterConfig()
+clusterB.name = ‘jet’
+clusterB.userdir = ‘/home/pathB/myuser/’
+<a href="#id23"><span class="problematic" id="id24">``</span></a><a href="#id25"><span class="problematic" id="id26">`</span></a></p>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index2.html">DART-WRF</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index2.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Lukas Kugler.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/example.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
