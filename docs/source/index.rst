@@ -1,10 +1,7 @@
-Welcome to Lumache's documentation!
+Welcome to the DART-WRF documentation!
 ===================================
 
-**Lumache** (/lu'make/) is a Python library for cooks and food lovers
-that creates recipes mixing random ingredients.
-It pulls data from the `Open Food Facts database <https://world.openfoodfacts.org/>`_
-and offers a *simple* and *intuitive* API.
+DART-WRF is a Python package to run an Ensemble Data Assimilation system with the software packages DART and WRF.
 
 - Why should I use it?
   - It's pythonic: see what it does at first glance, modular, flexible
@@ -21,13 +18,6 @@ Functions return a SLURM ID which can be used to trigger the start of another fu
 
 
 
-Check out the :doc:`usage` section for further information, including
-how to :ref:`installation` the project.
-
-.. note::
-
-   This project is under active development.
-
 Contents
 --------
 
@@ -35,4 +25,5 @@ Contents
 
    usage
    api
+   example
 
