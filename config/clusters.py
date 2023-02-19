@@ -147,4 +147,9 @@ srvx1.slurm_cfg = {"account": "lkugler", "partition": "compute",
 
 #################################
 # select cluster configuration
-cluster = jet
+if 'jet' in os.uname().nodename:
+    cluster = jet
+elif 'srvx1' in os.uname().nodename:
+    cluster = srvx1
+else:
+    cluster = vsc
