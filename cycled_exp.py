@@ -222,10 +222,10 @@ if __name__ == "__main__":
     if True:  # random
         prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
 
-        init_time = dt.datetime(2008, 7, 30, 12)
-        time = dt.datetime(2008, 7, 30, 13)
+        init_time = dt.datetime(2008, 7, 30, 13)
+        time = dt.datetime(2008, 7, 30, 14)
         last_assim_time = dt.datetime(2008, 7, 30, 14)
-        forecast_until = dt.datetime(2008, 7, 30, 18)
+        forecast_until = dt.datetime(2008, 7, 30, 14, 15)
 
         prepare_WRFrundir(init_time)
         # id = run_ideal(depends_on=id)
@@ -256,7 +256,7 @@ if __name__ == "__main__":
         output_restart_interval = timedelta_btw_assim.total_seconds()/60
         if time == last_assim_time: #this_forecast_init.minute in [0,]:  # longer forecast every full hour
             timedelta_integrate = forecast_until - last_assim_time  # dt.timedelta(hours=4)
-            output_restart_interval = 9999  # timedelta_btw_assim.total_seconds()/60 # 9999
+            output_restart_interval = 9999  # no restart file after last assim
 
         # 3) Run WRF ensemble
         id = run_ENS(begin=time,  # start integration from here
