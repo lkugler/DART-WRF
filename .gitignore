@@ -3,7 +3,6 @@ slurm-scripts/
 logs/
 dask-worker-space/
 dartwrf.egg*
-build*
 ._*
 .vscode
 dist/
