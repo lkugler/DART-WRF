@@ -1,6 +1,6 @@
+Workflow
+========
 
-
-## Workflow
 #### Configure your experiment
 Define simulation specific variables in [`config/cfg.py`](https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py).
 Define paths for python, ncks, etc. in [`config/clusters.py`](https://github.com/lkugler/DART-WRF/blob/master/config/clusters.py).
