@@ -85,7 +85,7 @@
 <li><a class="reference internal" href="#module-dartwrf.create_wbubble_wrfinput">dartwrf.create_wbubble_wrfinput module</a></li>
 <li><a class="reference internal" href="#module-dartwrf.evaluate_posterior">dartwrf.evaluate_posterior module</a></li>
 <li><a class="reference internal" href="#module-dartwrf.evaluate_prior">dartwrf.evaluate_prior module</a></li>
-<li><a class="reference internal" href="#module-dartwrf.link_dart_rttov">dartwrf.link_dart_rttov module</a></li>
+<li><a class="reference internal" href="#dartwrf-link-dart-rttov-module">dartwrf.link_dart_rttov module</a></li>
 <li><a class="reference internal" href="#module-dartwrf.obsseq">dartwrf.obsseq module</a><ul>
 <li><a class="reference internal" href="#dartwrf.obsseq.ObsRecord"><code class="docutils literal notranslate"><span class="pre">ObsRecord</span></code></a><ul>
 <li><a class="reference internal" href="#dartwrf.obsseq.ObsRecord.determine_nlayers"><code class="docutils literal notranslate"><span class="pre">ObsRecord.determine_nlayers()</span></code></a></li>
@@ -112,10 +112,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#module-dartwrf.obsseq_2dim">dartwrf.obsseq_2dim module</a></li>
-<li><a class="reference internal" href="#module-dartwrf.obsseq_to_netcdf">dartwrf.obsseq_to_netcdf module</a><ul>
-<li><a class="reference internal" href="#dartwrf.obsseq_to_netcdf.listdir_dirs"><code class="docutils literal notranslate"><span class="pre">listdir_dirs()</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#dartwrf-obsseq-to-netcdf-module">dartwrf.obsseq_to_netcdf module</a></li>
 <li><a class="reference internal" href="#module-dartwrf.old_functions">dartwrf.old_functions module</a><ul>
 <li><a class="reference internal" href="#dartwrf.old_functions.create_obsseq_in_separate_obs"><code class="docutils literal notranslate"><span class="pre">create_obsseq_in_separate_obs()</span></code></a></li>
 <li><a class="reference internal" href="#dartwrf.old_functions.obs_operator_nature"><code class="docutils literal notranslate"><span class="pre">obs_operator_nature()</span></code></a></li>
@@ -126,23 +123,10 @@
 <li><a class="reference internal" href="#dartwrf.old_functions.run_Hx"><code class="docutils literal notranslate"><span class="pre">run_Hx()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-dartwrf.prep_IC_prior">dartwrf.prep_IC_prior module</a><ul>
-<li><a class="reference internal" href="#dartwrf.prep_IC_prior.create_updated_wrfinput_from_wrfout"><code class="docutils literal notranslate"><span class="pre">create_updated_wrfinput_from_wrfout()</span></code></a></li>
-<li><a class="reference internal" href="#dartwrf.prep_IC_prior.create_wrfrst_in_WRF_rundir"><code class="docutils literal notranslate"><span class="pre">create_wrfrst_in_WRF_rundir()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#module-dartwrf.prepare_namelist">dartwrf.prepare_namelist module</a><ul>
-<li><a class="reference internal" href="#dartwrf.prepare_namelist.run"><code class="docutils literal notranslate"><span class="pre">run()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#module-dartwrf.prepare_wrfrundir">dartwrf.prepare_wrfrundir module</a></li>
-<li><a class="reference internal" href="#module-dartwrf.run_obs_diag">dartwrf.run_obs_diag module</a><ul>
-<li><a class="reference internal" href="#dartwrf.run_obs_diag.prepare"><code class="docutils literal notranslate"><span class="pre">prepare()</span></code></a></li>
-<li><a class="reference internal" href="#dartwrf.run_obs_diag.run_obs_seq_to_netcdf"><code class="docutils literal notranslate"><span class="pre">run_obs_seq_to_netcdf()</span></code></a></li>
-<li><a class="reference internal" href="#dartwrf.run_obs_diag.run_obsdiag"><code class="docutils literal notranslate"><span class="pre">run_obsdiag()</span></code></a></li>
-<li><a class="reference internal" href="#dartwrf.run_obs_diag.write_input_filelist"><code class="docutils literal notranslate"><span class="pre">write_input_filelist()</span></code></a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#dartwrf-prep-ic-prior-module">dartwrf.prep_IC_prior module</a></li>
+<li><a class="reference internal" href="#dartwrf-prepare-namelist-module">dartwrf.prepare_namelist module</a></li>
+<li><a class="reference internal" href="#dartwrf-prepare-wrfrundir-module">dartwrf.prepare_wrfrundir module</a></li>
+<li><a class="reference internal" href="#dartwrf-run-obs-diag-module">dartwrf.run_obs_diag module</a></li>
 <li><a class="reference internal" href="#module-dartwrf.update_IC">dartwrf.update_IC module</a><ul>
 <li><a class="reference internal" href="#dartwrf.update_IC.update_initials_in_WRF_rundir"><code class="docutils literal notranslate"><span class="pre">update_initials_in_WRF_rundir()</span></code></a></li>
 </ul>
@@ -509,8 +493,8 @@ from DART f90 script</p>
 <section id="module-dartwrf.evaluate_prior">
 <span id="dartwrf-evaluate-prior-module"></span><h2>dartwrf.evaluate_prior module<a class="headerlink" href="#module-dartwrf.evaluate_prior" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-dartwrf.link_dart_rttov">
-<span id="dartwrf-link-dart-rttov-module"></span><h2>dartwrf.link_dart_rttov module<a class="headerlink" href="#module-dartwrf.link_dart_rttov" title="Permalink to this heading"></a></h2>
+<section id="dartwrf-link-dart-rttov-module">
+<h2>dartwrf.link_dart_rttov module<a class="headerlink" href="#dartwrf-link-dart-rttov-module" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-dartwrf.obsseq">
 <span id="dartwrf-obsseq-module"></span><h2>dartwrf.obsseq module<a class="headerlink" href="#module-dartwrf.obsseq" title="Permalink to this heading"></a></h2>
@@ -663,13 +647,8 @@ self.obstypes (tuple(kind_nr, kind_descriptor)) for each obs type</p>
 <p>Create obs_seq.out files with collapsed vertical dimension
 Specifically, one observation per column which is the maximum of the column</p>
 </section>
-<section id="module-dartwrf.obsseq_to_netcdf">
-<span id="dartwrf-obsseq-to-netcdf-module"></span><h2>dartwrf.obsseq_to_netcdf module<a class="headerlink" href="#module-dartwrf.obsseq_to_netcdf" title="Permalink to this heading"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.obsseq_to_netcdf.listdir_dirs">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.obsseq_to_netcdf.</span></span><span class="sig-name descname"><span class="pre">listdir_dirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.obsseq_to_netcdf.listdir_dirs" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
+<section id="dartwrf-obsseq-to-netcdf-module">
+<h2>dartwrf.obsseq_to_netcdf module<a class="headerlink" href="#dartwrf-obsseq-to-netcdf-module" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-dartwrf.old_functions">
 <span id="dartwrf-old-functions-module"></span><h2>dartwrf.old_functions module<a class="headerlink" href="#module-dartwrf.old_functions" title="Permalink to this heading"></a></h2>
@@ -745,79 +724,17 @@ Creates</p>
 </dd></dl>
 
 </section>
-<section id="module-dartwrf.prep_IC_prior">
-<span id="dartwrf-prep-ic-prior-module"></span><h2>dartwrf.prep_IC_prior module<a class="headerlink" href="#module-dartwrf.prep_IC_prior" title="Permalink to this heading"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.prep_IC_prior.create_updated_wrfinput_from_wrfout">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.prep_IC_prior.</span></span><span class="sig-name descname"><span class="pre">create_updated_wrfinput_from_wrfout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_init_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_path_exp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_start_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.prep_IC_prior.create_updated_wrfinput_from_wrfout" title="Permalink to this definition"></a></dt>
-<dd><p>Same as create_wrfout_in_archivedir, but output is <cite>wrfinput</cite> in WRF run directory</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.prep_IC_prior.create_wrfrst_in_WRF_rundir">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.prep_IC_prior.</span></span><span class="sig-name descname"><span class="pre">create_wrfrst_in_WRF_rundir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_init_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_path_exp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.prep_IC_prior.create_wrfrst_in_WRF_rundir" title="Permalink to this definition"></a></dt>
-<dd><p>copies wrfrst to run_WRF directory (for next WRF run)</p>
-</dd></dl>
-
+<section id="dartwrf-prep-ic-prior-module">
+<h2>dartwrf.prep_IC_prior module<a class="headerlink" href="#dartwrf-prep-ic-prior-module" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-dartwrf.prepare_namelist">
-<span id="dartwrf-prepare-namelist-module"></span><h2>dartwrf.prepare_namelist module<a class="headerlink" href="#module-dartwrf.prepare_namelist" title="Permalink to this heading"></a></h2>
-<p>Create namelist.input files</p>
-<dl>
-<dt>Usage:</dt><dd><p>prepare_namelist.py &lt;begin&gt; &lt;end&gt; &lt;intv&gt; [–radt=&lt;minutes&gt;] [–restart=&lt;flag&gt;] [–restart_interval=&lt;minutes&gt;]</p>
-</dd>
-<dt>Options:</dt><dd><dl class="option-list">
-<dt><kbd><span class="option">--radt=<var>&lt;minutes&gt;</var></span></kbd></dt>
-<dd><p>Radiation interval [default: 5]</p>
-</dd>
-<dt><kbd><span class="option">--restart=<var>&lt;flag&gt;</var></span></kbd></dt>
-<dd><p>Restart flag (.true., .false.) [default: .false.]</p>
-</dd>
-<dt><kbd><span class="option">--restart_interval=<var>&lt;minutes&gt;</var></span></kbd></dt>
-<dd><p>Restart frequency [default: 720]</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.prepare_namelist.run">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.prepare_namelist.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">begin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">archive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">720</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.prepare_namelist.run" title="Permalink to this definition"></a></dt>
-<dd><p>Create namelist.input files</p>
-<p>Args:
-archive (bool): if True, write to archivedir of experiment</p>
-<blockquote>
-<div><p>if False, write to WRF run directory</p>
-</div></blockquote>
-<p>restart (str): fortran bool whether to use wrfinput or wrfrst
-restart_interval (int): output frequency of wrfrst (minutes)</p>
-</dd></dl>
-
+<section id="dartwrf-prepare-namelist-module">
+<h2>dartwrf.prepare_namelist module<a class="headerlink" href="#dartwrf-prepare-namelist-module" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-dartwrf.prepare_wrfrundir">
-<span id="dartwrf-prepare-wrfrundir-module"></span><h2>dartwrf.prepare_wrfrundir module<a class="headerlink" href="#module-dartwrf.prepare_wrfrundir" title="Permalink to this heading"></a></h2>
+<section id="dartwrf-prepare-wrfrundir-module">
+<h2>dartwrf.prepare_wrfrundir module<a class="headerlink" href="#dartwrf-prepare-wrfrundir-module" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-dartwrf.run_obs_diag">
-<span id="dartwrf-run-obs-diag-module"></span><h2>dartwrf.run_obs_diag module<a class="headerlink" href="#module-dartwrf.run_obs_diag" title="Permalink to this heading"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.run_obs_diag.prepare">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.run_obs_diag.</span></span><span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obserr_iszero</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.true.'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.run_obs_diag.prepare" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.run_obs_diag.run_obs_seq_to_netcdf">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.run_obs_diag.</span></span><span class="sig-name descname"><span class="pre">run_obs_seq_to_netcdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepaths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./obs_epoch.nc'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.run_obs_diag.run_obs_seq_to_netcdf" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.run_obs_diag.run_obsdiag">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.run_obs_diag.</span></span><span class="sig-name descname"><span class="pre">run_obsdiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepaths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./obsdiag.nc'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.run_obs_diag.run_obsdiag" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="dartwrf.run_obs_diag.write_input_filelist">
-<span class="sig-prename descclassname"><span class="pre">dartwrf.run_obs_diag.</span></span><span class="sig-name descname"><span class="pre">write_input_filelist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepaths</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dartwrf.run_obs_diag.write_input_filelist" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
+<section id="dartwrf-run-obs-diag-module">
+<h2>dartwrf.run_obs_diag module<a class="headerlink" href="#dartwrf-run-obs-diag-module" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-dartwrf.update_IC">
 <span id="dartwrf-update-ic-module"></span><h2>dartwrf.update_IC module<a class="headerlink" href="#module-dartwrf.update_IC" title="Permalink to this heading"></a></h2>
