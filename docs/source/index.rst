@@ -9,6 +9,8 @@ DART-WRF is a Python package to run an Ensemble Data Assimilation system with th
 :maxdepth: 2
 :caption: Contents:
 
+dartwrf
+example
 
 
 Indices and tables
