@@ -37,12 +37,12 @@ def create_wrfrst_in_WRF_rundir(time, prior_init_time, prior_path_exp):
         print('copy prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
         copy(prior_wrfrst, wrfrst)
         
-        # remove all wrfrst (but not the one used)
-        files_rst = glob.glob(prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/wrfrst_*'))
-        files_rst.remove(prior_wrfrst)
-        for f in files_rst:
-            print('removing', f)
-            try_remove(f)
+        # remove all wrfrst (but not the one used) - WHY? NO!
+        # files_rst = glob.glob(prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/wrfrst_*'))
+        # files_rst.remove(prior_wrfrst)
+        # for f in files_rst:
+        #     print('removing', f)
+        #     try_remove(f)
 
 def create_updated_wrfinput_from_wrfout(time, prior_init_time, prior_path_exp, new_start_time):
     """Same as create_wrfout_in_archivedir, but output is `wrfinput` in WRF run directory"""
