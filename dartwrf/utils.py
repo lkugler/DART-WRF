@@ -72,6 +72,7 @@ class ClusterConfig(object):
     
         try:
             shutil.copytree(self.scriptsdir, self.scripts_rundir)
+            print('scripts have been copied to', self.archivedir)
         except FileExistsError:
             pass
         except:
@@ -80,7 +81,6 @@ class ClusterConfig(object):
         #     copy(os.path.basename(__file__), self.scripts_rundir+'/')
         # except Exception as e:
         #     warnings.warn(str(e))
-        print('scripts have been copied to', self.archivedir)
 
 def shell(args):
     print(args)
