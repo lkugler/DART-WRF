@@ -9,7 +9,8 @@ Installation
 
 At the command line: 
 
-.. code-block:: console
+.. code-block::
+   
    git clone https://github.com/lkugler/DART-WRF.git
    cd DART-WRF
    pip install -e .
