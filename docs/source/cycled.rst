@@ -1,5 +1,5 @@
-Workflow
-========
+Cycled experiment
+=================
 
 #### Configure your experiment
 Define simulation specific variables in [`config/cfg.py`](https://github.com/lkugler/DART-WRF/blob/master/config/cfg.py).
