@@ -1,5 +1,0 @@
-.. autosummary::
-   :toctree: generated
-
-   dartwrf
-

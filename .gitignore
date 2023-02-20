@@ -6,5 +6,4 @@ dask-worker-space/
 dartwrf.egg*
 ._*
 .vscode
-dist/
-experimental/
+docs/build
