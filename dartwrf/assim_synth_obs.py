@@ -105,7 +105,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
             + str(iens)
             + prior_valid_time.strftime("/wrfout_d01_%Y-%m-%d_%H:%M:%S")
         )
-        dart_ensdir = cluster.dartrundir + "/advance_temp" + str(iens)
+        dart_ensdir = cluster.dartrundir + "/prior_ens" + str(iens)
         wrfout_dart = dart_ensdir + "/wrfout_d01"
 
         os.makedirs(dart_ensdir, exist_ok=True)
@@ -143,7 +143,7 @@ def write_txt(lines, fpath):
 def write_list_of_inputfiles_prior():
      files = []
      for iens in range(1, exp.n_ens+1):
-          files.append("./advance_temp" + str(iens) + "/wrfout_d01")
+          files.append("./prior_ens" + str(iens) + "/wrfout_d01")
      write_txt(files, cluster.dartrundir+'/input_list.txt')
 
 def write_list_of_inputfiles_posterior(assim_time):
