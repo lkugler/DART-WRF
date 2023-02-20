@@ -1,5 +1,5 @@
 Welcome to the DART-WRF documentation!
-===================================
+======================================
 
 DART-WRF is a Python package to run an Ensemble Data Assimilation system with the software packages DART and WRF.
 
@@ -9,7 +9,7 @@ Installation
 
 At the command line: 
 
-..  code-block:: none
+.. code-block:: shell
    git clone https://github.com/lkugler/DART-WRF.git
    cd DART-WRF
    pip install -e .
