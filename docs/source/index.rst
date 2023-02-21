@@ -19,8 +19,8 @@ At the command line:
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials:
-
-   readme
+   
+   self
    tutorial1
    tutorial2
 
