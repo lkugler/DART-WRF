@@ -5,7 +5,6 @@ running the forecast model without assimilation
 import os, sys, shutil
 import datetime as dt
 
-from dartwrf import utils
 from dartwrf.workflows import WorkFlows
 
 
@@ -16,8 +15,6 @@ assim_time = prior_valid_time
 
 w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
 
-w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
+id = w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
 
-
-
-# id_sat = create_satimages(time, depends_on=id)
+# w.create_satimages(time, depends_on=id)
