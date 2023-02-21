@@ -34,6 +34,11 @@ class ClusterConfig(object):
 
     @property
     def archivedir(self):
+        """Path to the directory where data for the experiment is stored
+        
+        Example:
+            `/users/abcd/data/sim_archive/experiment1/`
+        """
         return self.archive_base+'/'+self.exp.expname
 
     @property
@@ -67,7 +72,7 @@ class ClusterConfig(object):
             return Shellslurm(*args)
 
     def backup_scripts(self):
-        """Copies scripts and configuration to archive dir output folder"""
+        """Copies scripts and configuration to cluster.archivedir folder"""
         os.makedirs(self.archivedir, exist_ok=True)
     
         try:
