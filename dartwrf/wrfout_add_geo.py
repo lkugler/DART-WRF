@@ -1,12 +1,3 @@
-"""Add geogrid data to wrfinput
-DART needs a georeference, but ideal.exe does not provide it
-
-Takes LAT,LON, mapfac from geogrid, so that they are consistent.
-Does not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
-
-Example call:
-    ./wrfout_add_geo.py geo_em.d01.nc wrfinput_d01
-"""
 import os, sys
 import netCDF4 as nc
 
@@ -19,6 +10,20 @@ fields_new = ["XLAT",     "XLONG",      "CLAT",
                 "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
 
 def run(geo_data_file, wrfout_file):
+    """Add geogrid data to wrfinput
+    DART needs a georeference, but ideal.exe does not provide it
+
+    Takes LAT,LON, mapfac from geogrid, so that they are consistent.
+    Does not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
+    
+    Args:
+        geo_data_file (str): Path to WRF's geo_em file
+        wrfout_file (str): Path to WRF history (wrfout) file
+        
+    Returns:
+        None
+    """
+
     debug = False
 
     print('updating geodata in', wrfout_file, 'from', geo_data_file)
@@ -39,6 +44,10 @@ def run(geo_data_file, wrfout_file):
 
 
 if __name__ == '__main__':
+    """
+    Example:
+        $ ./wrfout_add_geo.py geo_em.d01.nc wrfinput_d01
+    """
     geo_data_file = sys.argv[1]  # '/home/fs71386/lkugler/compile_WRF/WPS-release-v4.2/geo_em.d01.nc'
     wrfout_file = sys.argv[2]  # '/home/fs71386/lkugler/DART/wrfinput_d01'
 
