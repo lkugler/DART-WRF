@@ -22,6 +22,7 @@ At the command line:
    self
    tutorial1
    tutorial2
+   tutorial3
 
 
 
