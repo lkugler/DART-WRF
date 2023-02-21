@@ -166,12 +166,6 @@ def create_satimages(init_time, depends_on=None):
     return id
 
 
-def mailme(depends_on=None):
-    if depends_on:
-        s = cluster.create_job("AllFinished", cfg_update={"time": "1", "mail-type": "BEGIN"})
-        s.run('sleep 1', depends_on=[depends_on])
-
-
 def gen_obsseq(depends_on=None):
     s = cluster.create_job("obsseq_netcdf", cfg_update={"time": "10", "mail-type": "FAIL,END"})
     id = s.run(cluster.python+' '+cluster.scripts_rundir+'/obsseq_to_netcdf.py',
