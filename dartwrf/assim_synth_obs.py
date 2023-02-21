@@ -458,7 +458,7 @@ if __name__ == "__main__":
     4) Assimilate with assigned errors
     
     Args:
-        assim_time:           time of output
+        assim_time (dt.datetime):           time of output
         prior_init_time:      forecast start of prior
         prior_valid_time:     valid time of prior (may be different to assim_time)
         path to prior experiment 
