@@ -445,8 +445,7 @@ def get_obsseq_out(time):
 
     return oso
 
-
-if __name__ == "__main__":
+def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """Assimilate observations
     as defined in config/cfg.py
     for a certain timestamp (argument) of the nature run (defined in config/clusters.py)
@@ -459,21 +458,13 @@ if __name__ == "__main__":
     
     Args:
         assim_time (dt.datetime):           time of output
-        prior_init_time:      forecast start of prior
-        prior_valid_time:     valid time of prior (may be different to assim_time)
-        path to prior experiment 
-
-    Example call:
-        python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
+        prior_init_time (dt.datetime):      forecast start of prior
+        prior_valid_time (dt.datetime):     valid time of prior (may be different to assim_time)
+        prior_path_exp (str):               path to prior experiment
+        
+    Returns:
+        None
     """
-
-    time = dt.datetime.strptime(sys.argv[1], "%Y-%m-%d_%H:%M")
-    prior_init_time = dt.datetime.strptime(sys.argv[2], "%Y-%m-%d_%H:%M")
-    prior_valid_time = dt.datetime.strptime(sys.argv[3], "%Y-%m-%d_%H:%M")
-    prior_path_exp = str(sys.argv[4])
-    options = []
-    if len(sys.argv) >4:
-        options = sys.argv[5:]
     nproc = cluster.max_nproc
 
     archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
@@ -520,3 +511,17 @@ if __name__ == "__main__":
              cluster.dartrundir+'/obs_seq.out')
     evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
 
+
+if __name__ == "__main__":
+    """Assimilate synthetic observations
+    
+    Example:
+        python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
+    """
+
+    time = dt.datetime.strptime(sys.argv[1], "%Y-%m-%d_%H:%M")
+    prior_init_time = dt.datetime.strptime(sys.argv[2], "%Y-%m-%d_%H:%M")
+    prior_valid_time = dt.datetime.strptime(sys.argv[3], "%Y-%m-%d_%H:%M")
+    prior_path_exp = str(sys.argv[4])
+
+    main(time, prior_init_time, prior_valid_time, prior_path_exp)
