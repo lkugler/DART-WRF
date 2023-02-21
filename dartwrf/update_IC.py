@@ -3,7 +3,7 @@ import datetime as dt
 import netCDF4 as nc
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 
 def update_initials_in_WRF_rundir(time):
     """Updates wrfrst-files in `/run_WRF/` directory 

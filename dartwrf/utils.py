@@ -2,35 +2,18 @@ import os, sys, shutil, glob, warnings
 import builtins as __builtin__
 import subprocess
 import datetime as dt
+import re, tempfile
+import importlib
 
-class ExperimentConfiguration(object):
-    """Collection of variables to use in code later on"""
+class Experiment(object):
+    """Collection of variables regarding the experiment configuration"""
     def __init__(self):
         pass
 
-class Shellslurm():
-    """Like Slurmpy class, but runs locally"""
-    def __init__(self, *args, **kwargs):
-        pass
-    def run(self, *args, **kwargs):
-        print(args[0])
-        os.system(args[0])
-
 class ClusterConfig(object):
-    """Collection of variables to use in code later on"""
+    """Collection of variables regarding the cluster configuration"""
     def __init__(self, exp):
         self.exp = exp
-        self.set_up = False
-
-    def setup(self):
-        # Set paths and backup scripts
-        self.log_dir = self.archivedir+'/logs/'
-        self.slurm_scripts_dir = self.archivedir+'/slurm-scripts/'
-        print('logging to', self.log_dir)
-        print('scripts, which are submitted to SLURM:', self.slurm_scripts_dir)
-
-        self.backup_scripts()
-        self.set_up = True
 
     @property
     def archivedir(self):
@@ -43,49 +26,51 @@ class ClusterConfig(object):
 
     @property
     def scripts_rundir(self):
+        """Path to the directory where the DART-WRF scripts are executed
+        
+        Example:
+            `/user/data/sim_archive/DART-WRF/`
+        """
         return self.archivedir+'/DART-WRF/'
 
     @property
     def dartrundir(self):
+        """Path to the directory where DART programs will run
+        Includes the experiment name
+        """
         return self.dart_rundir_base+'/'+self.exp.expname+'/'
 
     def wrf_rundir(self, iens):
+        """Path to the directory where an ensemble member will run WRF
+        Includes the experiment name and the ensemble member index
+        """
         return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)
 
-    def create_job(self, *args, cfg_update=dict(), **kwargs):
-        """Shortcut to slurmpy's class; keep certain default kwargs
-        and only update some with kwarg `cfg_update`
-        see https://github.com/brentp/slurmpy
+    def run_job(self, cmd, jobname='', cfg_update=dict(), depends_on=None):
+        """Run scripts in a shell
 
-        depending on cluster config : run either locally or via SLURM 
+        If not using SLURM: calls scripts through shell
+        if using SLURM: uses slurmpy to submit jobs, keep certain default kwargs and only update some with kwarg `overwrite_these_configurations`
+
+        Args:
+            cmd (str): Bash command(s) to run
+            jobname (str, optional): Name of SLURM job
+            cfg_update (dict): The config keywords will be overwritten with values
+            depends_on (int or None): SLURM job id of dependency, job will start after this id finished.
+
+        Returns 
+            None
         """
-        if not self.set_up:
-            self.setup()
-
         if self.use_slurm:
             from slurmpy import Slurm
-            return Slurm(*args, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
-                        log_dir=self.log_dir, 
-                        scripts_dir=self.slurm_scripts_dir, 
-                        **kwargs)
+            Slurm(jobname, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
+                  log_dir=self.log_dir, 
+                  scripts_dir=self.slurm_scripts_dir, 
+                  **kwargs
+                  ).run(cmd, depends_on=depends_on)
         else:
-            return Shellslurm(*args)
-
-    def backup_scripts(self):
-        """Copies scripts and configuration to cluster.archivedir folder"""
-        os.makedirs(self.archivedir, exist_ok=True)
-    
-        try:
-            shutil.copytree(self.scriptsdir, self.scripts_rundir)
-            print('scripts have been copied to', self.archivedir)
-        except FileExistsError:
-            pass
-        except:
-            raise
-        # try:
-        #     copy(os.path.basename(__file__), self.scripts_rundir+'/')
-        # except Exception as e:
-        #     warnings.warn(str(e))
+            print(cmd)
+            os.system(cmd)
 
 def shell(args):
     print(args)
@@ -145,10 +130,19 @@ def copy_scp_srvx8(src, dst):
     os.system('scp '+src+' a1254888@srvx8.img.univie.ac.at:'+dst)
 
 def sed_inplace(filename, pattern, repl):
-    import re, tempfile
-    '''
-    Perform the pure-Python equivalent of in-place `sed` substitution: e.g.,
-    `sed -i -e 's/'${pattern}'/'${repl}' "${filename}"`.
+    '''Perform the pure-Python equivalent of in-place `sed` substitution
+    Like `sed -i -e 's/'${pattern}'/'${repl}' "${filename}"`.
+
+    Args:
+        filename (str):  path to file
+        pattern (str): string that will be replaced
+        repl (str): what shall be written instead of pattern?
+
+    Example:
+        sed_inplace('namelist.input', '<dx>', str(int(exp.model_dx)))
+
+    Returns:
+        None
     '''
     # For efficiency, precompile the passed regular expression.
     pattern_compiled = re.compile(pattern)

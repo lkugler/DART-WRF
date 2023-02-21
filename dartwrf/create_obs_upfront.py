@@ -5,7 +5,7 @@ import datetime as dt
 import numpy as np
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 from dartwrf.utils import copy, print
 import dartwrf.create_obsseq as osq
 from dartwrf import obsseq
@@ -24,9 +24,12 @@ if __name__ == "__main__":
     for tstr in args:
         times.append(dt.datetime.strptime(tstr, tformat))
 
-    dir_for_obsseqout = exp.nature_wrfout + '/../../../obs_seq_out/'+exp.use_existing_obsseq
-    os.makedirs(dir_for_obsseqout, exist_ok=True)  # create directory to run DART in
+    # strange path?
+    # dir_for_obsseqout = exp.nature_wrfout + '/../../../obs_seq_out/'+exp.use_existing_obsseq  
+    raise NotImplementedError('where to save obsseq to?')  
+    dir_for_obsseqout = ''  # TODO: solve this when necessary
     print('will save obsseq to', dir_for_obsseqout)
+    os.makedirs(dir_for_obsseqout, exist_ok=True) 
 
     os.chdir(cluster.dartrundir)
 

@@ -6,27 +6,17 @@ import os, sys, shutil
 import datetime as dt
 
 from dartwrf import utils
-from config.cfg import exp
-from config.clusters import cluster
+from dartwrf.workflows import WorkFlows
 
-
-###############################
 
 prior_path_exp = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
 prior_init_time = dt.datetime(2008,7,30,12)
 prior_valid_time = dt.datetime(2008,7,30,12,30)
 assim_time = prior_valid_time
 
+w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
 
-cluster.setup()
-
-os.system(
-    cluster.python+' '+cluster.scripts_rundir+'/assim_synth_obs.py '
-                +assim_time.strftime('%Y-%m-%d_%H:%M ')
-                +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
-                +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
-                +prior_path_exp
-    )
+w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
 
 
 

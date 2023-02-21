@@ -8,7 +8,7 @@ import datetime as dt
 from pysolar.solar import get_altitude, get_azimuth
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 from dartwrf.obs import calculate_obs_locations as col
 
 def obskind_read():

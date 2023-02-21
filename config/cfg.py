@@ -1,13 +1,13 @@
 from dartwrf import utils
 
-exp = utils.ExperimentConfiguration()
-exp.expname = "exp_v1.22_P2_rr_VIS_obs10_loc20_inf5"
+exp = utils.Experiment()
+exp.expname = "test_newcode"
 exp.model_dx = 2000
-exp.n_ens = 40
+exp.n_ens = 10
 
 exp.filter_kind = 1
-exp.prior_inflation = 5
-exp.post_inflation = 0
+exp.prior_inflation = 0
+exp.post_inflation = 4
 exp.sec = True
 exp.reject_smallFGD = False
 exp.cov_loc_vert_km_horiz_km = (3, 20)
@@ -20,13 +20,10 @@ exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.ou
 #exp.use_existing_obsseq = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.21_P3_wbub7_REFL2D_obs10_loc20_oe5/obs_seq_out/2008-07-30_%H:%M_obs_seq.out'
 #exp.use_existing_obsseq = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.21_P2_rr_VIS_obs20_loc4/obs_seq_out/2008-07-30_%H:%M_obs_seq.out'
 
-#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P5+su_nat2/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#exp.nature_wrfout = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_Pwbub5_nat/2008-07-30_12:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-exp.nature_wrfout = '/jetfs/home/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#exp.nature_wrfout = '/home/fs71386/lkugler/data/sim_archive/exp_v1.19_P4_nat/2008-07-30_07:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+#exp.nature = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/2008-07-30_12:00/1'
+exp.nature = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1'
 
-exp.input_profile = '/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'
+exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'
 #exp.input_profile = '/gpfs/data/fs71386/lkugler/initial_profiles/wrf/ens/2022-03-31/raso.nat.<iens>.wrfprof'
 #exp.input_profile = '/gpfs/data/fs71386/lkugler/initial_profiles/wrf/ens/2022-05-18/raso.fc.<iens>.wrfprof'
 
@@ -71,11 +68,11 @@ radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
 
 t = dict(plotname='Temperature', plotunits='[K]',
          kind='RADIOSONDE_TEMPERATURE', 
-         n_obs=22500, obs_locations='square_array_evenly_on_grid',
-         # n_obs=1, obs_locations=[(45., 0.)],
+         #n_obs=22500, obs_locations='square_array_evenly_on_grid',
+         n_obs=1, obs_locations=[(45., 0.)],
          error_generate=0.2, error_assimilate=0.2,
          heights=[1000,], #range(1000, 17001, 2000),
-         cov_loc_radius_km=1.5)
+         cov_loc_radius_km=50)
 
 q = dict(plotname='Specific humidity', plotunits='[kg/kg]',
          kind='RADIOSONDE_SPECIFIC_HUMIDITY', n_obs=1,
@@ -93,7 +90,7 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             error_generate=50., error_assimilate=100.,
             cov_loc_radius_km=32)
 
-exp.observations = [vis]
+exp.observations = [t]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 #exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 

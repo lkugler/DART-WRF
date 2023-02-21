@@ -8,7 +8,7 @@ import datetime as dt
 import xarray as xr
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 
 #####################
 # Global variables

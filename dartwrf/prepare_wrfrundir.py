@@ -2,7 +2,7 @@ import os, sys, shutil
 import datetime as dt
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 from utils import symlink, copy, link_contents
 import prepare_namelist
 

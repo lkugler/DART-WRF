@@ -13,7 +13,7 @@ import datetime as dt
 from docopt import docopt
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 from utils import sed_inplace, copy, symlink, mkdir
 
 def run(iens, begin, end, hist_interval=5, radt=5, archive=True,

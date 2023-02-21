@@ -12,7 +12,7 @@ import os, sys
 import netCDF4 as nc
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 
 def run(geo_data_file, wrfinput_file):
     geo_ds = nc.Dataset(geo_data_file, 'r')

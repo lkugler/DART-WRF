@@ -3,15 +3,16 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp
-from config.clusters import cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
 from dartwrf.obs import error_models as err
 import dartwrf.create_obsseq as osq
 from dartwrf import wrfout_add_geo
 from dartwrf import obsseq
 
+from config.cfg import exp
+from config.cluster import cluster
 earth_radius_km = 6370
+wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 
 def set_DART_nml(just_prior_values=False):
@@ -71,14 +72,21 @@ def set_DART_nml(just_prior_values=False):
 
 
 def link_nature_to_dart_truth(time):
+    """Set a symlink from the WRFout file to be used as nature to the run_DART folder
+    
+    Args:
+        time (dt.datetime): Time at which observations will be made
+    """
+
     # get wrfout_d01 from nature run
-    shutil.copy(time.strftime(exp.nature_wrfout), cluster.dartrundir + "/wrfout_d01")
+    shutil.copy(time.strftime(exp.nature+'/'+wrfout_format), 
+                cluster.dartrundir + "/wrfout_d01")
+
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
-    symlink(cluster.dartrundir + "/wrfout_d01", cluster.dartrundir + "/wrfinput_d01")
-    print(
-        "linked", time.strftime(exp.nature_wrfout),
-        "to", cluster.dartrundir + "/wrfout_d01",
-    )
+    symlink(cluster.dartrundir + "/wrfout_d01", 
+            cluster.dartrundir + "/wrfinput_d01")
+    print("linked", time.strftime(exp.nature+'/'+wrfout_format),
+          "to", cluster.dartrundir + "/wrfout_d01")
 
 
 def prepare_nature_dart(time):
@@ -103,7 +111,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
             prior_path_exp
             + prior_init_time.strftime("/%Y-%m-%d_%H:%M/")
             + str(iens)
-            + prior_valid_time.strftime("/wrfout_d01_%Y-%m-%d_%H:%M:%S")
+            + prior_valid_time.strftime("/"+wrfout_format)
         )
         dart_ensdir = cluster.dartrundir + "/prior_ens" + str(iens)
         wrfout_dart = dart_ensdir + "/wrfout_d01"
@@ -484,27 +492,25 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     print("prepare prior ensemble")
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
     
-    ################################################
     print(" 1) get observations with specified obs-error")
     oso = get_obsseq_out(time)
 
-    ################################################
-    print('3.1) evaluate prior')  # evaluate prior observations for all locations
+    print(" 2.1) evaluate prior for all observations (incl rejected)")
     osf_prior = evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")
 
-    print(" 3.2) assign observation-errors for assimilation ")
+    print(" 2.2) assign observation-errors for assimilation ")
     set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile=cluster.dartrundir + "/obs_seq.out")
 
     if getattr(exp, "reject_smallFGD", False):
-        print(" 3.3) reject observations? ")
+        print(" 2.3) reject observations? ")
         qc_obs(time, oso, osf_prior)
 
-    print(" 3.4) assimilate (run filter) ")
+    print(" 3) run filter ")
     set_DART_nml()
     filter(nproc=nproc)
     archive_filteroutput(time)
 
-    # evaluate posterior observations for all locations
+    print(" 4) evaluate posterior observations for all observations (incl rejected)")
     write_list_of_inputfiles_posterior(time)
     if getattr(exp, "reject_smallFGD", False):
         copy(cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'), 

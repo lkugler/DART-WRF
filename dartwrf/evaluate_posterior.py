@@ -4,7 +4,7 @@ import datetime as dt
 import numpy as np
 
 from config.cfg import exp
-from config.clusters import cluster
+from config.cluster import cluster
 from dartwrf import assim_synth_obs as aso
 
 
