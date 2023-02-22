@@ -15,7 +15,7 @@ from dartwrf.obs import calculate_obs_locations as col
 
 #####################
 # Global variables
-obs_kind_nrs = csv.DictReader(open("config/obskind.csv"))  # DART internal indices
+from config.obskind import obs_kind_nrs  # DART internal indices
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
