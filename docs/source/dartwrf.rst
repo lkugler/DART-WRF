@@ -93,14 +93,6 @@ dartwrf.obsseq\_to\_netcdf module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.old\_functions module
------------------------------
-
-.. automodule:: dartwrf.old_functions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dartwrf.prep\_IC\_prior module
 ------------------------------
 
@@ -145,6 +137,14 @@ dartwrf.utils module
 --------------------
 
 .. automodule:: dartwrf.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+dartwrf.workflows module
+------------------------
+
+.. automodule:: dartwrf.workflows
    :members:
    :undoc-members:
    :show-inheritance:
