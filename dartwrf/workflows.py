@@ -32,6 +32,11 @@ class WorkFlows(object):
             self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
             print('scripts, which are submitted to SLURM:', self.cluster.slurm_scripts_dir)
 
+        # copy obs kind def to config, we will read a table from there
+        # file needs to exist within package so sphinx can read it
+        shutil.copy(cluster.dart_srcdir+'/../../../assimilation_code/modules/observations/obs_kind_mod.f90',
+                    cluster.scriptsdir+'/../config/')
+            
         # Copy scripts to self.cluster.archivedir folder
         os.makedirs(self.cluster.archivedir, exist_ok=True)
         try:
@@ -46,8 +51,7 @@ class WorkFlows(object):
         shutil.copy('config/'+exp_config, self.cluster.scripts_rundir+'/cfg.py')
         shutil.copy('config/'+server_config, self.cluster.scripts_rundir+'/cluster.py')  # whatever server, the config name is always the same!
         shutil.copy('config/'+server_config, 'config/cluster.py')  # whatever server, the config name is always the same!
-
-
+        
     def prepare_WRFrundir(self, init_time):
         """Create WRF/run directories and wrfinput files
         """

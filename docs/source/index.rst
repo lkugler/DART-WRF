@@ -19,7 +19,7 @@ At the command line:
 .. toctree::
    :hidden:
 
-   self
+   Home <self>
 
 .. toctree::
    :maxdepth: 2

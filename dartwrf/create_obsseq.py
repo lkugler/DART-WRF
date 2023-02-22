@@ -16,7 +16,7 @@ def obskind_read():
     from DART f90 script
     """
 
-    definitionfile = cluster.dart_srcdir+'/../../../assimilation_code/modules/observations/obs_kind_mod.f90'
+    definitionfile = cluster.scriptsdir+'/../config/obs_kind_mod.f90'
     with open(definitionfile, 'r') as f:
         kind_def_f = f.readlines()
 
