@@ -22,7 +22,7 @@ extensions = [
     'nbsphinx'
 ]
 
-autodoc_mock_imports = ['numpy','scipy','xarray','netCDF4','config.cluster','config.cfg']
+autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','config.cluster','config.cfg']
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
