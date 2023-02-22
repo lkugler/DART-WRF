@@ -19,13 +19,14 @@ At the command line:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials:
-   
    self
+   :caption: Tutorials:
    tutorial1
    tutorial2
    tutorial3
-
+.. automodule:: dartwrf.assim_synth_obs
+    :members:
+    :exclude-members:
 
 
 API
