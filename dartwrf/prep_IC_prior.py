@@ -4,7 +4,7 @@ import numpy as np
 
 from config.cfg import exp
 from config.cluster import cluster
-from utils import copy, clean_wrfdir, try_remove
+from dartwrf.utils import copy, clean_wrfdir, try_remove
 
 """
 Sets initial condition data (wrfinput/wrfrst file) in the run_WRF directory for each ensemble member 

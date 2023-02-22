@@ -14,7 +14,7 @@ from docopt import docopt
 
 from config.cfg import exp
 from config.cluster import cluster
-from utils import sed_inplace, copy, symlink, mkdir
+from dartwrf.utils import sed_inplace, copy, symlink, mkdir
 
 def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
         restart=False, restart_interval=720):
