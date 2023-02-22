@@ -18,8 +18,8 @@ DART-WRF is available at `github.com/lkugler/DART-WRF <https://github.com/lkugle
 Helpful other documentations
 ----------------------------
 
-`**DART docs** <https://docs.dart.ucar.edu/en/latest/README.html>`_ 
-`**WRF Userguide** <http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_v4/v4.2/WRFUsersGuide_v42.pdf>`_
+**`DART docs <https://docs.dart.ucar.edu/en/latest/README.html>`_**
+**`WRF Userguide <http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_v4/v4.2/WRFUsersGuide_v42.pdf>`_**
 
 
 .. toctree::
