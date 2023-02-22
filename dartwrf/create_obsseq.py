@@ -5,44 +5,17 @@ according to which observations are generated and subsequently assimilated.
 import os, sys, warnings
 import numpy as np
 import datetime as dt
+import csv
 from pysolar.solar import get_altitude, get_azimuth
 
 from config.cfg import exp
 from config.cluster import cluster
 from dartwrf.obs import calculate_obs_locations as col
 
-def obskind_read():
-    """Read dictionary of observation types + ID numbers ("kind") 
-    from DART f90 script
-    """
-
-    definitionfile = cluster.scriptsdir+'/../config/obs_kind_mod.f90'
-    with open(definitionfile, 'r') as f:
-        kind_def_f = f.readlines()
-
-    obskind_nrs = {}
-    for i, line in enumerate(kind_def_f):
-        if 'Integer definitions for DART OBS TYPES' in line:
-            # data starts below this line
-            i_start = i
-            break
-    for line in kind_def_f[i_start+1:]:
-        if 'MAX_DEFINED_TYPES_OF_OBS' in line:
-            # end of data
-            break
-        if '::' in line:
-            # a line looks like this
-            # integer, parameter, public ::       MSG_4_SEVIRI_TB =   261
-            data = line.split('::')[-1].split('=')
-            kind_str = data[0].strip()
-            kind_nr = int(data[1].strip())
-            obskind_nrs[kind_str] = kind_nr
-    return obskind_nrs
-
 
 #####################
 # Global variables
-obs_kind_nrs = obskind_read()  # DART internal indices
+obs_kind_nrs = csv.DictReader(open("config/obskind.csv"))  # DART internal indices
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
