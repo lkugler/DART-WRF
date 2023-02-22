@@ -21,14 +21,6 @@ dartwrf.assim\_synth\_obs module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.cleanup\_exp module
----------------------------
-
-.. automodule:: dartwrf.cleanup_exp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dartwrf.create\_obs\_upfront module
 -----------------------------------
 
