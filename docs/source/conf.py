@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 project = 'DART-WRF'
 copyright = '2023, Lukas Kugler'
 author = 'Lukas Kugler'
-release = '2023.2.17'
+release = '2023.2.21'
 
 # -- General configuration
 
@@ -21,6 +21,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'nbsphinx'
 ]
+
+autodoc_mock_imports = ['numpy',]
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
