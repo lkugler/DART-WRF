@@ -15,8 +15,8 @@ DART-WRF is available at `github.com/lkugler/DART-WRF <https://github.com/lkugle
    pip install -e .
 
 
-Helpful other documentations
-----------------------------
+Other helpful resources
+-----------------------
 
 **DART documentation** `[here] <https://docs.dart.ucar.edu/en/latest/README.html>`_
 **WRF user guide** `[here] <http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_v4/v4.2/WRFUsersGuide_v42.pdf>`_
