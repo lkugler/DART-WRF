@@ -16,13 +16,15 @@ At the command line:
    cd DART-WRF
    pip install -e .
 
+.. toctree::
+   :hidden:
+
+   self
 
 .. toctree::
    :maxdepth: 2
-   self
-.. toctree::
-   :maxdepth: 2
    :caption: Tutorials:
+
    tutorial1
    tutorial2
    tutorial3
