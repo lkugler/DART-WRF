@@ -1,4 +1,4 @@
-sphinx==4.0.2
+sphinx>=6.1
 pysolar==1.10.0
 docopt
 nbsphinx>=0.8.6
