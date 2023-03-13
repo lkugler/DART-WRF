@@ -22,7 +22,7 @@ class ClusterConfig(object):
         Example:
             `/users/abcd/data/sim_archive/experiment1/`
         """
-        return self.archive_base+'/'+self.exp.expname
+        return self.archive_base+'/'+self.exp.expname+'/'
 
     @property
     def scripts_rundir(self):
@@ -44,7 +44,7 @@ class ClusterConfig(object):
         """Path to the directory where an ensemble member will run WRF
         Includes the experiment name and the ensemble member index
         """
-        return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)
+        return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)+'/'
 
     def run_job(self, cmd, jobname='', cfg_update=dict(), depends_on=None):
         """Run scripts in a shell
