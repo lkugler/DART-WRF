@@ -1,10 +1,18 @@
+"""Prepare WRF run directories, to use wrf.exe then
+
+Args:
+    init_time (str): YYYY-MM-DD_HH:MM
+
+Returns:
+    None
+"""
 import os, sys, shutil
 import datetime as dt
 
 from config.cfg import exp
 from config.cluster import cluster
 from dartwrf.utils import symlink, copy, link_contents
-from dartrwrf import prepare_namelist
+from dartwrf import prepare_namelist
 
 if __name__ == '__main__':
 
