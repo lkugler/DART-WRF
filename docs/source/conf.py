@@ -23,6 +23,8 @@ extensions = [
     'nbsphinx'
 ]
 
+source_suffix = [".rst", ".md"]
+
 autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils']
 
 napoleon_google_docstring = True
