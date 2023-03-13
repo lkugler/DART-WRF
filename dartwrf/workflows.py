@@ -138,7 +138,6 @@ class WorkFlows(object):
 
         if input_is_restart:  # start WRF in restart mode
         """
-        id = depends_on
         restart_flag = '.false.' if not input_is_restart else '.true.'
 
         # if False:  # doesnt work with restarts at the moment# first_minute:
@@ -180,7 +179,7 @@ class WorkFlows(object):
         if output_restart_interval:
             args.append('--restart_interval='+str(int(float(output_restart_interval))))
 
-        id = self.cluster.run_job(' '.join(args), "preWRF", cfg_update=dict(time="2"), depends_on=[id])
+        id = self.cluster.run_job(' '.join(args), "preWRF", cfg_update=dict(time="2"), depends_on=[depends_on])
 
         cmd = script_to_str(self.cluster.run_WRF).replace('<exp.expname>', exp.expname
                                         ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base)

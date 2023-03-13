@@ -63,10 +63,9 @@ class ClusterConfig(object):
         """
         if self.use_slurm:
             from slurmpy import Slurm
-            Slurm(jobname, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
+            return Slurm(jobname, slurm_kwargs=dict(self.slurm_cfg, **cfg_update), 
                   log_dir=self.log_dir, 
-                  scripts_dir=self.slurm_scripts_dir, 
-                  **kwargs
+                  scripts_dir=self.slurm_scripts_dir,
                   ).run(cmd, depends_on=depends_on)
         else:
             print(cmd)

@@ -63,7 +63,7 @@ if __name__ == "__main__":
         # How long shall we integrate?
         timedelta_integrate = timedelta_btw_assim
         output_restart_interval = timedelta_btw_assim.total_seconds()/60
-        if time == last_assim_time: #this_forecast_init.minute in [0,]:  # longer forecast every full hour
+        if time == last_assim_time:  # this_forecast_init.minute in [0,]:  # longer forecast every full hour
             timedelta_integrate = forecast_until - last_assim_time  # dt.timedelta(hours=4)
             output_restart_interval = 9999  # no restart file after last assim
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     depends_on=id)
         
         # as we have WRF output, we can use own exp path as prior
-        prior_path_exp = cluster.archivedir       
+        prior_path_exp = w.cluster.archivedir       
 
         id_sat = w.create_satimages(time, depends_on=id)
         
