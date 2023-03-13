@@ -35,11 +35,6 @@ Other helpful resources
    tutorial2
    tutorial3
 
-   :caption: Tutorials:
-
-   api
-   modules
-
 API
 ===
 
