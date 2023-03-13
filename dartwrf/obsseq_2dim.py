@@ -3,7 +3,14 @@ Specifically, one observation per column which is the maximum of the column
 
 Use this script before running the OSSE workflow, to prepare obs_seq.out files.
 
-path_3d_obsseq = '/path/exp_obs10_loc20/obs_seq_out/2008-07-30_%H:%M_obs_seq.out'  
+Note:
+     path_3d_obsseq = '/path/exp_obs10_loc20/obs_seq_out/2008-07-30_%H:%M_obs_seq.out'  
+
+Note:
+     Only works in case there is 1 observation type!
+
+Example:
+     python obsseq_2dim.py exp_v1.22_P2_rr_REFL_obs10_loc20_oe2.5 2008-07-30_13:00
 """
 
 from copy import copy
@@ -17,42 +24,41 @@ from dartwrf import utils
 from dartwrf import assim_synth_obs as aso
 from dartwrf import obsseq
 
+def _get_n_obs_per_layer(oso):     
+     """Get number of observations per layer"""
+     height_all = np.array([a[2] for a in oso.df.loc3d])
+
+     height_first = height_all[0]
+
+     # count how often this height appears
+     n_obs_per_layer = int(np.sum(height_all == height_first))
+     return n_obs_per_layer
+
 
 if __name__ == "__main__":
-     
      exp = sys.argv[1]
      assim_time = dt.datetime.strptime(sys.argv[2], "%Y-%m-%d_%H:%M")
      
      path_3d_obsseq = cluster.archive_base+exp+'/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'
      oso_input = assim_time.strftime(path_3d_obsseq)
      
-     # load experiment config
-     sys.path.insert(0, cluster.archivedir+'/'+exp+'/DART-WRF')
-     from config import cfg
-
-     # only assured to work with single obstype
-     if len(cfg.exp.observations) > 1:
-          raise NotImplementedError()
-
      # existing obsseq with multi levels
      oso = obsseq.ObsSeq(oso_input)
+     
+     n_obs_3d = len(oso.df)
+     n_obs_per_layer = _get_n_obs_per_layer(oso)
+     nlev = int(n_obs_3d/n_obs_per_layer)
+     assert np.allclose(nlev, n_obs_3d/n_obs_per_layer), 'n_obs not evenly divisible!'
 
-     n_obs = cfg.exp.observations[0]['n_obs']
-     nlev = len(oso.df)/n_obs
-     if nlev - int(nlev) != 0:
-          raise RuntimeError()
-     nlev = int(nlev)  # levels per obs
-     print('nlev', nlev)
-     print('n_obs', n_obs)
+     print('n_obs_per_layer', n_obs_per_layer)
+     print('n_obs_3d', n_obs_3d)
      
      output = copy(oso)  # copy will be modified
      # output.df = output.df.copy()  # without this, we get a SettingWithCopyWarning
      output.df = output.df.iloc[0::nlev]  #  every nth level = first level
 
-     #print(output.df, oso.df)
-
      # iterate through, set value to max
-     for i_obs in range(0, n_obs):  # go through n_obs (all columns)
+     for i_obs in range(0, ):  # go through n_obs (all columns)
 
           i_obs_subset = i_obs*nlev  # jumps by nlev (from one to next column)
           column = oso.df.loc[0 + i_obs_subset:nlev + i_obs_subset, :]  # select column
