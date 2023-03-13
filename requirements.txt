@@ -1,3 +1,4 @@
-pysolar==0.10.0
+sphinx==4.0.2
+pysolar==1.10.0
 docopt
-nbsphinx
+nbsphinx>=0.8.6
