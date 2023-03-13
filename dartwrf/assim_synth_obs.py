@@ -3,7 +3,7 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
+from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell, write_txt
 from dartwrf.obs import error_models as err
 import dartwrf.create_obsseq as osq
 from dartwrf import wrfout_add_geo
@@ -140,13 +140,6 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system("rm -rf " + cluster.dartrundir + "/output_sd*")
     os.system("rm -rf " + cluster.dartrundir + "/perfect_output_*")
     os.system("rm -rf " + cluster.dartrundir + "/obs_seq.fina*")
-
-
-def write_txt(lines, fpath):
-    try_remove(fpath)
-    with open(fpath, "w") as file:
-        for line in lines:
-            file.write(line+'\n')
 
 def write_list_of_inputfiles_prior():
      files = []

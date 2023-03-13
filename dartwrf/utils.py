@@ -109,7 +109,8 @@ def clean_wrfdir(dir):
             os.remove(f)
 
 def symlink(src, dst):
-    # Create a symbolic link pointing to src named dst.
+    """Create a symbolic link from src to dst
+    """
     try:
         os.symlink(src, dst)
     except FileExistsError:
@@ -123,11 +124,17 @@ def symlink(src, dst):
         raise e
 
 def link_contents(src, dst):
+    """Create symbolic links for all files in src to dst
+    
+    Args:
+        src (str): Path to source directory
+        dst (str): Path to destination directory
+        
+    Returns:
+        None
+    """
     for f in os.listdir(src):
         symlink(src+'/'+f, dst+'/'+f)
-
-def copy_scp_srvx8(src, dst):
-    os.system('scp '+src+' a1254888@srvx8.img.univie.ac.at:'+dst)
 
 def sed_inplace(filename, pattern, repl):
     '''Perform the pure-Python equivalent of in-place `sed` substitution
@@ -162,4 +169,28 @@ def sed_inplace(filename, pattern, repl):
     shutil.move(tmp_file.name, filename)
 
 def append_file(f_main, f_gets_appended):
+    """Append the contents of one file to another
+
+    Args:
+        f_main (str): Path to file that will be appended
+        f_gets_appended (str): Path to file that will be appended to f_main
+
+    Returns:
+        None
+    """
     os.system('cat '+f_gets_appended+' >> '+f_main)
+
+def write_txt(lines, fpath):
+    """Write a list of strings to a text file
+    
+    Args:
+        lines (list): List of strings
+        fpath (str): Path to file
+        
+    Returns:
+        None
+    """
+    try_remove(fpath)
+    with open(fpath, "w") as file:
+        for line in lines:
+            file.write(line+'\n')
