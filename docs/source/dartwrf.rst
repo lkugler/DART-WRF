@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   dartwrf.config
    dartwrf.obs
 
 Submodules
