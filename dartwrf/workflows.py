@@ -25,7 +25,7 @@ def dict_to_py(d, outfile):
 
 class WorkFlows(object):
     def __init__(self, exp_config='cfg.py', server_config='server.py'):
-        """Set up the experiment folder in `archivedir`, copy config files, backup scripts.
+        """Set up the experiment folder in `archivedir`.
 
         Args:
             exp (str): Path to exp config file
@@ -239,7 +239,7 @@ class WorkFlows(object):
 
     def create_satimages(self, init_time, depends_on=None):
         cmd = self.cluster.python_verif+' ~/RTTOV-WRF/run_init.py '+self.cluster.archivedir+init_time.strftime('/%Y-%m-%d_%H:%M/')
-        id = self.cluster.run_job(cmd, "RTTOV", cfg_update={"ntasks": "12", "time": "80", "mem": "180G"}, depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "RTTOV", cfg_update={"ntasks": "12", "time": "80", "mem": "200G"}, depends_on=[depends_on])
         return id
 
 
