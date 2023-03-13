@@ -1,7 +1,7 @@
 import os
 from config.cfg import exp
 from config.cluster import cluster
-from dartwrf.utils import symlink, copy_scp_srvx8, copy, sed_inplace
+from dartwrf.utils import symlink, copy, sed_inplace
 
 joinp = os.path.join
 

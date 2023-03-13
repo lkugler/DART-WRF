@@ -1,12 +1,12 @@
 """Create namelist.input files
 
 Usage:
-  prepare_namelist.py <begin> <end> <intv> [--radt=<minutes>] [--restart=<flag>] [--restart_interval=<minutes>]
+prepare_namelist.py <begin> <end> <intv> [--radt=<minutes>] [--restart=<flag>] [--restart_interval=<minutes>]
 
 Options:
-  --radt=<minutes>   		Radiation interval [default: 5]
-  --restart=<flag> 		Restart flag (.true., .false.) [default: .false.]
-  --restart_interval=<minutes>	Restart frequency [default: 720]
+--radt=<minutes>   		Radiation interval [default: 5]
+--restart=<flag> 		Restart flag (.true., .false.) [default: .false.]
+--restart_interval=<minutes>	Restart frequency [default: 720]
 """
 import os, sys, shutil, warnings
 import datetime as dt
@@ -18,13 +18,16 @@ from dartwrf.utils import sed_inplace, copy, symlink, mkdir
 
 def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
         restart=False, restart_interval=720):
-    """Create namelist.input files
+    """Create a namelist.input file for each ensemble member
 
     Args:
-    archive (bool): if True, write to archivedir of experiment
-        if False, write to WRF run directory
-    restart (str): fortran bool whether to use wrfinput or wrfrst
-    restart_interval (int): output frequency of wrfrst (minutes)
+        archive (bool): if True, write to archivedir of experiment
+            if False, write to WRF run directory
+        restart (str): fortran bool whether to use wrfinput or wrfrst
+        restart_interval (int): output frequency of wrfrst (minutes)
+
+    Returns
+        None
     """
     rundir = cluster.wrf_rundir(iens)
     copy(cluster.namelist, rundir+'/namelist.input')
@@ -73,6 +76,7 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
 
 
 if __name__ == '__main__':
+
     args = docopt(__doc__)
     begin = dt.datetime.strptime(args['<begin>'], '%Y-%m-%d_%H:%M')
     end = dt.datetime.strptime(args['<end>'], '%Y-%m-%d_%H:%M')
