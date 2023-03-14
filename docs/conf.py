@@ -23,7 +23,7 @@ extensions = [
     'nbsphinx'
 ]
 
-autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils','config','config.cfg','config.cluster','cluster.dartrundir']
+autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils']
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
