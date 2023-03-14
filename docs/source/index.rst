@@ -31,9 +31,7 @@ Other helpful resources
    :maxdepth: 2
    :caption: Tutorials:
 
-   tutorial1
-   tutorial2
-   tutorial3
+   test
 
 
 API
