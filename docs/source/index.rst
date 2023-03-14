@@ -31,7 +31,7 @@ Other helpful resources
    :maxdepth: 2
    :caption: Tutorials:
 
-   test
+   notebooks/test
 
 
 API
