@@ -11,8 +11,9 @@ author = 'Lukas Kugler'
 release = '2023.2.21'
 
 # -- General configuration
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../source/'))
 
 master_doc = 'index'
 
