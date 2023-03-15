@@ -457,7 +457,7 @@ def prepare_inflation_2(time, prior_init_time):
     """
     dir_priorinf = cluster.archivedir + prior_init_time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/") 
 
-    f_default = cluster.archive_basedir + "/input_priorinf_mean.nc"
+    f_default = cluster.archive_base + "/input_priorinf_mean.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     f_new = cluster.dartrundir+'/input_priorinf_mean.nc'
 
@@ -468,7 +468,7 @@ def prepare_inflation_2(time, prior_init_time):
         warnings.warn(f_prior + ' does not exist. Using default file instead.')
         copy(f_default, f_new)
 
-    f_default = cluster.archive_basedir + "/input_priorinf_sd.nc"
+    f_default = cluster.archive_base + "/input_priorinf_sd.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     f_new = cluster.dartrundir+'/input_priorinf_sd.nc'
 
