@@ -445,6 +445,52 @@ def get_obsseq_out(time):
 
     return oso
 
+def prepare_inflation_2(time, prior_init_time):
+    """Prepare inflation files
+    
+    Recycles inflation files from previous assimilations
+    or takes default files from archive.
+    
+    Args:
+        time (datetime): time of assimilation
+        prior_init_time (datetime): time of prior assimilation
+    """
+    dir_priorinf = cluster.archivedir + prior_init_time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/") 
+
+    f_default = cluster.archive_basedir + "/input_priorinf_mean.nc"
+    f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
+    f_new = cluster.dartrundir+'/input_priorinf_mean.nc'
+
+    if os.path.isfile(f_prior):
+        copy(f_prior, f_new)
+        print(f_prior, 'copied to', f_new)
+    else:
+        warnings.warn(f_prior + ' does not exist. Using default file instead.')
+        copy(f_default, f_new)
+
+    f_default = cluster.archive_basedir + "/input_priorinf_sd.nc"
+    f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
+    f_new = cluster.dartrundir+'/input_priorinf_sd.nc'
+
+    if os.path.isfile(f_prior):
+        copy(f_prior, f_new)
+        print(f_prior, 'copied to', f_new)
+    else:
+        warnings.warn(f_prior + ' does not exist. Using default file instead.')
+        copy(f_default, f_new)
+
+def archive_inflation_2(time):
+    f_output = cluster.dartrundir + time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/output_priorinf_sd.nc')
+    f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
+    copy(f_output, f_archive)
+    print(f_archive, 'saved')
+
+    f_output = cluster.dartrundir + time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/output_priorinf_mean.nc')
+    f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
+    copy(f_output, f_archive)
+    print(f_archive, 'saved')
+
+
 def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """Assimilate observations
     as defined in config/cfg.py
@@ -497,10 +543,16 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
         print(" 2.3) reject observations? ")
         qc_obs(time, oso, osf_prior)
 
+    if exp.prior_inflation == 2:
+        prepare_inflation_2(time, prior_init_time)
+
     print(" 3) run filter ")
     set_DART_nml()
     filter(nproc=nproc)
     archive_filteroutput(time)
+
+    if exp.prior_inflation == 2:
+        archive_inflation_2(time)
 
     print(" 4) evaluate posterior observations for all observations (incl rejected)")
     write_list_of_inputfiles_posterior(time)
