@@ -1,0 +1,4 @@
+sphinx>=6
+pysolar==0.10.0
+docopt
+nbsphinx

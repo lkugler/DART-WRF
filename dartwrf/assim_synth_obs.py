@@ -3,7 +3,7 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
+from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell, write_txt
 from dartwrf.obs import error_models as err
 import dartwrf.create_obsseq as osq
 from dartwrf import wrfout_add_geo
@@ -141,13 +141,6 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system("rm -rf " + cluster.dartrundir + "/perfect_output_*")
     os.system("rm -rf " + cluster.dartrundir + "/obs_seq.fina*")
 
-
-def write_txt(lines, fpath):
-    try_remove(fpath)
-    with open(fpath, "w") as file:
-        for line in lines:
-            file.write(line+'\n')
-
 def write_list_of_inputfiles_prior():
      files = []
      for iens in range(1, exp.n_ens+1):
@@ -236,13 +229,13 @@ def archive_filteroutput(time):
 def get_parametrized_error(obscfg, osf_prior):
     """Calculate the parametrized error for an ObsConfig (one obs type)
 
-    Args
-        obscfg (object):                configuration of observations
-        osf_prior (obsseq.ObsRecord):   contains truth and prior values from obs_seq.final
+    Args:
+        obscfg (object): Configuration of observations
+        osf_prior (obsseq.ObsRecord): Contains truth and prior values from obs_seq.final
                                         (output of ./final in evaluate-mode (no posterior))
 
-    Returns
-        np.array            observation error std-dev for assimilation
+    Returns:
+        np.array: observation error std-dev for assimilation
     """
     Hx_prior = osf_prior.get_prior_Hx().T
     Hx_truth = osf_prior.get_truth_Hx()
@@ -263,8 +256,7 @@ def set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile="./obs_seq.out"):
     """"Overwrite existing variance values in obs_seq.out files
     
     Args:
-        oso (ObsSeq) :  python representation of obs_seq.out file, 
-                        will be modified and written to file
+        oso (ObsSeq): python representation of obs_seq.out file, will be modified and written to file
         osf_prior (ObsSeq): python representation of obs_seq.final (output of filter in evaluate-mode without posterior)
                             contains prior values; used for parameterized errors
 

@@ -174,21 +174,21 @@ kind
 
 
 def create_obs_seq_in(time_dt, list_obscfg, 
-                             output_path=cluster.dartrundir+'/obs_seq.in'):
+                      output_path=cluster.dartrundir+'/obs_seq.in'):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
         time_dt (dt.datetime): time of observation
-        list_obscfg (list of dict) :    configuration for observation types
-            must have keys: 
-                - n_obs (int) : number of observations (must be a square of an integer: 4, 9, 1000, ...)
-                - obs_locations (str or tuple) in ['square_array_from_domaincenter', 'square_array_evenly_on_grid', ] 
-                                                or list of (lat, lon) coordinate tuples, in degrees north/east
-                - error_generate (float)
-                - error_assimilate (float or False) : False -> parameterized
-                - cov_loc_radius_km (float)
+        list_obscfg (list of dict): configuration for observation types
 
-        obs_errors (np.array): contains observation errors, one for each observation
+    Note:
+        `list_obscfg` must have these keys: 
+            - n_obs (int) : number of observations (must be a square of an integer: 4, 9, 1000, ...)
+            - obs_locations (str or tuple) in ['square_array_from_domaincenter', 'square_array_evenly_on_grid', ] 
+                                            or list of (lat, lon) coordinate tuples, in degrees north/east
+            - error_generate (np.array)
+            - error_assimilate (np.array or False) : False -> parameterized
+            - cov_loc_radius_km (float)
     """
     print('creating obs_seq.in:')
     time_dt = add_timezone_UTC(time_dt)
