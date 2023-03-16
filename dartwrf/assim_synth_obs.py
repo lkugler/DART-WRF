@@ -459,7 +459,7 @@ def prepare_inflation_2(time, prior_init_time):
 
     f_default = cluster.archive_base + "/input_priorinf_mean.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
-    f_new = cluster.dartrundir+'/input_priorinf_mean.nc'
+    f_new = cluster.dartrundir + '/input_priorinf_mean.nc'
 
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
@@ -470,7 +470,7 @@ def prepare_inflation_2(time, prior_init_time):
 
     f_default = cluster.archive_base + "/input_priorinf_sd.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
-    f_new = cluster.dartrundir+'/input_priorinf_sd.nc'
+    f_new = cluster.dartrundir + '/input_priorinf_sd.nc'
 
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
@@ -480,12 +480,12 @@ def prepare_inflation_2(time, prior_init_time):
         copy(f_default, f_new)
 
 def archive_inflation_2(time):
-    f_output = cluster.dartrundir + time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/output_priorinf_sd.nc')
+    f_output = cluster.dartrundir + '/output_priorinf_sd.nc'
     f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
-    f_output = cluster.dartrundir + time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/output_priorinf_mean.nc')
+    f_output = cluster.dartrundir + '/output_priorinf_mean.nc'
     f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
