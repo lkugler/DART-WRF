@@ -42,38 +42,35 @@ slurm_cfg               python dictionary, containing options of SLURM
                             'cfg_update = {"nodes": "2"}'
 """
 
-
 cluster = utils.ClusterConfig(exp)
-cluster.name = 'jet'
-cluster.max_nproc = 12
-cluster.use_slurm = True
-cluster.size_jobarray = 40
+cluster.name = 'srvx1'
+cluster.max_nproc = 6
+cluster.use_slurm = False
 
 # binaries
-cluster.python = '/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
-cluster.python_verif = '/jetfs/home/lkugler/miniconda3/envs/enstools/bin/python'
-cluster.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-20.0.2/nco-4.9.3-dhlqiyog7howjmaleyfhm6lkt7ra37xf/bin/ncks'
-cluster.ideal = '/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
-cluster.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
+cluster.python = 'python'
+cluster.python_verif = '/users/staff/lkugler/miniconda3/bin/python'
+cluster.ncks = '/home/swd/spack/opt/spack/linux-rhel8-skylake_avx512/gcc-8.5.0/nco-5.0.1-ntu44aoxlvwtr2tsrobfr4lht7cpvccf/bin/ncks'
+cluster.ideal = '' #/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
+cluster.wrfexe = '' #/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
 cluster.container = ''
 
 # paths for data output
-cluster.wrf_rundir_base = '/jetfs/home/lkugler/data/run_WRF/'  # path for temporary files
-cluster.dart_rundir_base = '/jetfs/home/lkugler/data/run_DART/'  # path for temporary files
-cluster.archive_base = '/jetfs/home/lkugler/data/sim_archive/'
+cluster.wrf_rundir_base = utils.userhome+'/AdvDA23/run_WRF/'  # path for temporary files
+cluster.dart_rundir_base = utils.userhome+'/AdvDA23/run_DART/'  # path for temporary files
+cluster.archive_base = utils.userhome+'/data/sim_archive/'
 
 # paths used as input
-cluster.srcdir = '/jetfs/home/lkugler/data/compile/WRF-4.3/run'
-cluster.dart_srcdir = '/jetfs/home/lkugler/data/compile/DART/DART-10.5.3/models/wrf/work'
-cluster.rttov_srcdir = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/'
-cluster.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
+cluster.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
+cluster.dart_srcdir = '/users/students/lehre/advDA_s2023/DART/models/wrf/work'
+cluster.rttov_srcdir = '/users/students/lehre/advDA_s2023/RTTOV13/rtcoef_rttov13/'
+cluster.scriptsdir = utils.userhome+'/DART-WRF/dartwrf/'
+cluster.geo_em = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
 
-# other inputs
-cluster.geo_em = '/jetfs/home/lkugler/data/geo_em.d01.nc'
-cluster.obs_impact_filename = cluster.scriptsdir+'/../templates/impactfactor_T.txt'
+# templates/run scripts
 cluster.namelist = cluster.scriptsdir+'/../templates/namelist.input'
-cluster.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
+cluster.run_WRF = cluster.scriptsdir+'/run_ens.jet.sh'
 
-cluster.slurm_cfg = {"account": "lkugler", "partition": "compute", #"nodelist": "jet07",
+cluster.slurm_cfg = {"account": "lkugler", "partition": "compute",
                  "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",
                  "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"}

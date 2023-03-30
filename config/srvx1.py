@@ -48,7 +48,7 @@ cluster.max_nproc = 6
 cluster.use_slurm = False
 
 # binaries
-cluster.python = '/users/staff/lkugler/miniconda3/bin/python'
+cluster.python = 'python'
 cluster.python_verif = '/users/staff/lkugler/miniconda3/bin/python'
 cluster.ncks = '/home/swd/spack/opt/spack/linux-rhel8-skylake_avx512/gcc-8.5.0/nco-5.0.1-ntu44aoxlvwtr2tsrobfr4lht7cpvccf/bin/ncks'
 cluster.ideal = '' #/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
@@ -56,16 +56,16 @@ cluster.wrfexe = '' #/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
 cluster.container = ''
 
 # paths for data output
-cluster.wrf_rundir_base = '/users/staff/lkugler/AdvDA23/run_WRF/'  # path for temporary files
-cluster.dart_rundir_base = '/users/staff/lkugler/AdvDA23/run_DART/'  # path for temporary files
-cluster.archive_base = '/mnt/jetfs/scratch/lkugler/data/sim_archive/'
+cluster.wrf_rundir_base = utils.userhome+'/AdvDA23/run_WRF/'  # path for temporary files
+cluster.dart_rundir_base = utils.userhome+'/AdvDA23/run_DART/'  # path for temporary files
+cluster.archive_base = utils.userhome+'/data/sim_archive/'
 
 # paths used as input
 cluster.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
-cluster.dart_srcdir = '/users/staff/lkugler/AdvDA23/DART/models/wrf/work'
-cluster.rttov_srcdir = '/users/staff/lkugler/AdvDA23/RTTOV13/rtcoef_rttov13/'
-cluster.scriptsdir = '/users/staff/lkugler/AdvDA23/DART-WRF/dartwrf/'
-cluster.geo_em = '/mnt/jetfs/scratch/lkugler/data/geo_em.d01.nc'
+cluster.dart_srcdir = '/users/students/lehre/advDA_s2023/DART/models/wrf/work'
+cluster.rttov_srcdir = '/users/students/lehre/advDA_s2023/RTTOV13/rtcoef_rttov13/'
+cluster.scriptsdir = utils.userhome+'/DART-WRF/dartwrf/'
+cluster.geo_em = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
 
 # templates/run scripts
 cluster.namelist = cluster.scriptsdir+'/../templates/namelist.input'

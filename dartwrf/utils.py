@@ -71,6 +71,8 @@ class ClusterConfig(object):
             print(cmd)
             os.system(cmd)
 
+userhome = os.path.expanduser('~')
+
 def shell(args):
     print(args)
     #subprocess.run(args.split(' ')) #, shell=True) #, stderr=subprocess.STDOUT) 
