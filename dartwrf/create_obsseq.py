@@ -191,7 +191,7 @@ def create_obs_seq_in(time_dt, list_obscfg,
             - error_assimilate (np.array or False) : False -> parameterized
             - cov_loc_radius_km (float)
     """
-    os.makedirs(cluster.dartrundir, exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     print('creating obs_seq.in:')
     time_dt = add_timezone_UTC(time_dt)
