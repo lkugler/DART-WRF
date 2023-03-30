@@ -35,5 +35,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8.3",
-    install_requires=["pysolar>=0.10"],
+    install_requires=["xarray", 
+                      "netCDF4",
+                      "pysolar>=0.10"],
 )
