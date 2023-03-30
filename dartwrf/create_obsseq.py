@@ -190,6 +190,8 @@ def create_obs_seq_in(time_dt, list_obscfg,
             - error_assimilate (np.array or False) : False -> parameterized
             - cov_loc_radius_km (float)
     """
+    os.makedirs(cluster.dartrundir, exist_ok=True)
+
     print('creating obs_seq.in:')
     time_dt = add_timezone_UTC(time_dt)
     dart_date_day, secs_thatday = get_dart_date(time_dt)
@@ -307,7 +309,8 @@ if __name__ == '__main__':
     #             cov_loc_radius_km=32, cov_loc_vert_km=5)
 
 
-    create_obs_seq_in(time_dt, [radar])
+    create_obs_seq_in(time_dt, [radar],
+                      output_path=utils.userhome+'/run_DART/obs_seq.in')
 
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
