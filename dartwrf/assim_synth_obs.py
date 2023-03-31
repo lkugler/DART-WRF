@@ -480,13 +480,16 @@ def prepare_inflation_2(time, prior_init_time):
         copy(f_default, f_new)
 
 def archive_inflation_2(time):
+    dir_output = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
+    os.makedirs(dir_output, exist_ok=True)
+
     f_output = cluster.dartrundir + '/output_priorinf_sd.nc'
-    f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
+    f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
     f_output = cluster.dartrundir + '/output_priorinf_mean.nc'
-    f_archive = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
+    f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
