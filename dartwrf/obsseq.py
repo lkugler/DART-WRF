@@ -73,16 +73,7 @@ class ObsRecord(pd.DataFrame):
 
     def get_posterior_Hx(self):
         """Return posterior Hx array (n_obs, n_ens)"""
-        try:
-            return self._get_model_Hx('posterior')
-        except KeyError as e:
-            raise  # change: not allow this, too unsafe
-        # if posterior is not available, return prior
-        # return self._get_model_Hx('prior')
-        #     # this is useful if we evaluate a 'posterior state'
-        #     # then the variable is called 'prior' while it really is a posterior
-        #     #warnings.warn(str(e)+' returning prior from this file instead!')
-        #     return self._get_model_Hx('prior')
+        return self._get_model_Hx('posterior')
 
     def get_truth_Hx(self):
         return self['truth'].values
