@@ -7,11 +7,6 @@ import os, sys, shutil, warnings
 import numpy as np
 import pandas as pd
 
-from config.cfg import exp
-from config.cluster import cluster
-from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove
-
-
 def plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
 
@@ -142,6 +137,7 @@ class ObsRecord(pd.DataFrame):
 
     def determine_nlayers(self):
         nlayers = 1  # first guess
+        from config.cfg import exp
 
         if len(exp.observations) == 1:
             # obscfg = exp.observations[0]
@@ -716,6 +712,7 @@ class ObsSeq(object):
 
 
 if __name__ == "__main__":
+    from config.cluster import cluster
     # for testing purposes
 
     # f = cluster.scriptsdir + "/../tests/obs_seq.orig.out"
