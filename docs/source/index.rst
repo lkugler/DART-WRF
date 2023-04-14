@@ -34,6 +34,13 @@ Other helpful resources
    notebooks/tutorial1
    notebooks/tutorial2
    notebooks/tutorial3
+   
+.. toctree::
+   :hidden:
+   :caption: API:
+   
+   api
+   modules
 
 
 API
@@ -42,5 +49,3 @@ API
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
