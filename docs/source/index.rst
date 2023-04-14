@@ -41,8 +41,7 @@ Other helpful resources
    
    modules
    genindex 
-   modindex
-   search
+   
 
 API
 ===
