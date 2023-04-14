@@ -29,7 +29,7 @@ Other helpful resources
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials:
+   :caption: Tutorials
 
    notebooks/tutorial1
    notebooks/tutorial2
@@ -37,11 +37,12 @@ Other helpful resources
    
 .. toctree::
    :hidden:
-   :caption: API:
+   :caption: Reference
    
-   api
    modules
-
+   genindex 
+   modindex
+   search
 
 API
 ===
