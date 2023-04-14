@@ -2,9 +2,7 @@
 """
 running the forecast model without assimilation
 """
-import os, sys, shutil
 import datetime as dt
-
 from dartwrf.workflows import WorkFlows
 
 

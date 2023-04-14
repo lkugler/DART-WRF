@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     id = None
 
-    if False:  # warm bubble
+    if True:  # warm bubble
         prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         # id = w.run_ideal(depends_on=id)
         # id = w.wrfinput_insert_wbubble(depends_on=id)    
 
-    if True:  # random
+    if False:  # random
         prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
         w.prepare_WRFrundir(init_time)
         # id = w.run_ideal(depends_on=id)
 
-    # prior_path_exp = cluster.archivedir
+    # prior_path_exp = w.cluster.archivedir
     # prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5+su_noDA'
     
     prior_init_time = init_time

@@ -23,7 +23,7 @@ if False: # generate_nature
                      input_is_restart=False,
                      output_restart_interval=(end-begin).total_seconds()/60,
                      depends_on=id)
-    # id = create_satimages(begin, depends_on=id)
+    # id = w.create_satimages(begin, depends_on=id)
 
 
 if False:  # to continue a nature after spinup
@@ -34,11 +34,11 @@ if False:  # to continue a nature after spinup
     id = w.prepare_WRFrundir(start)  # create initial conditions
     id = w.run_ideal(depends_on=id)
 
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5_nat2' # cluster.archivedir
+    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5_nat2' # w.cluster.archivedir
     prior_init_time = dt.datetime(2008, 7, 30, 7)
     prior_valid_time = dt.datetime(2008, 7, 30, 12)
 
-    id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
+    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
             new_start_time=start, # <---------- to start again after spinup
             depends_on=id)
 
@@ -48,8 +48,7 @@ if False:  # to continue a nature after spinup
              #output_restart_interval=9999,
              depends_on=id)
         
-    id = create_satimages(start, depends_on=id)
-    verify(depends_on=id)
+    id = w.create_satimages(start, depends_on=id)
 
 
 if True:   # do a free run (all inits)
@@ -78,12 +77,12 @@ if True:   # do a free run (all inits)
         last_init = time
         time = next_restart
         input_is_restart = True
-        create_satimages(last_init, depends_on=id)
+        w.create_satimages(last_init, depends_on=id)
 
-        prior_path_exp = cluster.archivedir
+        prior_path_exp = w.cluster.archivedir
         prior_init_time = last_init
         prior_valid_time = time
-        id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+        id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
     # free run, no restart files anymore
     end = dt.datetime(2008, 7, 30, 18)
@@ -95,8 +94,9 @@ if True:   # do a free run (all inits)
              depends_on=id)
     
     
-    id = create_satimages(time, depends_on=id)
-    verify(depends_on=id)
+    w.verify_wrf(depends_on=id)
+    id = w.create_satimages(time, depends_on=id)
+    w.verify_sat(depends_on=id)
 
 if False:  # to continue a free run
     start = dt.datetime(2008, 7, 30, 7)
@@ -104,11 +104,11 @@ if False:  # to continue a free run
 
     id = w.prepare_WRFrundir(start)  # create initial conditions
 
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5_noDA' # cluster.archivedir
+    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5_noDA' # w.cluster.archivedir
     prior_init_time = dt.datetime(2008, 7, 30, 11)
     prior_valid_time = start
 
-    id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
     id = w.run_ENS(begin=start, end=end,
              input_is_restart=True,
@@ -116,8 +116,8 @@ if False:  # to continue a free run
              #output_restart_interval=9999,
              depends_on=id)
         
-    id = create_satimages(start, depends_on=id)
-    verify(depends_on=id)
+    id = w.create_satimages(start, depends_on=id)
+    w.verify(depends_on=id)
 
 if False:  # to continue a free run after spinup
     start = dt.datetime(2008, 7, 30, 13,30)
@@ -126,11 +126,11 @@ if False:  # to continue a free run after spinup
     id = w.prepare_WRFrundir(start)  # create initial conditions
     # id = w.run_ideal(depends_on=id)
 
-    prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA' # cluster.archivedir
+    prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA' # w.cluster.archivedir
     prior_init_time = dt.datetime(2008, 7, 30, 13)
     prior_valid_time = dt.datetime(2008, 7, 30, 13,30)
 
-    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
+    id = w.w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
             # new_start_time=start, # <---------- to overwrite start time
             depends_on=id)
 
@@ -143,14 +143,14 @@ if False:  # to continue a free run after spinup
              #output_restart_interval=9999,
              depends_on=id)
         
-    # id = create_satimages(start, depends_on=id)
+    # id = w.create_satimages(start, depends_on=id)
     
     # # continue now with free run
     # # no restart files anymore
-    # prior_path_exp = cluster.archivedir
+    # prior_path_exp = w.cluster.archivedir
     # prior_init_time = start
     # prior_valid_time = end
-    # id = prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+    # id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
     # start = end
     # end = dt.datetime(2008, 7, 30, 18)
@@ -160,6 +160,6 @@ if False:  # to continue a free run after spinup
     #          #output_restart_interval=(next_restart-time).total_seconds()/60,
     #          output_restart_interval=9999,
     #          depends_on=id)
-    # id = create_satimages(start, depends_on=id)
-    # verify(depends_on=id)
+    # id = w.create_satimages(start, depends_on=id)
+    # w.verify(depends_on=id)
 
