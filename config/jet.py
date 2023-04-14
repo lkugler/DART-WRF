@@ -52,9 +52,9 @@ cluster.size_jobarray = 40
 # binaries
 cluster.python = '/jetfs/home/lkugler/miniconda3/envs/DART/bin/python'
 cluster.python_verif = '/jetfs/home/lkugler/miniconda3/envs/enstools/bin/python'
-cluster.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-20.0.2/nco-4.9.3-dhlqiyog7howjmaleyfhm6lkt7ra37xf/bin/ncks'
+cluster.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-2021.7.1/nco-5.1.0-izrhxv24jqco5epjhf5ledsqwanojc5m/bin/ncks'
 cluster.ideal = '/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
-cluster.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
+cluster.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22_ifort_20230413.exe'
 cluster.container = ''
 
 # paths for data output
