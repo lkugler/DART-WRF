@@ -14,6 +14,7 @@ class ClusterConfig(object):
     """Collection of variables regarding the cluster configuration"""
     def __init__(self, exp):
         self.exp = exp
+        self.dart_modules = ''  # default value
 
     @property
     def archivedir(self):

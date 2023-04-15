@@ -29,6 +29,9 @@ class WorkFlows(object):
             exp (str): Path to exp config file
             config (str): Path to the cluster config file
 
+        Attributes:
+            cluster (obj): cluster configuration as defined in server_config file
+
         Note:
             in WorkFlows, we load the config from the git cloned folder
             in all other dartwrf scripts, load the config from cluster.scripts_rundir
@@ -196,7 +199,7 @@ class WorkFlows(object):
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
 
         id = self.cluster.run_job(cmd, "WRF", cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
-                            "time": str(runtime_wallclock_mins_expected), "mem": "140G"}, depends_on=[id])
+                            "time": str(runtime_wallclock_mins_expected), "mem": "100G"}, depends_on=[id])
         return id
 
 

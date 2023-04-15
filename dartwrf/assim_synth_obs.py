@@ -169,7 +169,7 @@ def run_perfect_model_obs(nproc=12, verbose=True):
     try_remove(cluster.dartrundir + "/obs_seq.out")
     if not os.path.exists(cluster.dartrundir + "/obs_seq.in"):
         raise RuntimeError("obs_seq.in does not exist in " + cluster.dartrundir)
-    shell('mpirun -np '+str(nproc)+' '+cluster.container+" ./perfect_model_obs > log.perfect_model_obs")
+    shell(cluster.dart_modules+' mpirun -np '+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
     if not os.path.exists(cluster.dartrundir + "/obs_seq.out"):
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dartrundir,
@@ -182,9 +182,9 @@ def filter(nproc=12):
     try_remove(cluster.dartrundir + "/obs_seq.final")
     t = time_module.time()
     if nproc < 12:
-        shell('mpirun -np 12 '+cluster.container+' ./filter &> log.filter')
+        shell(cluster.dart_modules+' mpirun -np 12 ./filter &> log.filter')
     else:  # -genv I_MPI_PIN_PROCESSOR_LIST=0-"+str(int(nproc) - 1)
-        shell("mpirun -np "+str(int(nproc))+' '+cluster.container+" ./filter > log.filter")
+        shell(cluster.dart_modules+" mpirun -np "+str(int(nproc))+" ./filter > log.filter")
     print("./filter took", int(time_module.time() - t), "seconds")
     if not os.path.isfile(cluster.dartrundir + "/obs_seq.final"):
         raise RuntimeError(

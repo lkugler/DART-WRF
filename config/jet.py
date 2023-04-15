@@ -55,7 +55,7 @@ cluster.python_verif = '/jetfs/home/lkugler/miniconda3/envs/enstools/bin/python'
 cluster.ncks = '/jetfs/spack/opt/spack/linux-rhel8-skylake_avx512/intel-2021.7.1/nco-5.1.0-izrhxv24jqco5epjhf5ledsqwanojc5m/bin/ncks'
 cluster.ideal = '/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
 cluster.wrfexe = '/jetfs/home/lkugler/bin/wrf-v4.3_v1.22_ifort_20230413.exe'
-cluster.container = ''
+cluster.dart_modules = 'module purge; module load netcdf-fortran/4.5.3-gcc-8.5.0-qsqbozc;'
 
 # paths for data output
 cluster.wrf_rundir_base = '/jetfs/home/lkugler/data/run_WRF/'  # path for temporary files

@@ -39,7 +39,7 @@ def run_obsdiag(filepaths, f_out='./obsdiag.nc'):
         print('------ running obs_diag program')
         os.chdir(rundir_program)
         symlink(cluster.dart_srcdir+'/obs_diag', rundir_program+'/obs_diag')
-        shell(cluster.container, './obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
+        shell(cluster.dart_modules+' ./obs_diag >& obs_diag.log')  # caution, this overwrites obs_seq_to_netcdf
 
         # move output to archive
         #outdir = os.path.dirname(f_out)  #'/'.join(folder_obs_seq_final.split('/')[:-1])
@@ -57,7 +57,7 @@ def run_obs_seq_to_netcdf(filepaths, f_out='./obs_epoch.nc'):
     print('------ running obs_seq_to_netcdf program')
     #shutil.copy(cluster.dart_srcdir+'/obs_seq_to_netcdf-bak', rundir_program+'/obs_seq_to_netcdf')
     os.chdir(rundir_program)
-    shell(cluster.container, './obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')  # caution, overwrites its own binary?!
+    shell(cluster.dart_modules+' ./obs_seq_to_netcdf  >& obs_seq_to_netcdf.log')  # caution, overwrites its own binary?!
     shutil.move(rundir_program+'/obs_epoch_001.nc', f_out)
     print(f_out, 'saved.')
 
