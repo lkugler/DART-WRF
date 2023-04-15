@@ -13,6 +13,14 @@ Subpackages
 Submodules
 ----------
 
+dartwrf.workflows module
+------------------------
+
+.. automodule:: dartwrf.workflows
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 dartwrf.assim\_synth\_obs module
 --------------------------------
 
@@ -137,14 +145,6 @@ dartwrf.utils module
 --------------------
 
 .. automodule:: dartwrf.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.workflows module
-------------------------
-
-.. automodule:: dartwrf.workflows
    :members:
    :undoc-members:
    :show-inheritance:

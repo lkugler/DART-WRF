@@ -29,12 +29,19 @@ Other helpful resources
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials:
+   :caption: Tutorials
 
    notebooks/tutorial1
    notebooks/tutorial2
    notebooks/tutorial3
-
+   
+.. toctree::
+   :hidden:
+   :caption: Reference
+   
+   modules
+   genindex 
+   
 
 API
 ===
@@ -42,5 +49,3 @@ API
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
