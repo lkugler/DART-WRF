@@ -151,7 +151,7 @@ class WorkFlows(object):
         mv $rundir/rsl.out.0000 $rundir/rsl.out.input
     done
     """
-        id = self.cluster.run_job(cmd, "ideal", cfg_update={"ntasks": str(exp.n_ens),
+        id = self.cluster.run_job(cmd, "ideal"+exp.expname, cfg_update={"ntasks": str(exp.n_ens),
                             "time": "10", "mem": "100G"}, depends_on=[depends_on])
         return id
 
@@ -165,7 +165,7 @@ class WorkFlows(object):
             pstr = ' perturb'
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/create_wbubble_wrfinput.py'+pstr
 
-        id = self.cluster.run_job(cmd, "ins_wbubble", cfg_update={"time": "5"}, depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "ins_wbubble"+exp.expname, cfg_update={"time": "5"}, depends_on=[depends_on])
         return id
 
     def run_ENS(self, begin, end, depends_on=None, first_minute=True, 
@@ -232,13 +232,13 @@ class WorkFlows(object):
         time_in_simulation_hours = (end-begin).total_seconds()/3600
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
 
-        id = self.cluster.run_job(cmd, "WRF", cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
-                            "time": str(runtime_wallclock_mins_expected), "mem": "30G"}, depends_on=[id])
+        id = self.cluster.run_job(cmd, "WRF"+exp.expname, cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
+                            "time": str(runtime_wallclock_mins_expected), "mem": "40G"}, depends_on=[id])
         return id
 
 
     def assimilate(self, assim_time, prior_init_time, prior_valid_time, prior_path_exp, 
-                depends_on=None):
+               depends_on=None):
         """Creates observations from a nature run and assimilates them.
 
         Args:
@@ -258,7 +258,7 @@ class WorkFlows(object):
                 +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_path_exp)
 
-        id = self.cluster.run_job(cmd, "Assim", cfg_update={"ntasks": "12", "time": "60",
+        id = self.cluster.run_job(cmd, "Assim"+exp.expname, cfg_update={"ntasks": "12", "time": "60",
                                 "mem": "200G", "ntasks-per-node": "12", "ntasks-per-core": "2"}, depends_on=[depends_on])
         return id
 
@@ -275,19 +275,19 @@ class WorkFlows(object):
                     +prior_init_time.strftime(' %Y-%m-%d_%H:%M')
                     +prior_valid_time.strftime(' %Y-%m-%d_%H:%M')
                     +tnew)
-        id = self.cluster.run_job(cmd, "IC-prior", cfg_update=dict(time="8"), depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "IC-prior"+exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
         return id
 
 
     def update_IC_from_DA(self, assim_time, depends_on=None):
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/update_IC.py '+assim_time.strftime('%Y-%m-%d_%H:%M')
-        id = self.cluster.run_job(cmd, "IC-update", cfg_update=dict(time="8"), depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "IC-update"+exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
         return id
 
 
     def create_satimages(self, init_time, depends_on=None):
-        cmd = self.cluster.python_verif+' ~/RTTOV-WRF/run_init.py '+self.cluster.archivedir+init_time.strftime('/%Y-%m-%d_%H:%M/')
-        id = self.cluster.run_job(cmd, "RTTOV", cfg_update={"ntasks": "12", "time": "80", "mem": "200G"}, depends_on=[depends_on])
+        cmd = 'module purge; module load netcdf-fortran/4.5.3-gcc-8.5.0-qsqbozc; python ~/RTTOV-WRF/run_init.py '+self.cluster.archivedir+init_time.strftime('/%Y-%m-%d_%H:%M/')
+        id = self.cluster.run_job(cmd, "RTTOV"+exp.expname, cfg_update={"ntasks": "12", "time": "120", "mem": "200G"}, depends_on=[depends_on])
         return id
 
 
@@ -302,15 +302,15 @@ class WorkFlows(object):
         cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
 
         self.cluster.run_job(cmd, "verif-SAT-"+exp.expname, 
-                        cfg_update={"time": "60", "mail-type": "FAIL,END", "ntasks": "20", 
-                                    "ntasks-per-node": "20", "ntasks-per-core": "1", "mem": "100G",}, depends_on=[depends_on])
+                        cfg_update={"time": "60", "mail-type": "FAIL,END", "ntasks": "15", 
+                                    "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "100G",}, depends_on=[depends_on])
 
     def verify_wrf(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d verif3d FSS BS'
+        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
         
         self.cluster.run_job(cmd, "verif-WRF-"+exp.expname, 
-                        cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "20", 
-                                    "ntasks-per-node": "20", "ntasks-per-core": "1", "mem": "250G"}, depends_on=[depends_on])
+                        cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "15", 
+                                    "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "180G"}, depends_on=[depends_on])
 
     def verify_fast(self, depends_on=None):
         cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
