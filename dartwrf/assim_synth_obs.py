@@ -51,6 +51,12 @@ def set_DART_nml(just_prior_values=False):
         "<list_obstypes>": "'" + "','".join(list_obstypes) + "'",
         "<list_cutoffs>": ", ".join(list_cov_loc_radian),
     }
+    
+    # fail if horiz_dist_only == false but observations contain a satellite channel
+    if exp.cov_loc_vert_km_horiz_km != False:
+        for obscfg in exp.observations:
+            if hasattr(obscfg, "sat_channel"):
+                raise ValueError("Selected vertical localization, but observations contain satellite obs -> Not possible.")
 
     # Note: only one value of vertical localization possible
     try:
