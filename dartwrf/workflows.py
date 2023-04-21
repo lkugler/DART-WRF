@@ -168,7 +168,7 @@ class WorkFlows(object):
         id = self.cluster.run_job(cmd, "ins_wbub-"+exp.expname, cfg_update={"time": "5"}, depends_on=[depends_on])
         return id
 
-    def run_ENS(self, begin, end, depends_on=None, first_minute=True, 
+    def run_ENS(self, begin, end, depends_on=None, first_minute=False, 
                 input_is_restart=True, output_restart_interval=720):
         """Run the forecast ensemble
 
@@ -183,60 +183,46 @@ class WorkFlows(object):
         Returns:
             str: job ID of the submitted job
         """
+
+        def prepare_WRF_inputfiles(begin, end, hist_interval=5, radt=5, output_restart_interval=False, depends_on=None):
+            
+            args = [self.cluster.python, self.cluster.scripts_rundir+'/prepare_namelist.py',
+                    begin.strftime('%Y-%m-%d_%H:%M'), end.strftime('%Y-%m-%d_%H:%M'),
+                    str(hist_interval), '--radt='+str(radt), '--restart='+restart_flag,]
+            if output_restart_interval:
+                args.append('--restart_interval='+str(int(float(output_restart_interval))))
+
+            return self.cluster.run_job(' '.join(args), "preWRF", cfg_update=dict(time="2"), depends_on=[depends_on])
+        
+
+        id = depends_on
         restart_flag = '.false.' if not input_is_restart else '.true.'
-
-        # if False:  # doesnt work with restarts at the moment# first_minute:
-        #     # first minute forecast (needed for validating an assimilation)
-        #     hist_interval = 1
-        #     radt = 1  # calc CFRAC also in first minute
-        #     begin_plus1 = begin+dt.timedelta(minutes=1)
-        #     s = self.cluster.run_job("preWRF1", cfg_update=dict(time="2"))
-        #     args = [self.cluster.python, self.cluster.scripts_rundir+'/prepare_namelist.py',
-        #             begin.strftime('%Y-%m-%d_%H:%M'),
-        #             begin_plus1.strftime('%Y-%m-%d_%H:%M'),
-        #             str(hist_interval),
-        #             '--radt='+str(radt),
-        #             '--restart='+restart_flag,]
-        #     id = s.run(' '.join(args), depends_on=[id])
-
-        #     s = self.cluster.run_job("runWRF1", cfg_update={"nodes": "1", "array": "1-"+str(exp.n_nodes),
-        #                 "time": "2", "mem-per-cpu": "2G"})
-        #     cmd = script_to_str(self.cluster.run_WRF).replace('<expname>', exp.expname)
-        #     id = s.run(cmd, depends_on=[id])
-
-        #     # apply forward operator (DART filter without assimilation)
-        #     s = self.cluster.run_job("fwOP-1m", cfg_update=dict(time="10", ntasks=48))
-        #     id = s.run(self.cluster.python+' '+self.cluster.scripts_rundir+'/apply_obs_op_dart.py '
-        #                + begin.strftime('%Y-%m-%d_%H:%M')+' '
-        #                + begin_plus1.strftime('%Y-%m-%d_%H:%M'),
-        #                depends_on=[id])
-
-        # whole forecast timespan
-        hist_interval = 5
-        radt = 5
-        args = [self.cluster.python,
-                    self.cluster.scripts_rundir+'/prepare_namelist.py',
-                    begin.strftime('%Y-%m-%d_%H:%M'),
-                    end.strftime('%Y-%m-%d_%H:%M'),
-                    str(hist_interval),
-                    '--radt='+str(radt),
-                    '--restart='+restart_flag,]
-        if output_restart_interval:
-            args.append('--restart_interval='+str(int(float(output_restart_interval))))
-
-        id = self.cluster.run_job(' '.join(args), "preWRF", cfg_update=dict(time="2"), depends_on=[depends_on])
-
-        cmd = script_to_str(self.cluster.run_WRF
+        wrf_cmd = script_to_str(self.cluster.run_WRF
                 ).replace('<exp.expname>', exp.expname
                 ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base
                 ).replace('<cluster.wrf_modules>', self.cluster.wrf_modules)
-                
 
+
+        # first minute forecast (needed for validating a radiance assimilation)
+        if first_minute:
+            hist_interval = 1  # to get an output after 1 minute
+            radt = 1  # to get a cloud fraction CFRAC after 1 minute
+            id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=1), 
+                    hist_interval=hist_interval, radt=radt, output_restart_interval=output_restart_interval, depends_on=id)
+
+            id = self.cluster.run_job(wrf_cmd, "WRF-"+exp.expname, 
+                                      cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
+                                                  "time": "10", "mem": "40G"}, 
+                                      depends_on=[id])
+
+        # forecast for the whole forecast duration       
+        id = prepare_WRF_inputfiles(depends_on=id)
         time_in_simulation_hours = (end-begin).total_seconds()/3600
-        runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
-
-        id = self.cluster.run_job(cmd, "WRF-"+exp.expname, cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
-                            "time": str(runtime_wallclock_mins_expected), "mem": "40G"}, depends_on=[id])
+        runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9)  # usually below 9 min/hour
+        id = self.cluster.run_job(wrf_cmd, "WRF-"+exp.expname, 
+                            cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
+                                        "time": str(runtime_wallclock_mins_expected), "mem": "40G"}, 
+                            depends_on=[id])
         return id
 
 
