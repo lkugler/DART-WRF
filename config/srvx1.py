@@ -63,7 +63,7 @@ cluster.archive_base = utils.userhome+'/data/sim_archive/'
 cluster.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
 cluster.dart_srcdir = '/users/students/lehre/advDA_s2023/DART/models/wrf/work'
 cluster.rttov_srcdir = '/users/students/lehre/advDA_s2023/RTTOV13/rtcoef_rttov13/'
-cluster.scriptsdir = utils.userhome+'/DART-WRF/dartwrf/'
+cluster.scriptsdir = utils.userhome+'/AdvDA23/DART-WRF/dartwrf/'
 cluster.geo_em = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
 
 # templates/run scripts
