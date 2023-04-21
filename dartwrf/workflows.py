@@ -226,8 +226,11 @@ class WorkFlows(object):
 
         id = self.cluster.run_job(' '.join(args), "preWRF", cfg_update=dict(time="2"), depends_on=[depends_on])
 
-        cmd = script_to_str(self.cluster.run_WRF).replace('<exp.expname>', exp.expname
-                                        ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base)
+        cmd = script_to_str(self.cluster.run_WRF
+                ).replace('<exp.expname>', exp.expname
+                ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base
+                ).replace('<cluster.wrf_modules>', self.cluster.wrf_modules)
+                
 
         time_in_simulation_hours = (end-begin).total_seconds()/3600
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9.5)  # usually below 9 min/hour
