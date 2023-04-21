@@ -34,7 +34,7 @@ if __name__ == "__main__":
         init_time = dt.datetime(2008, 7, 30, 12)
         time = dt.datetime(2008, 7, 30, 13)
         last_assim_time = dt.datetime(2008, 7, 30, 14)
-        forecast_until = dt.datetime(2008, 7, 30, 14, 18)
+        forecast_until = dt.datetime(2008, 7, 30, 18)
 
         w.prepare_WRFrundir(init_time)
         # id = w.run_ideal(depends_on=id)
@@ -86,4 +86,3 @@ if __name__ == "__main__":
 
     w.verify_sat(id_sat)
     w.verify_wrf(id)
-    w.verify_fast(id)
