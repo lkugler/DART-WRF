@@ -5,10 +5,8 @@ according to which observations are generated and subsequently assimilated.
 import os, sys, warnings
 import numpy as np
 import datetime as dt
-import csv
 from pysolar.solar import get_altitude, get_azimuth
 
-from config.cfg import exp
 from config.cluster import cluster
 from dartwrf.obs import calculate_obs_locations as col
 from dartwrf import utils

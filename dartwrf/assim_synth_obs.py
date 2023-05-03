@@ -8,73 +8,11 @@ from dartwrf.obs import error_models as err
 import dartwrf.create_obsseq as osq
 from dartwrf import wrfout_add_geo
 from dartwrf import obsseq
+from dartwrf import dart_nml
 
 from config.cfg import exp
 from config.cluster import cluster
-earth_radius_km = 6370
 wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
-
-
-def set_DART_nml(just_prior_values=False):
-    def to_radian_horizontal(cov_loc_horiz_km):
-        cov_loc_radian = cov_loc_horiz_km / earth_radius_km
-        return cov_loc_radian
-
-    def to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km):
-        vert_norm_rad = earth_radius_km * cov_loc_vert_km / cov_loc_horiz_km * 1000
-        return vert_norm_rad
-
-    list_obstypes = [obscfg["kind"] for obscfg in exp.observations]
-    list_cov_loc_radius_km = [obscfg["cov_loc_radius_km"] for obscfg in exp.observations]
-    list_cov_loc_radian = [str(to_radian_horizontal(a)) for a in list_cov_loc_radius_km]
-
-    if just_prior_values:  # if not compute posterior
-        template = cluster.scriptsdir + "/../templates/input.eval.nml"
-    else:
-        template = cluster.scriptsdir + "/../templates/input.nml"
-    copy(template, cluster.dartrundir + "/input.nml")
-
-    # impact_factor
-    if exp.adjust_obs_impact:
-        copy(cluster.obs_impact_filename, cluster.dartrundir + "/control_impact_runtime.txt")
-
-    # The keys in `options` are placeholders in input.nml which will be replaced.
-    # How? This is defined here
-    options = {
-        "<adjust_obs_impact>": '.true.' if exp.adjust_obs_impact else '.false.',
-        "<filter_kind>": str(int(exp.filter_kind)),
-        "<sampling_error_correction>": '.true.' if exp.sec else '.false.',
-        "<prior_inflation>": str(exp.prior_inflation),
-        "<post_inflation>": str(exp.post_inflation),
-        "<n_ens>": str(int(exp.n_ens)),
-        "<cov_loc_radian>": "0.00000001",  # dummy value, used for types not mentioned below
-        "<list_obstypes>": "'" + "','".join(list_obstypes) + "'",
-        "<list_cutoffs>": ", ".join(list_cov_loc_radian),
-    }
-    
-    # fail if horiz_dist_only == false but observations contain a satellite channel
-    if exp.cov_loc_vert_km_horiz_km != False:
-        for obscfg in exp.observations:
-            if hasattr(obscfg, "sat_channel"):
-                raise ValueError("Selected vertical localization, but observations contain satellite obs -> Not possible.")
-
-    # Note: only one value of vertical localization possible
-    try:
-        cov_loc_vert_km, cov_loc_horiz_km = exp.cov_loc_vert_km_horiz_km
-        vert_norm_hgt = to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km)
-        options["<vert_norm_hgt>"] = str(vert_norm_hgt)
-        options["<horiz_dist_only>"] = ".false."
-    except Exception as e:
-        warnings.warn(str(e)+' - not using vertical localization.')
-        options["<horiz_dist_only>"] = ".true."
-        options["<vert_norm_hgt>"] = "99999.0"  # dummy value
-
-    for key, value in options.items():
-        sed_inplace(cluster.dartrundir + "/input.nml", key, value)
-
-    # input.nml for RTTOV
-    rttov_nml = cluster.scriptsdir + "/../templates/obs_def_rttov.VIS.nml"
-    append_file(cluster.dartrundir + "/input.nml", rttov_nml)
 
 
 def link_nature_to_dart_truth(time):
@@ -363,7 +301,7 @@ def evaluate(assim_time,
     if not os.path.isfile(cluster.dartrundir+'/obs_seq.out'):
         raise RuntimeError(cluster.dartrundir+'/obs_seq.out does not exist')
 
-    set_DART_nml(just_prior_values=True)
+    dart_nml.write_namelist(just_prior_values=True)
     filter(nproc=6)
 
     # archiving
@@ -531,7 +469,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
 
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
-    set_DART_nml()
+    dart_nml.write_namelist()
 
     print("prepare nature")
     prepare_nature_dart(time)  # link WRF files to DART directory
@@ -556,7 +494,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
         prepare_inflation_2(time, prior_init_time)
 
     print(" 3) run filter ")
-    set_DART_nml()
+    dart_nml.write_namelist()
     filter(nproc=nproc)
     archive_filteroutput(time)
 
