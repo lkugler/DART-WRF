@@ -32,23 +32,25 @@ def read_namelist(filepath):
 
                 # namelist section
                 if line.startswith('&'):
-                    section = line.lower()
+                    section = line
                     d[section] = dict()
+                    continue
+                
+                if '/' in line:
+                    continue  # skip end of namelist section
 
-                # namelist variable
-                else:
+                try:
                     # split line into variable name and value
                     var, val = line.split('=')
-                    var = var.strip().lower()
-                    val = val.strip()
+                    val = val.strip().strip(',').strip()
 
-                    # split value into list if possible
-                    if ',' in val:
-                        val = val.split(',')
-                        val = [v.strip() for v in val]
+                except ValueError:
+                    # If the above split failed, we are still, we are still in the previous variable
+                    nextline_values = line.strip().split(',').strip()
+                    val = val + nextline_values
 
-                    # add variable to dictionary
-                    d[section][var] = val
+                # add variable to dictionary
+                d[section][var] = val
     return d
 
 
@@ -209,8 +211,8 @@ def write_namelist(just_prior_values=False):
                 raise ValueError("Selected vertical localization, but observations contain satellite obs -> Not possible.")
 
     # write to file
-    write_namelist_from_dict(nml, cluster.dartrundir + "/input.nml")
+    write_namelist_from_dict(nml, cluster.dart_rundir + "/input.nml")
 
     # append section for RTTOV
     rttov_nml = cluster.scriptsdir + "/../templates/obs_def_rttov.VIS.nml"
-    append_file(cluster.dartrundir + "/input.nml", rttov_nml)
+    append_file(cluster.dart_rundir + "/input.nml", rttov_nml)

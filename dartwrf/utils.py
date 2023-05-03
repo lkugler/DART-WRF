@@ -13,7 +13,7 @@ class Experiment(object):
 class ClusterConfig(object):
     """Collection of variables regarding the cluster configuration"""
     def __init__(self, exp):
-        self.exp = exp
+        self.exp = exp  # makes derived properties available
         self.dart_modules = ''  # default value
 
     @property
@@ -35,7 +35,7 @@ class ClusterConfig(object):
         return self.archivedir+'/DART-WRF/'
 
     @property
-    def dartrundir(self):
+    def dart_rundir(self):
         """Path to the directory where DART programs will run
         Includes the experiment name
         """

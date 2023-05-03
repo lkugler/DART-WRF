@@ -31,7 +31,7 @@ if __name__ == "__main__":
     print('will save obsseq to', dir_for_obsseqout)
     os.makedirs(dir_for_obsseqout, exist_ok=True) 
 
-    os.chdir(cluster.dartrundir)
+    os.chdir(cluster.dart_rundir)
 
     # link DART binaries to run_DART
     os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
         aso.run_perfect_model_obs(nproc=6)  # create observations (obs_seq.out)
 
-        oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
 
         if True:  # set reflectance < surface albedo to surface albedo
             print(" 2.2) removing obs below surface albedo ")
@@ -57,13 +57,13 @@ if __name__ == "__main__":
             if_obs_below_surface_albedo = oso.df['observations'].values < 0.2928
 
             oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = 0.2928
-            oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+            oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
 
         if getattr(exp, "superob_km", False):
             print(" 2.3) superobbing to", exp.superob_km, "km")
             oso.df = oso.df.superob(window_km=exp.superob_km)
-            copy(cluster.dartrundir + "/obs_seq.out", cluster.dartrundir + "/obs_seq.out-orig")
-            oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+            copy(cluster.dart_rundir + "/obs_seq.out", cluster.dart_rundir + "/obs_seq.out-orig")
+            oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
 
         aso.archive_osq_out(time, dir_obsseq=dir_for_obsseqout)
 

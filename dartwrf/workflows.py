@@ -10,7 +10,6 @@ import datetime as dt
 import importlib
 
 from dartwrf.utils import script_to_str
-from config.cfg import exp
 
 class WorkFlows(object):
     def __init__(self, exp_config='cfg.py', server_config='server.py'):
@@ -23,14 +22,40 @@ class WorkFlows(object):
         Attributes:
             cluster (obj): cluster configuration as defined in server_config file
 
-        Note:
-            in WorkFlows, we load the config from the git cloned folder
-            in all other dartwrf scripts, load the config from cluster.scripts_rundir
+        we load the config from load the config from cluster.scripts_rundir/config/cfg.py
         """
         print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
-        # exp = __import__('config/'+exp_config)
-        # load python config file
+
+        def copy_dartwrf_to_archive():
+            # Copy scripts to self.cluster.archivedir folder
+            os.makedirs(self.cluster.archivedir, exist_ok=True)
+            try:
+                shutil.copytree(self.cluster.scriptsdir, self.cluster.scripts_rundir)
+                print('scripts have been copied to', self.cluster.archivedir)
+            except FileExistsError as e:
+                warnings.warn(str(e))
+            except:
+                raise
+
+        def copy_config_to_archive():
+            # later, we can load the exp cfg with `from config.cfg import exp`
+            shutil.copyfile('config/'+exp_config, self.cluster.scripts_rundir+'/config/cfg.py')
+
+            # later, we can load the cluster cfg with `from config.cluster import cluster`
+            shutil.copyfile('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
+
+        # copy config file to current config folder
+        try:
+            shutil.copyfile('config/'+exp_config, '/'.join(__file__.split('/')[:-2])+'/config/cfg.py')
+        except shutil.SameFileError:
+            pass
+
+        # load python config files
         self.cluster = importlib.import_module('config.'+server_config.strip('.py')).cluster
+        self.exp = importlib.import_module('config.'+exp_config.strip('.py')).exp
+
+        copy_dartwrf_to_archive()
+        copy_config_to_archive()
 
         # Set paths and backup scripts
         self.cluster.log_dir = self.cluster.archivedir+'/logs/'
@@ -88,21 +113,7 @@ class WorkFlows(object):
 
         _dict_to_py(_obskind_read(), self.cluster.scriptsdir+'/../config/obskind.py')
         
-        # Copy scripts to self.cluster.archivedir folder
-        os.makedirs(self.cluster.archivedir, exist_ok=True)
-        try:
-            shutil.copytree(self.cluster.scriptsdir, self.cluster.scripts_rundir)
-            print('scripts have been copied to', self.cluster.archivedir)
-        except FileExistsError as e:
-            warnings.warn(str(e))
-        except:
-            raise
 
-        # later, we can load the exp cfg with `from config.cfg import exp`
-        shutil.copy('config/'+exp_config, self.cluster.scripts_rundir+'/config/cfg.py')
-
-        # later, we can load the cluster cfg with `from config.cluster import cluster`
-        shutil.copy('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
         
         # probably not needed
         # shutil.copy('config/'+server_config, 'config/cluster.py')  # whatever server, the config name is always the same!
@@ -137,21 +148,21 @@ class WorkFlows(object):
         """
         cmd = """# run ideal.exe in parallel
     export SLURM_STEP_GRES=none
-    for ((n=1; n<="""+str(exp.n_ens)+"""; n++))
+    for ((n=1; n<="""+str(self.exp.n_ens)+"""; n++))
     do
-        rundir="""+self.cluster.wrf_rundir_base+'/'+exp.expname+"""/$n
+        rundir="""+self.cluster.wrf_rundir_base+'/'+self.exp.expname+"""/$n
         echo $rundir
         cd $rundir
         mpirun -np 1 ./ideal.exe &
     done
     wait
-    for ((n=1; n<="""+str(exp.n_ens)+"""; n++))
+    for ((n=1; n<="""+str(self.exp.n_ens)+"""; n++))
     do
-        rundir="""+self.cluster.wrf_rundir_base+'/'+exp.expname+"""/$n
+        rundir="""+self.cluster.wrf_rundir_base+'/'+self.exp.expname+"""/$n
         mv $rundir/rsl.out.0000 $rundir/rsl.out.input
     done
     """
-        id = self.cluster.run_job(cmd, "ideal-"+exp.expname, cfg_update={"ntasks": str(exp.n_ens),
+        id = self.cluster.run_job(cmd, "ideal-"+self.exp.expname, cfg_update={"ntasks": str(self.exp.n_ens),
                             "time": "10", "mem": "100G"}, depends_on=[depends_on])
         return id
 
@@ -159,13 +170,12 @@ class WorkFlows(object):
         """Given that directories with wrfinput files exist,
         update these wrfinput files with warm bubbles
         """
-
         pstr = ' '
         if perturb:
             pstr = ' perturb'
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/create_wbubble_wrfinput.py'+pstr
 
-        id = self.cluster.run_job(cmd, "ins_wbub-"+exp.expname, cfg_update={"time": "5"}, depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "ins_wbub-"+self.exp.expname, cfg_update={"time": "5"}, depends_on=[depends_on])
         return id
 
     def run_ENS(self, begin, end, depends_on=None, first_minute=False, 
@@ -198,28 +208,28 @@ class WorkFlows(object):
         id = depends_on
         restart_flag = '.false.' if not input_is_restart else '.true.'
         wrf_cmd = script_to_str(self.cluster.run_WRF
-                ).replace('<exp.expname>', exp.expname
+                ).replace('<exp.expname>', self.exp.expname
                 ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base
                 ).replace('<cluster.wrf_modules>', self.cluster.wrf_modules)
 
 
         # first minute forecast (needed for validating a radiance assimilation)
         if first_minute:
-            hist_interval = 1  # to get an output after 1 minute
-            radt = 1  # to get a cloud fraction CFRAC after 1 minute
             id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=1), 
-                    hist_interval=hist_interval, radt=radt, output_restart_interval=output_restart_interval, depends_on=id)
+                    hist_interval=1,  # to get an output after 1 minute
+                    radt=1,  # to get a cloud fraction CFRAC after 1 minute
+                    output_restart_interval=output_restart_interval, depends_on=id)
 
-            id = self.cluster.run_job(wrf_cmd, "WRF-"+exp.expname, 
+            id = self.cluster.run_job(wrf_cmd, "WRF-"+self.exp.expname, 
                                       cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
                                                   "time": "10", "mem": "40G"}, 
                                       depends_on=[id])
 
         # forecast for the whole forecast duration       
-        id = prepare_WRF_inputfiles(depends_on=id)
+        id = prepare_WRF_inputfiles(begin, end, output_restart_interval=output_restart_interval, depends_on=id)
         time_in_simulation_hours = (end-begin).total_seconds()/3600
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9)  # usually below 9 min/hour
-        id = self.cluster.run_job(wrf_cmd, "WRF-"+exp.expname, 
+        id = self.cluster.run_job(wrf_cmd, "WRF-"+self.exp.expname, 
                             cfg_update={"array": "1-"+str(self.cluster.size_jobarray), "ntasks": "10", "nodes": "1",
                                         "time": str(runtime_wallclock_mins_expected), "mem": "40G"}, 
                             depends_on=[id])
@@ -247,7 +257,7 @@ class WorkFlows(object):
                 +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_path_exp)
 
-        id = self.cluster.run_job(cmd, "Assim-"+exp.expname, cfg_update={"ntasks": "12", "time": "60",
+        id = self.cluster.run_job(cmd, "Assim-"+self.exp.expname, cfg_update={"ntasks": "12", "time": "60",
                                 "mem": "200G", "ntasks-per-node": "12", "ntasks-per-core": "2"}, depends_on=[depends_on])
         return id
 
@@ -264,19 +274,19 @@ class WorkFlows(object):
                     +prior_init_time.strftime(' %Y-%m-%d_%H:%M')
                     +prior_valid_time.strftime(' %Y-%m-%d_%H:%M')
                     +tnew)
-        id = self.cluster.run_job(cmd, "IC-prior-"+exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "IC-prior-"+self.exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
         return id
 
 
     def update_IC_from_DA(self, assim_time, depends_on=None):
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/update_IC.py '+assim_time.strftime('%Y-%m-%d_%H:%M')
-        id = self.cluster.run_job(cmd, "IC-update-"+exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "IC-update-"+self.exp.expname, cfg_update=dict(time="8"), depends_on=[depends_on])
         return id
 
 
     def create_satimages(self, init_time, depends_on=None):
         cmd = 'module purge; module load netcdf-fortran/4.5.3-gcc-8.5.0-qsqbozc; python ~/RTTOV-WRF/run_init.py '+self.cluster.archivedir+init_time.strftime('/%Y-%m-%d_%H:%M/')
-        id = self.cluster.run_job(cmd, "RTTOV-"+exp.expname, cfg_update={"ntasks": "12", "time": "120", "mem": "200G"}, depends_on=[depends_on])
+        id = self.cluster.run_job(cmd, "RTTOV-"+self.exp.expname, cfg_update={"ntasks": "12", "time": "120", "mem": "200G"}, depends_on=[depends_on])
         return id
 
 
@@ -288,22 +298,22 @@ class WorkFlows(object):
 
 
     def verify_sat(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node sat verif1d FSS BS'
+        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node sat verif1d FSS BS'
 
-        self.cluster.run_job(cmd, "verif-SAT-"+exp.expname, 
+        self.cluster.run_job(cmd, "verif-SAT-"+self.exp.expname, 
                         cfg_update={"time": "60", "mail-type": "FAIL,END", "ntasks": "15", 
                                     "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "100G",}, depends_on=[depends_on])
 
     def verify_wrf(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+exp.expname+' has_node wrf verif1d FSS BS'
+        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node wrf verif1d FSS BS'
         
-        self.cluster.run_job(cmd, "verif-WRF-"+exp.expname, 
+        self.cluster.run_job(cmd, "verif-WRF-"+self.exp.expname, 
                         cfg_update={"time": "120", "mail-type": "FAIL,END", "ntasks": "15", 
                                     "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "180G"}, depends_on=[depends_on])
 
     def verify_fast(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+exp.expname
+        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+self.exp.expname
 
-        self.cluster.run_job(cmd, "verif-fast-"+exp.expname, 
+        self.cluster.run_job(cmd, "verif-fast-"+self.exp.expname, 
                         cfg_update={"time": "10", "mail-type": "FAIL", "ntasks": "1",
                                     "ntasks-per-node": "1", "ntasks-per-core": "1"}, depends_on=[depends_on])

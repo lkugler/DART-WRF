@@ -717,4 +717,4 @@ if __name__ == "__main__":
     obs.plot(f_out="./map_obs_superobs.png")
 
     # write to obs_seq.out in DART format
-    # obs.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+    # obs.to_dart(f=cluster.dart_rundir + "/obs_seq.out")

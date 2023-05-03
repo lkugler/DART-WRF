@@ -24,19 +24,19 @@ def link_nature_to_dart_truth(time):
 
     # get wrfout_d01 from nature run
     shutil.copy(time.strftime(exp.nature+'/'+wrfout_format), 
-                cluster.dartrundir + "/wrfout_d01")
+                cluster.dart_rundir + "/wrfout_d01")
 
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
-    symlink(cluster.dartrundir + "/wrfout_d01", 
-            cluster.dartrundir + "/wrfinput_d01")
+    symlink(cluster.dart_rundir + "/wrfout_d01", 
+            cluster.dart_rundir + "/wrfinput_d01")
     print("linked", time.strftime(exp.nature+'/'+wrfout_format),
-          "to", cluster.dartrundir + "/wrfout_d01")
+          "to", cluster.dart_rundir + "/wrfout_d01")
 
 
 def prepare_nature_dart(time):
     print("linking nature to DART & georeferencing")
     link_nature_to_dart_truth(time)
-    wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
+    wrfout_add_geo.run(cluster.geo_em, cluster.dart_rundir + "/wrfout_d01")
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -57,7 +57,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
             + str(iens)
             + prior_valid_time.strftime("/"+wrfout_format)
         )
-        dart_ensdir = cluster.dartrundir + "/prior_ens" + str(iens)
+        dart_ensdir = cluster.dart_rundir + "/prior_ens" + str(iens)
         wrfout_dart = dart_ensdir + "/wrfout_d01"
 
         os.makedirs(dart_ensdir, exist_ok=True)
@@ -69,7 +69,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
         if assim_time != prior_valid_time:
             print("overwriting time in prior from nature wrfout")
             shell(cluster.ncks+ " -A -v XTIME,Times "+ 
-                    cluster.dartrundir+"/wrfout_d01 "+ wrfout_dart)
+                    cluster.dart_rundir+"/wrfout_d01 "+ wrfout_dart)
 
         # this seems to be necessary (else wrong level selection)
         wrfout_add_geo.run(cluster.geo_em, wrfout_dart)
@@ -78,18 +78,18 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     write_list_of_outputfiles()
 
     print("removing preassim and filter_restart")
-    os.system("rm -rf " + cluster.dartrundir + "/preassim_*")
-    os.system("rm -rf " + cluster.dartrundir + "/filter_restart*")
-    os.system("rm -rf " + cluster.dartrundir + "/output_mean*")
-    os.system("rm -rf " + cluster.dartrundir + "/output_sd*")
-    os.system("rm -rf " + cluster.dartrundir + "/perfect_output_*")
-    os.system("rm -rf " + cluster.dartrundir + "/obs_seq.fina*")
+    os.system("rm -rf " + cluster.dart_rundir + "/preassim_*")
+    os.system("rm -rf " + cluster.dart_rundir + "/filter_restart*")
+    os.system("rm -rf " + cluster.dart_rundir + "/output_mean*")
+    os.system("rm -rf " + cluster.dart_rundir + "/output_sd*")
+    os.system("rm -rf " + cluster.dart_rundir + "/perfect_output_*")
+    os.system("rm -rf " + cluster.dart_rundir + "/obs_seq.fina*")
 
 def write_list_of_inputfiles_prior():
      files = []
      for iens in range(1, exp.n_ens+1):
           files.append("./prior_ens" + str(iens) + "/wrfout_d01")
-     write_txt(files, cluster.dartrundir+'/input_list.txt')
+     write_txt(files, cluster.dart_rundir+'/input_list.txt')
 
 def write_list_of_inputfiles_posterior(assim_time):
      filedir = cluster.archivedir+assim_time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
@@ -97,43 +97,43 @@ def write_list_of_inputfiles_posterior(assim_time):
      files = []
      for iens in range(1, exp.n_ens+1):
           files.append(filedir+'filter_restart_d01.'+str(iens).zfill(4))
-     write_txt(files, cluster.dartrundir+'/input_list.txt')
+     write_txt(files, cluster.dart_rundir+'/input_list.txt')
 
 def write_list_of_outputfiles():
     files = []
     for iens in range(1, exp.n_ens+1):
         files.append("./filter_restart_d01." + str(iens).zfill(4))
-    write_txt(files, cluster.dartrundir+'/output_list.txt')
+    write_txt(files, cluster.dart_rundir+'/output_list.txt')
 
 def run_perfect_model_obs(nproc=12, verbose=True):
     if verbose:
         print("generating observations - running ./perfect_model_obs")
-    os.chdir(cluster.dartrundir)
+    os.chdir(cluster.dart_rundir)
 
-    try_remove(cluster.dartrundir + "/obs_seq.out")
-    if not os.path.exists(cluster.dartrundir + "/obs_seq.in"):
-        raise RuntimeError("obs_seq.in does not exist in " + cluster.dartrundir)
+    try_remove(cluster.dart_rundir + "/obs_seq.out")
+    if not os.path.exists(cluster.dart_rundir + "/obs_seq.in"):
+        raise RuntimeError("obs_seq.in does not exist in " + cluster.dart_rundir)
     shell(cluster.dart_modules+' mpirun -np '+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
-    if not os.path.exists(cluster.dartrundir + "/obs_seq.out"):
+    if not os.path.exists(cluster.dart_rundir + "/obs_seq.out"):
         raise RuntimeError(
-            "obs_seq.out does not exist in " + cluster.dartrundir,
-            "\n look for " + cluster.dartrundir + "/log.perfect_model_obs")
+            "obs_seq.out does not exist in " + cluster.dart_rundir,
+            "\n look for " + cluster.dart_rundir + "/log.perfect_model_obs")
 
 def filter(nproc=12):
     print("time now", dt.datetime.now())
     print("running filter")
-    os.chdir(cluster.dartrundir)
-    try_remove(cluster.dartrundir + "/obs_seq.final")
+    os.chdir(cluster.dart_rundir)
+    try_remove(cluster.dart_rundir + "/obs_seq.final")
     t = time_module.time()
     if nproc < 12:
         shell(cluster.dart_modules+' mpirun -np 12 ./filter &> log.filter')
     else:  # -genv I_MPI_PIN_PROCESSOR_LIST=0-"+str(int(nproc) - 1)
         shell(cluster.dart_modules+" mpirun -np "+str(int(nproc))+" ./filter > log.filter")
     print("./filter took", int(time_module.time() - t), "seconds")
-    if not os.path.isfile(cluster.dartrundir + "/obs_seq.final"):
+    if not os.path.isfile(cluster.dart_rundir + "/obs_seq.final"):
         raise RuntimeError(
-            "obs_seq.final does not exist in " + cluster.dartrundir,
-            "\n look for " + cluster.dartrundir + "/log.filter")
+            "obs_seq.final does not exist in " + cluster.dart_rundir,
+            "\n look for " + cluster.dart_rundir + "/log.filter")
 
 
 ############### archiving
@@ -144,28 +144,28 @@ def archive_filteroutput(time):
     archive_dir = cluster.archivedir + "/obs_seq_final/"
     mkdir(archive_dir)
     fout = archive_dir + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.final")
-    copy(cluster.dartrundir + "/obs_seq.final", fout)
+    copy(cluster.dart_rundir + "/obs_seq.final", fout)
     print(fout, "saved.")
 
     archive_assim = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
     mkdir(archive_assim)
-    copy(cluster.dartrundir + "/input.nml", archive_assim + "/input.nml")
+    copy(cluster.dart_rundir + "/input.nml", archive_assim + "/input.nml")
 
     for iens in range(1, exp.n_ens + 1):  # single members
         copy(
-            cluster.dartrundir + "/filter_restart_d01." + str(iens).zfill(4),
+            cluster.dart_rundir + "/filter_restart_d01." + str(iens).zfill(4),
             archive_assim + "/filter_restart_d01." + str(iens).zfill(4),
         )
 
     try:  # not necessary for next forecast run
         for iens in range(1, exp.n_ens + 1):
             copy(
-                cluster.dartrundir + "/postassim_member_" + str(iens).zfill(4) + ".nc",
+                cluster.dart_rundir + "/postassim_member_" + str(iens).zfill(4) + ".nc",
                 archive_assim + "/postassim_member_" + str(iens).zfill(4) + ".nc",
             )
 
         for f in ["output_mean.nc", "output_sd.nc"]:  # copy mean and sd to archive
-            copy(cluster.dartrundir + "/" + f, archive_assim + "/" + f)
+            copy(cluster.dart_rundir + "/" + f, archive_assim + "/" + f)
 
     except Exception as e:
         warnings.warn(str(e))
@@ -273,10 +273,10 @@ def qc_obs(time, oso, osf_prior):
         # for archiving
         f_out_archive = cluster.archivedir + "/obs_seq_out/" + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-beforeQC")
         os.makedirs(cluster.archivedir + "/obs_seq_out/", exist_ok=True)
-        copy(cluster.dartrundir + "/obs_seq.out", f_out_archive)
+        copy(cluster.dart_rundir + "/obs_seq.out", f_out_archive)
 
         # for assimilation later
-        f_out_dart = cluster.dartrundir+'/obs_seq.out'
+        f_out_dart = cluster.dart_rundir+'/obs_seq.out'
         oso.to_dart(f_out_dart)
         print('saved', f_out_dart)
 
@@ -286,8 +286,8 @@ def evaluate(assim_time,
     """Depending on input_list.txt, this function calculates either prior or posterior obs space values.
     """
 
-    os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
-    os.chdir(cluster.dartrundir)
+    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
+    os.chdir(cluster.dart_rundir)
 
     # link DART binaries to run_DART
     os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
@@ -298,8 +298,8 @@ def evaluate(assim_time,
     print("prepare nature")
     prepare_nature_dart(assim_time)  # link WRF files to DART directory
 
-    if not os.path.isfile(cluster.dartrundir+'/obs_seq.out'):
-        raise RuntimeError(cluster.dartrundir+'/obs_seq.out does not exist')
+    if not os.path.isfile(cluster.dart_rundir+'/obs_seq.out'):
+        raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
 
     dart_nml.write_namelist(just_prior_values=True)
     filter(nproc=6)
@@ -307,10 +307,10 @@ def evaluate(assim_time,
     # archiving
     fout = cluster.archivedir + "/obs_seq_final/" + assim_time.strftime(output_format)
     os.makedirs(cluster.archivedir + "/obs_seq_final/", exist_ok=True)
-    copy(cluster.dartrundir + "/obs_seq.final", fout)
+    copy(cluster.dart_rundir + "/obs_seq.final", fout)
     print(fout, "saved.")
 
-    osf = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.final")
+    osf = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.final")
     return osf
 
 
@@ -324,21 +324,21 @@ def generate_obsseq_out(time):
         if_vis_obs = oso.df['kind'].values == 262
         if_obs_below_surface_albedo = oso.df['observations'].values < clearsky_albedo
         oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = clearsky_albedo
-        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+        oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
         return oso
 
 
     def apply_superobbing(oso):
         try:
             f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-before_superob")
-            shutil.copy(cluster.dartrundir + "/obs_seq.out-before_superob", f_oso)
+            shutil.copy(cluster.dart_rundir + "/obs_seq.out-before_superob", f_oso)
             print('saved', f_oso)
         except Exception as e:
             warnings.warn(str(e))
 
         print(" 2.3) superobbing to", exp.superob_km, "km")
         oso.df = oso.df.superob(window_km=exp.superob_km)
-        oso.to_dart(f=cluster.dartrundir + "/obs_seq.out")
+        oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
 
 
     ##############################
@@ -350,7 +350,7 @@ def generate_obsseq_out(time):
     run_perfect_model_obs()  # generate observation, draws from gaussian
 
     print(" 2.1) obs preprocessing")
-    oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+    oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
 
     oso = ensure_physical_vis(oso)
 
@@ -359,7 +359,7 @@ def generate_obsseq_out(time):
 
     # archive complete obsseqout
     f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-    shutil.copy(cluster.dartrundir + "/obs_seq.out", f_oso)
+    shutil.copy(cluster.dart_rundir + "/obs_seq.out", f_oso)
     print('saved', f_oso)
     return oso
 
@@ -369,9 +369,9 @@ def get_obsseq_out(time):
     # did we specify an obsseqout inputfile?
     if exp.use_existing_obsseq != False: 
         f_obsseq = time.strftime(exp.use_existing_obsseq)
-        copy(f_obsseq, cluster.dartrundir+'/obs_seq.out')
-        print(f_obsseq, 'copied to', cluster.dartrundir+'/obs_seq.out')
-        oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+        copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')
+        print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
+        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
     else:
         # decision to NOT use existing obs_seq.out file
         
@@ -379,9 +379,9 @@ def get_obsseq_out(time):
         # f_oso_thisexp = cluster.archivedir+'/obs_seq_out/'+time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
         # if os.path.isfile(f_oso_thisexp):
         #     # oso exists
-        #     copy(f_oso_thisexp, cluster.dartrundir+'/obs_seq.out')
+        #     copy(f_oso_thisexp, cluster.dart_rundir+'/obs_seq.out')
         #     print('copied existing obsseqout from', f_oso_thisexp)
-        #     oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
+        #     oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
         # else: 
 
         # generate observations with new observation noise
@@ -403,7 +403,7 @@ def prepare_inflation_2(time, prior_init_time):
 
     f_default = cluster.archive_base + "/input_priorinf_mean.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
-    f_new = cluster.dartrundir + '/input_priorinf_mean.nc'
+    f_new = cluster.dart_rundir + '/input_priorinf_mean.nc'
 
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
@@ -414,7 +414,7 @@ def prepare_inflation_2(time, prior_init_time):
 
     f_default = cluster.archive_base + "/input_priorinf_sd.nc"
     f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
-    f_new = cluster.dartrundir + '/input_priorinf_sd.nc'
+    f_new = cluster.dart_rundir + '/input_priorinf_sd.nc'
 
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
@@ -427,12 +427,12 @@ def archive_inflation_2(time):
     dir_output = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
     os.makedirs(dir_output, exist_ok=True)
 
-    f_output = cluster.dartrundir + '/output_priorinf_sd.nc'
+    f_output = cluster.dart_rundir + '/output_priorinf_sd.nc'
     f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
-    f_output = cluster.dartrundir + '/output_priorinf_mean.nc'
+    f_output = cluster.dart_rundir + '/output_priorinf_mean.nc'
     f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
@@ -461,8 +461,8 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     nproc = cluster.max_nproc
 
     archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
-    os.makedirs(cluster.dartrundir, exist_ok=True)  # create directory to run DART in
-    os.chdir(cluster.dartrundir)
+    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
+    os.chdir(cluster.dart_rundir)
 
     # link DART binaries to run_DART
     os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
@@ -484,7 +484,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     osf_prior = evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")
 
     print(" 2.2) assign observation-errors for assimilation ")
-    set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile=cluster.dartrundir + "/obs_seq.out")
+    set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile=cluster.dart_rundir + "/obs_seq.out")
 
     if getattr(exp, "reject_smallFGD", False):
         print(" 2.3) reject observations? ")
@@ -505,7 +505,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     write_list_of_inputfiles_posterior(time)
     if getattr(exp, "reject_smallFGD", False):
         copy(cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'), 
-             cluster.dartrundir+'/obs_seq.out')
+             cluster.dart_rundir+'/obs_seq.out')
     evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
 
 

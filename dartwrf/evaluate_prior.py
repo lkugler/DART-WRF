@@ -27,7 +27,7 @@ if __name__ == "__main__":
           oso_input = cluster.archivedir+'/obs_seq_out' + assim_time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-beforeQC")
           if not os.path.isfile(oso_input):
                oso_input = cluster.archivedir+'/obs_seq_out' + assim_time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-          shutil.copy(oso_input, cluster.dartrundir+'/obs_seq.out')
+          shutil.copy(oso_input, cluster.dart_rundir+'/obs_seq.out')
 
 
      aso.evaluate(assim_time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")

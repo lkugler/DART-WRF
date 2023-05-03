@@ -173,7 +173,7 @@ kind
 
 
 def create_obs_seq_in(time_dt, list_obscfg, 
-                      output_path=cluster.dartrundir+'/obs_seq.in'):
+                      output_path=cluster.dart_rundir+'/obs_seq.in'):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
@@ -314,6 +314,6 @@ if __name__ == '__main__':
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
         import assim_synth_obs as aso
-        aso.replace_errors_obsseqout(cluster.dartrundir+'/obs_seq.out', error_assimilate)
+        aso.replace_errors_obsseqout(cluster.dart_rundir+'/obs_seq.out', error_assimilate)
 
 

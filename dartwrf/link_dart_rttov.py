@@ -11,8 +11,8 @@ if __name__ == "__main__":
     bins = ['perfect_model_obs', 'filter', 'obs_diag', 'obs_seq_to_netcdf']
     for b in bins:
         symlink(joinp(cluster.dart_srcdir, b),
-                joinp(cluster.dartrundir, b))
-        print(joinp(cluster.dartrundir, b), 'created')
+                joinp(cluster.dart_rundir, b))
+        print(joinp(cluster.dart_rundir, b), 'created')
 
     rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
             #'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.dat',
@@ -25,17 +25,17 @@ if __name__ == "__main__":
                 destname = 'rtcoef_msg_4_seviri.dat'
 
         symlink(cluster.rttov_srcdir + f_src, 
-                cluster.dartrundir+'/'+destname)
+                cluster.dart_rundir+'/'+destname)
 
     ##################
-    symlink(cluster.dartrundir+'/rttov_mfasis_cld_msg_4_seviri_deff.H5', 
-            cluster.dartrundir+'/rttov_mfasis_cld_msg_4_seviri.H5')
+    symlink(cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri_deff.H5', 
+            cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri.H5')
 
     symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sensor_db.csv',
-            cluster.dartrundir+'/rttov_sensor_db.csv')
+            cluster.dart_rundir+'/rttov_sensor_db.csv')
 
     symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
         +'work/sampling_error_correction_table.nc',
-        cluster.dartrundir+'/sampling_error_correction_table.nc')
+        cluster.dart_rundir+'/sampling_error_correction_table.nc')
 
-    print('prepared DART & RTTOV links in', cluster.dartrundir)
+    print('prepared DART & RTTOV links in', cluster.dart_rundir)

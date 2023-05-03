@@ -7,7 +7,7 @@ if __name__ == "__main__":
     """
     Run a cycled OSSE with WRF and DART.
     """
-    w = WorkFlows(exp_config='exp_example.py', server_config='jet.py')
+    w = WorkFlows(exp_config='cfg.py', server_config='jet.py')
 
     timedelta_integrate = dt.timedelta(minutes=15)
     timedelta_btw_assim = dt.timedelta(minutes=15)
