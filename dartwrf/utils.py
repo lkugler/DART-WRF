@@ -70,7 +70,9 @@ class ClusterConfig(object):
                   ).run(cmd, depends_on=depends_on)
         else:
             print(cmd)
-            os.system(cmd)
+            returncode = os.system(cmd)
+            if returncode != 0:
+                raise Exception('Error running command: '+cmd)
 
 userhome = os.path.expanduser('~')
 
