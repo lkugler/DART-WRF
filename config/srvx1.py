@@ -53,6 +53,8 @@ cluster.python_verif = '/users/staff/lkugler/miniconda3/bin/python'
 cluster.ncks = '/home/swd/spack/opt/spack/linux-rhel8-skylake_avx512/gcc-8.5.0/nco-5.0.1-ntu44aoxlvwtr2tsrobfr4lht7cpvccf/bin/ncks'
 cluster.ideal = '' #/jetfs/home/lkugler/bin/ideal-v4.3_v1.22.exe'
 cluster.wrfexe = '' #/jetfs/home/lkugler/bin/wrf-v4.3_v1.22.exe'
+cluster.dart_modules = ''
+cluster.wrf_modules = ''
 
 # paths for data output
 cluster.wrf_rundir_base = utils.userhome+'/AdvDA23/run_WRF/'  # path for temporary files

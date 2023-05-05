@@ -14,7 +14,11 @@ class ClusterConfig(object):
     """Collection of variables regarding the cluster configuration"""
     def __init__(self, exp):
         self.exp = exp  # makes derived properties available
-        self.dart_modules = ''  # default value
+
+        # defaults
+        self.dart_modules = ''
+        self.wrf_modules = '' 
+        self.size_jobarray = '1'
 
     @property
     def archivedir(self):
@@ -71,8 +75,9 @@ class ClusterConfig(object):
         else:
             print(cmd)
             returncode = os.system(cmd)
+            print(cmd, 'returncode', returncode)
             if returncode != 0:
-                raise Exception('Error running command: '+cmd)
+                raise Exception('Error running command >>> '+cmd)
 
 userhome = os.path.expanduser('~')
 
