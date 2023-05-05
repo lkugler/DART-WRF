@@ -3,12 +3,12 @@ from dartwrf import utils
 exp = utils.Experiment()
 exp.expname = "obs-T_inflation-1.1"
 exp.model_dx = 2000
-exp.n_ens = 10
+exp.n_ens = 20
 
 exp.filter_kind = 1
-exp.prior_inflation = 0
+exp.prior_inflation = 3
 exp.inf_initial = 1.1
-exp.post_inflation = 4
+exp.post_inflation = 0
 exp.sec = True
 exp.cov_loc_vert_km_horiz_km = (4, 40)
 exp.superob_km = False  # False or int (spatial averaging of observations)
@@ -63,7 +63,7 @@ t = dict(plotname='Temperature', plotunits='[K]',
          #n_obs=1, obs_locations=[(45., 0.)],
          error_generate=0.2, error_assimilate=0.2,
          heights=[1000,], #range(1000, 17001, 2000),
-         cov_loc_radius_km=30)
+         cov_loc_radius_km=40)
 
 q = dict(plotname='Specific humidity', plotunits='[kg/kg]',
          kind='RADIOSONDE_SPECIFIC_HUMIDITY', n_obs=1,
