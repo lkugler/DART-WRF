@@ -1,12 +1,13 @@
 from dartwrf import utils
 
 exp = utils.Experiment()
-exp.expname = "obs-cold_localization-narrow"
+exp.expname = "obs-T_inflation-1.1"
 exp.model_dx = 2000
 exp.n_ens = 10
 
 exp.filter_kind = 1
 exp.prior_inflation = 0
+exp.inf_initial = 1.1
 exp.post_inflation = 4
 exp.sec = True
 exp.cov_loc_vert_km_horiz_km = (4, 40)
@@ -14,7 +15,7 @@ exp.superob_km = False  # False or int (spatial averaging of observations)
 exp.adjust_obs_impact = False
 
 exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
-exp.use_existing_obsseq = '/users/students/lehre/advDA_s2023/dartwrf_tutorial/very_cold_observation.out'
+#exp.use_existing_obsseq = '/users/students/lehre/advDA_s2023/dartwrf_tutorial/very_cold_observation.out'
 
 # path to the nature run, where we take observations from
 exp.nature = '/users/students/lehre/advDA_s2023/data/sample_nature/'
@@ -58,11 +59,11 @@ radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
 
 t = dict(plotname='Temperature', plotunits='[K]',
          kind='RADIOSONDE_TEMPERATURE', 
-         #n_obs=22500, obs_locations='square_array_evenly_on_grid',
-         n_obs=1, obs_locations=[(45., 0.)],
+         n_obs=961, obs_locations='square_array_evenly_on_grid',
+         #n_obs=1, obs_locations=[(45., 0.)],
          error_generate=0.2, error_assimilate=0.2,
          heights=[1000,], #range(1000, 17001, 2000),
-         cov_loc_radius_km=50)
+         cov_loc_radius_km=30)
 
 q = dict(plotname='Specific humidity', plotunits='[kg/kg]',
          kind='RADIOSONDE_SPECIFIC_HUMIDITY', n_obs=1,
@@ -80,7 +81,6 @@ psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             error_generate=50., error_assimilate=100.,
             cov_loc_radius_km=32)
 
-exp.observations = [t2m]
+exp.observations = [t]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
-#exp.update_vars = ['U', 'V', 'W', 'T', 'PH', 'MU', 'QVAPOR', 'PSFC']
 

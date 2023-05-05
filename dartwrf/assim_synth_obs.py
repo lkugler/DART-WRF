@@ -46,6 +46,7 @@ def set_DART_nml(just_prior_values=False):
         "<sampling_error_correction>": '.true.' if exp.sec else '.false.',
         "<prior_inflation>": str(exp.prior_inflation),
         "<post_inflation>": str(exp.post_inflation),
+        "<inf_initial>": str(exp.inf_initial),
         "<n_ens>": str(int(exp.n_ens)),
         "<cov_loc_radian>": "0.00000001",  # dummy value, used for types not mentioned below
         "<list_obstypes>": "'" + "','".join(list_obstypes) + "'",
@@ -220,11 +221,11 @@ def archive_filteroutput(time):
         )
 
     try:  # not necessary for next forecast run
-        for iens in range(1, exp.n_ens + 1):
-            copy(
-                cluster.dartrundir + "/postassim_member_" + str(iens).zfill(4) + ".nc",
-                archive_assim + "/postassim_member_" + str(iens).zfill(4) + ".nc",
-            )
+        ftypes = ['preassim', 'postassim']
+        for ftype in ftypes:
+            for iens in range(1, exp.n_ens + 1):
+                fname = "/"+ftype+"_member_" + str(iens).zfill(4) + ".nc"
+                copy(cluster.dartrundir + fname, archive_assim + fname)
 
         for f in ["output_mean.nc", "output_sd.nc"]:  # copy mean and sd to archive
             copy(cluster.dartrundir + "/" + f, archive_assim + "/" + f)
