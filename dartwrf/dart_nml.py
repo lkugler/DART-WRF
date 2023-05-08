@@ -5,6 +5,7 @@ from config.cluster import cluster
 
 earth_radius_km = 6370
 
+
 def read_namelist(filepath):
     """Read the DART namelist file into a dictionary.
     
@@ -64,7 +65,7 @@ def read_namelist(filepath):
 
             param_data.append(val)
 
-            print('this iteration var, val ...', {param: param_data})
+            # print('this iteration var, val ...', {param: param_data})
 
             # add variable to dictionary
             d[section][param] = param_data
@@ -86,7 +87,7 @@ def write_namelist_from_dict(d, filepath):
 
             try:
                 parameters = d[section].keys()
-                print(parameters, [len(p) for p in parameters])
+                # print(parameters, [len(p) for p in parameters])
                 max_width_of_parameter_name = max([len(p) for p in parameters])
                 width = max_width_of_parameter_name + 1
             except:
@@ -107,9 +108,9 @@ def write_namelist_from_dict(d, filepath):
 
 
                     if i == 0:
-                        f.write('   '+parameter.ljust(width)+' = '+line+'\n')
+                        f.write('   '+parameter.ljust(width)+' = '+line+',\n')
                     else:
-                        f.write('   '+' '*width+' = '+line+'\n')
+                        f.write('   '+' '*width+'   '+line+',\n')
             f.write('   /\n\n')
 
 
@@ -191,7 +192,8 @@ def _get_list_of_localizations():
 
 
 def _to_fortran_list(l):
-    """Ensure formatting as "arg1", "arg2", """
+    """Ensure formatting with quotation mark, e.g. parameter = "arg1", "arg2", 
+    """
     assert isinstance(l, list)
 
     if len(l) > 1:  # multiple entries
@@ -243,7 +245,6 @@ def write_namelist(just_prior_values=False):
     nml['&location_nml']['special_vert_normalization_heights'] = [_to_fortran_list(list_loc_vert_km)]
     nml['&location_nml']['special_vert_normalization_scale_heights'] = [_to_fortran_list(list_loc_vert_scaleheight)]
 
-    print(nml['&location_nml']['special_vert_normalization_obs_types'])
 
     # overwrite namelist with experiment configuration
     for section, sdata in exp.dart_nml.items():
