@@ -23,13 +23,13 @@ def link_nature_to_dart_truth(time):
     """
 
     # get wrfout_d01 from nature run
-    shutil.copy(time.strftime(exp.nature+'/'+wrfout_format), 
+    shutil.copy(time.strftime(exp.nature_wrfout), 
                 cluster.dart_rundir + "/wrfout_d01")
 
     # DART may need a wrfinput file as well, which serves as a template for dimension sizes
     symlink(cluster.dart_rundir + "/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
-    print("linked", time.strftime(exp.nature+'/'+wrfout_format),
+    print("linked", time.strftime(exp.nature_wrfout),
           "to", cluster.dart_rundir + "/wrfout_d01")
 
 
@@ -448,6 +448,46 @@ def archive_inflation_2(time):
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
+def link_DART_binaries_and_RTTOV_files():
+    joinp = os.path.join
+
+    # link DART binaries
+    bins = ['perfect_model_obs', 'filter', 'obs_diag', 'obs_seq_to_netcdf']
+    for b in bins:
+            symlink(joinp(cluster.dart_srcdir, b),
+                    joinp(cluster.dart_rundir, b))
+
+    # link RTTOV files
+    rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
+                    'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.H5',
+                    'cldaer_visir/sccldcoef_msg_4_seviri.dat']
+
+    try:  # may fail quietly if we dont need RTTOV
+        for f_src in rttov_files:
+                destname = os.path.basename(f_src)
+                if 'rtcoef' in f_src:
+                        destname = 'rtcoef_msg_4_seviri.dat'
+
+                symlink(cluster.rttov_srcdir + f_src, 
+                        cluster.dart_rundir+'/'+destname)
+
+        symlink(cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri_deff.H5', 
+                cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri.H5')  # use deff, not OPAC
+
+        symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sensor_db.csv',
+                cluster.dart_rundir+'/rttov_sensor_db.csv')
+
+        symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
+                +'work/sampling_error_correction_table.nc',
+                cluster.dart_rundir+'/sampling_error_correction_table.nc')
+
+        print('prepared DART & RTTOV links in', cluster.dart_rundir)
+    except Exception as e:
+        if any([hasattr(obscfg, 'sat_channel') for obscfg in exp.observations]):
+            raise e
+        else:
+            pass  # we dont need RTTOV anyway
+
 
 def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """Assimilate observations
@@ -475,8 +515,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dart_rundir)
 
-    # link DART binaries to run_DART
-    os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
+    link_DART_binaries_and_RTTOV_files()
 
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  

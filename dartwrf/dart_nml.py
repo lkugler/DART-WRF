@@ -12,7 +12,7 @@ def read_namelist(filepath):
         filepath (str): Path to namelist file
     
     Returns:
-        dict: keys are namelist sections, values are dictionaries of namelist variables
+        dict: namelist[section][parameter] = [[arg1, arg2,], [arg3, arg4]]
     """
     
     d = dict()
@@ -24,52 +24,93 @@ def read_namelist(filepath):
         # skip whitespace
         line = line.strip()
 
-        # skip comments
-        if not line.startswith('#'):
+        if line.startswith('#') or line.startswith('!'):
+            continue  # skip this line
 
-            # skip empty lines
-            if len(line) > 0:
+        # skip empty lines
+        if len(line) > 0:
 
-                # namelist section
-                if line.startswith('&'):
-                    section = line
-                    d[section] = dict()
-                    continue
-                
-                if '/' in line:
-                    continue  # skip end of namelist section
+            # namelist section
+            if line.startswith('&'):
+                section = line
+                d[section] = dict()
+                continue
+            
+            if '/' in line:
+                continue  # skip end of namelist section
 
-                try:
-                    # split line into variable name and value
-                    var, val = line.split('=')
-                    val = val.strip().strip(',').strip()
+            line = line.strip().strip(',')
 
-                except ValueError:
-                    # If the above split failed, we are still, we are still in the previous variable
-                    nextline_values = line.strip().split(',').strip()
-                    val = val + nextline_values
+            try:
+                # split line into variable name and value
+                param, val = line.split('=')
+                param = param.strip()
 
-                # add variable to dictionary
-                d[section][var] = val
+                param_data = []
+
+            except ValueError:
+                # If the above split failed, 
+                # then there is additional data for the previous variable
+                val = line  # in this line, there is only param_data
+                # param is still the one from previously
+
+            val = val.strip().strip(',').split(',')
+
+            # ensure that we have strings
+            if isinstance(val, list):
+                val = [str(v) for v in val]
+            else:
+                val = [str(val)]
+
+            param_data.append(val)
+
+            print('this iteration var, val ...', {param: param_data})
+
+            # add variable to dictionary
+            d[section][param] = param_data
     return d
-
 
 def write_namelist_from_dict(d, filepath):
     """Write a DART namelist dictionary to a file.
     
     Args:
-        d (dict): keys are namelist sections, values are dictionaries of namelist variables
+        d (dict): keys are namelist sections, values are dictionaries.
+                    these dictionaries contain keys (=parameters) and values (list type)
+                    every item in values is a line (list type)
+                    every line contains possibly multiple entries
         filepath (str): Path to namelist file
     """
     with open(filepath, 'w') as f:
         for section in d:
             f.write(section+'\n')
-            for var in d[section]:
-                val = d[section][var]
-                if isinstance(val, list):
-                    val = ', '.join(val)
-                f.write('\t '+var+' = '+str(val)+'\n')
-            f.write('\t /\n\n')
+
+            try:
+                parameters = d[section].keys()
+                print(parameters, [len(p) for p in parameters])
+                max_width_of_parameter_name = max([len(p) for p in parameters])
+                width = max_width_of_parameter_name + 1
+            except:
+                width = None
+            
+            for parameter in parameters:
+                lines = d[section][parameter]
+
+                if isinstance(lines, str):
+                    lines = [lines,]
+
+                for i, line in enumerate(lines):
+
+                    try:
+                        line = ', '.join(line)  # write line (is a list)
+                    except:
+                        pass
+
+
+                    if i == 0:
+                        f.write('   '+parameter.ljust(width)+' = '+line+'\n')
+                    else:
+                        f.write('   '+' '*width+' = '+line+'\n')
+            f.write('   /\n\n')
 
 
 def _get_list_of_localizations():
@@ -142,12 +183,23 @@ def _get_list_of_localizations():
     
     # set the other (unused) list to a dummy value
     if len(l_loc_vert_km) > 0:
-        l_loc_vert_scaleheight = [-1,]
+        l_loc_vert_scaleheight = ["-1",]
     else:
-        l_loc_vert_km = [-1,]
+        l_loc_vert_km = ["-1",]
     
     return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
 
+
+def _to_fortran_list(l):
+    """Ensure formatting as "arg1", "arg2", """
+    assert isinstance(l, list)
+
+    if len(l) > 1:  # multiple entries
+        return ', '.join(['"'+v+'"' for v in l])
+    elif len(l) == 1:  # single entry
+        return '"'+l[0]+'"'
+    else:  # no entry
+        return '' 
 
 def write_namelist(just_prior_values=False):
     """Set DART namelist variables in 'input.nml' file.
@@ -171,7 +223,7 @@ def write_namelist(just_prior_values=False):
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
 
     # make sure that observations defined in `exp.observations` are assimilated
-    nml['&obs_kind_nml']['assimilate_these_obs_types'] = list_obstypes
+    nml['&obs_kind_nml']['assimilate_these_obs_types'] = _to_fortran_list(list_obstypes)
     
     # dont compute posterior, just evaluate prior
     if just_prior_values:  
@@ -180,32 +232,39 @@ def write_namelist(just_prior_values=False):
         nml['&filter_nml']['output_mean'] = '.false.'
         nml['&filter_nml']['output_sd'] = '.false.'
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = []
-        nml['&obs_kind_nml']['evaluate_these_obs_types'] = list_obstypes
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [_to_fortran_list(list_obstypes)]
 
 
     # write localization variables
-    nml['&assim_tools_nml']['special_localization_obs_types'] = list_obstypes
-    nml['&assim_tools_nml']['special_localization_cutoffs'] = list_loc_horiz_rad
+    nml['&assim_tools_nml']['special_localization_obs_types'] = [_to_fortran_list(list_obstypes)]
+    nml['&assim_tools_nml']['special_localization_cutoffs'] = [_to_fortran_list(list_loc_horiz_rad)]
 
-    nml['&location_nml']['special_vert_normalization_obs_types'] = list_obstypes
-    nml['&location_nml']['special_vert_normalization_heights'] = list_loc_vert_km
-    nml['&location_nml']['special_vert_normalization_scale_heights'] = list_loc_vert_scaleheight
+    nml['&location_nml']['special_vert_normalization_obs_types'] = [_to_fortran_list(list_obstypes)]
+    nml['&location_nml']['special_vert_normalization_heights'] = [_to_fortran_list(list_loc_vert_km)]
+    nml['&location_nml']['special_vert_normalization_scale_heights'] = [_to_fortran_list(list_loc_vert_scaleheight)]
 
+    print(nml['&location_nml']['special_vert_normalization_obs_types'])
 
-    # overwrite namelist with DART-WRF/config/ configuration
-    for key, value in exp.dart_nml.items():
+    # overwrite namelist with experiment configuration
+    for section, sdata in exp.dart_nml.items():
 
-        # if key is not in namelist, add it
-        if key not in nml:
-            nml[key] = {}
+        # if section is not in namelist, add it
+        if section not in nml:
+            nml[section] = {}
 
-        # overwrite entry in each dictionary
-        nml[key] = value
+        for parameter, value in sdata.items():
 
+            if isinstance(value, list) and len(value) > 1:  # it is a real list
+                value = [value]  # value was a list of parameter values, but just one line
+            else:
+                value = [[value]]  # value was a single entry
+
+            # overwrite entry in each dictionary
+            nml[section][parameter] = value  # every entry in this list is one line
 
     # final checks
     # fail if horiz_dist_only == false but observations contain a satellite channel
-    if nml['&location_nml']['horiz_dist_only'] == '.false.':
+    if nml['&location_nml']['horiz_dist_only'][0] == '.false.':
         for obscfg in exp.observations:
             if hasattr(obscfg, "sat_channel"):
                 raise ValueError("Selected vertical localization, but observations contain satellite obs -> Not possible.")
