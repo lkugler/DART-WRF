@@ -283,7 +283,18 @@ def qc_obs(time, oso, osf_prior):
 
 def evaluate(assim_time, 
              output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"):
-    """Depending on input_list.txt, this function calculates either prior or posterior obs space values.
+    """Calculates either prior or posterior obs space values.
+
+    Note: Depends on a prepared input_list.txt, which defines the ensemble (prior or posterior).
+
+    Output file: Saves obs_seq.final to `/archivedir/obs_seq_final/`
+
+    Args:
+        assim_time (datetime): time of assimilation
+        output_format (str): format string for output filename, default is `"%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"`
+
+    Returns:
+        obsseq.ObsSeq
     """
 
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
