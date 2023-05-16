@@ -133,7 +133,7 @@ class WorkFlows(object):
         Returns:
             None
         """
-        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
+        cmd = 'cd '+self.cluster.scripts_rundir+'; '+self.cluster.python+' prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
         print(cmd)
         os.system(cmd)
 
@@ -251,7 +251,7 @@ class WorkFlows(object):
         if not os.path.exists(prior_path_exp):
             raise IOError('prior_path_exp does not exist: '+prior_path_exp)
 
-        cmd = (self.cluster.python+' '+self.cluster.scripts_rundir+'/assim_synth_obs.py '
+        cmd = ('cd '+self.cluster.scripts_rundir+'; '+self.cluster.python+' assim_synth_obs.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
