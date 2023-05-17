@@ -11,8 +11,9 @@ import datetime as dt
 
 from config.cfg import exp
 from config.cluster import cluster
-from dartwrf.utils import symlink, copy, link_contents
-from dartwrf import prepare_namelist
+
+from utils import symlink, copy, link_contents
+import prepare_namelist
 
 if __name__ == '__main__':
 

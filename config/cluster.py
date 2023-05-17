@@ -65,12 +65,12 @@ cluster.archive_base = utils.userhome+'/data/sim_archive/'
 cluster.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
 cluster.dart_srcdir = '/users/students/lehre/advDA_s2023/DART/models/wrf/work'
 cluster.rttov_srcdir = '/users/students/lehre/advDA_s2023/RTTOV13/rtcoef_rttov13/'
-cluster.dartwrf_dir = utils.userhome+'/AdvDA23/DART-WRF/'
+cluster.scriptsdir = utils.userhome+'/AdvDA23/DART-WRF/dartwrf/'
 cluster.geo_em = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
 
 # templates/run scripts
-cluster.namelist = cluster.dartwrf_dir+'/../templates/namelist.input'
-cluster.run_WRF = cluster.dartwrf_dir+'/run_ens.jet.sh'
+cluster.namelist = cluster.scriptsdir+'/../templates/namelist.input'
+cluster.run_WRF = cluster.scriptsdir+'/run_ens.jet.sh'
 
 cluster.slurm_cfg = {"account": "lkugler", "partition": "compute",
                  "ntasks": "1", "ntasks-per-core": "1", "mem": "50G",

@@ -50,6 +50,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     """
     print("prepare prior state estimate")
     for iens in range(1, exp.n_ens + 1):
+
         print("link wrfout file to DART background file")
         wrfout_run = (
             prior_path_exp
@@ -65,7 +66,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
         copy(wrfout_run, wrfout_dart)
         symlink(wrfout_dart, dart_ensdir + "/wrfinput_d01")
 
-        # ensure prior time matches assim time (can be off intentionally)
+        # ensure prior time matches assim time (can be intentionally different)
         if assim_time != prior_valid_time:
             print("overwriting time in prior from nature wrfout")
             shell(cluster.ncks+ " -A -v XTIME,Times "+ 
@@ -86,18 +87,22 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system("rm -rf " + cluster.dart_rundir + "/obs_seq.fina*")
 
 def write_list_of_inputfiles_prior():
-     files = []
-     for iens in range(1, exp.n_ens+1):
-          files.append("./prior_ens" + str(iens) + "/wrfout_d01")
-     write_txt(files, cluster.dart_rundir+'/input_list.txt')
+    """Instruct DART to use the prior ensemble as input
+    """
+    files = []
+    for iens in range(1, exp.n_ens+1):
+        files.append("./prior_ens" + str(iens) + "/wrfout_d01")
+    write_txt(files, cluster.dart_rundir+'/input_list.txt')
 
 def write_list_of_inputfiles_posterior(assim_time):
-     filedir = cluster.archivedir+assim_time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
+    """Use posterior as input for DART, e.g. to evaluate the analysis in observation space
+    """
+    filedir = cluster.archivedir+assim_time.strftime("/%Y-%m-%d_%H:%M/assim_stage0/")
 
-     files = []
-     for iens in range(1, exp.n_ens+1):
-          files.append(filedir+'filter_restart_d01.'+str(iens).zfill(4))
-     write_txt(files, cluster.dart_rundir+'/input_list.txt')
+    files = []
+    for iens in range(1, exp.n_ens+1):
+        files.append(filedir+'filter_restart_d01.'+str(iens).zfill(4))
+    write_txt(files, cluster.dart_rundir+'/input_list.txt')
 
 def write_list_of_outputfiles():
     files = []
@@ -300,8 +305,7 @@ def evaluate(assim_time,
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dart_rundir)
 
-    # link DART binaries to run_DART
-    os.system(cluster.python + " " + cluster.scripts_rundir + "/link_dart_rttov.py")  
+    link_DART_binaries_and_RTTOV_files() 
 
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.final")  
@@ -488,6 +492,15 @@ def link_DART_binaries_and_RTTOV_files():
         else:
             pass  # we dont need RTTOV anyway
 
+def prepare_run_DART_folder():
+    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
+    os.chdir(cluster.dart_rundir)
+
+    link_DART_binaries_and_RTTOV_files()
+
+    # remove any existing observation files
+    os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
+
 
 def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """Assimilate observations
@@ -511,14 +524,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """
     nproc = cluster.max_nproc
 
-    archive_time = cluster.archivedir + time.strftime("/%Y-%m-%d_%H:%M/")
-    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
-    os.chdir(cluster.dart_rundir)
-
-    link_DART_binaries_and_RTTOV_files()
-
-    # remove any existing observation files
-    os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
+    prepare_run_DART_folder()
     dart_nml.write_namelist()
 
     print("prepare nature")

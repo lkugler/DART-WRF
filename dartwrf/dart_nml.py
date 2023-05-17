@@ -37,7 +37,7 @@ def read_namelist(filepath):
                 d[section] = dict()
                 continue
             
-            if '/' in line:
+            if line == '/':
                 continue  # skip end of namelist section
 
             line = line.strip().strip(',')
@@ -57,11 +57,21 @@ def read_namelist(filepath):
 
             val = val.strip().strip(',').split(',')
 
-            # ensure that we have strings
-            if isinstance(val, list):
-                val = [str(v) for v in val]
-            else:
-                val = [str(val)]
+            # # ensure that we have list of strings
+            # if isinstance(val, list) and len(val) == 1:
+            #     val = [val]
+
+
+            # try:
+            #     # convert to float/int
+            #     val = [float(v) for v in val]
+
+            #     # convert to int when they are equal
+            #     val = [int(v) for v in val if int(v)==v]
+            # except:
+            # it is not a numeric value => string
+            val = [v.strip() for v in val]
+
 
             param_data.append(val)
 
@@ -96,15 +106,35 @@ def write_namelist_from_dict(d, filepath):
             for parameter in parameters:
                 lines = d[section][parameter]
 
-                if isinstance(lines, str):
-                    lines = [lines,]
+                # lines (list(list(str))): 
+                # outer list: one element per line in the text file
+                # inner list: one element per value in that line
+
+
+                # we should have a list here
+                # if we instead have a single value, then make a list
+                # because we assume that lines consists of multiple lines
+                assert isinstance(lines, list)
 
                 for i, line in enumerate(lines):
 
-                    try:
-                        line = ', '.join(line)  # write line (is a list)
-                    except:
-                        pass
+                    assert isinstance(line, list)
+                    if line == []:
+                        line = ['',]
+                    
+
+                    first_entry = line[0]
+                    if isinstance(first_entry, str) and not first_entry.startswith('.'):
+                        try:
+                            float(first_entry)
+                            line = ', '.join(str(v) for v in line)
+                        except:
+                            # contains strings
+                            line = [entry.strip("'").strip('"') for entry in line]  # remove pre-existing quotes
+                            line = ', '.join('"'+v+'"' for v in line)
+                    else:
+                        # numerical values
+                        line = ', '.join(str(v) for v in line)
 
 
                     if i == 0:
@@ -154,54 +184,78 @@ def _get_list_of_localizations():
 
         l_obstypes.append(obscfg["kind"])
         loc_horiz_km = obscfg["loc_horiz_km"]
+        if not loc_horiz_km >= 0:
+            raise ValueError('Invalid value for `loc_horiz_km`, set loc_horiz_km >= 0 !')
 
         # compute horizontal localization
-        loc_horiz_rad = str(to_radian_horizontal(loc_horiz_km))
+        loc_horiz_rad = to_radian_horizontal(loc_horiz_km)
         l_loc_horiz_rad.append(loc_horiz_rad)
 
         # compute vertical localization
+
+        # do we have vertical localization?
+        if not hasattr(obscfg, "loc_vert_km") and not hasattr(obscfg, "loc_vert_scaleheight"):
+            l_loc_vert_km.append(-1)
+            l_loc_vert_scaleheight.append(-1)
+            # if not add dummy value
 
         # choose either localization by height or by scale height
         if hasattr(obscfg, "loc_vert_km") and hasattr(obscfg, "loc_vert_scaleheight"):
             raise ValueError("Observation config contains both loc_vert_km and loc_vert_scaleheight. Please choose one.")
         
         elif hasattr(obscfg, "loc_vert_km"):  # localization by height
-            loc_vert_km = str(obscfg["loc_vert_km"])
+            loc_vert_km = obscfg["loc_vert_km"]
 
             vert_norm_hgt = to_vertical_normalization(loc_vert_km, loc_horiz_km)
             l_loc_vert_km.append(vert_norm_hgt)
 
         elif hasattr(obscfg, "loc_vert_scaleheight"):  # localization by scale height
-            loc_vert_scaleheight = str(obscfg["loc_vert_scaleheight"])
+            loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
 
             # no conversion necessary, take the values as defined in obscfg
             l_loc_vert_scaleheight.append(loc_vert_scaleheight)
 
-
-    # fail when both localization by height and scale height are requested
-    if len(l_loc_vert_km) > 0 and len(l_loc_vert_scaleheight) > 0:
-        raise ValueError("List of observation configurations contain both height and scale-height localization. Please choose one.")
-    
     # set the other (unused) list to a dummy value
     if len(l_loc_vert_km) > 0:
-        l_loc_vert_scaleheight = ["-1",]
+        l_loc_vert_scaleheight = [-1,]
     else:
-        l_loc_vert_km = ["-1",]
+        l_loc_vert_km = [-1,]
     
     return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
 
 
-def _to_fortran_list(l):
-    """Ensure formatting with quotation mark, e.g. parameter = "arg1", "arg2", 
-    """
-    assert isinstance(l, list)
+# def _fortran_format(l):
 
-    if len(l) > 1:  # multiple entries
-        return ', '.join(['"'+v+'"' for v in l])
-    elif len(l) == 1:  # single entry
-        return '"'+l[0]+'"'
-    else:  # no entry
-        return '' 
+#     # do we have multiples entries?
+#     # Caution: a string is iterable
+#     if isinstance(l, list):
+#         pass
+#     else:
+#         l = [l,]
+
+#     # do we have strings as elements?
+#     if isinstance(l[0], str):
+        
+
+#     return l
+
+# def _as_fortran_list(l):
+#     """Convert parameter list 
+    
+#     if l contains strings:
+#         output: "arg1", "arg2", "arg3"
+#     else
+#         output 1,2,3 
+#     """
+#     assert isinstance(l, list)
+
+#     if isinstance(l[0], str):
+#         # contains strings
+#         l = ['"'+a+'"' for a in l]  # add quotation marks
+        
+
+    
+
 
 def write_namelist(just_prior_values=False):
     """Set DART namelist variables in 'input.nml' file.
@@ -225,26 +279,28 @@ def write_namelist(just_prior_values=False):
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
 
     # make sure that observations defined in `exp.observations` are assimilated
-    nml['&obs_kind_nml']['assimilate_these_obs_types'] = _to_fortran_list(list_obstypes)
+    nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes]
     
     # dont compute posterior, just evaluate prior
     if just_prior_values:  
-        nml['&filter_nml']['compute_posterior'] = '.false.'
-        nml['&filter_nml']['output_members'] = '.false.'
-        nml['&filter_nml']['output_mean'] = '.false.'
-        nml['&filter_nml']['output_sd'] = '.false.'
-        nml['&obs_kind_nml']['assimilate_these_obs_types'] = []
-        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [_to_fortran_list(list_obstypes)]
+        nml['&filter_nml']['compute_posterior'] = [['.false.']]
+        nml['&filter_nml']['output_members'] = [['.false.']]
+        nml['&filter_nml']['output_mean'] = [['.false.']]
+        nml['&filter_nml']['output_sd'] = [['.false.']]
+        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
 
 
     # write localization variables
-    nml['&assim_tools_nml']['special_localization_obs_types'] = [_to_fortran_list(list_obstypes)]
-    nml['&assim_tools_nml']['special_localization_cutoffs'] = [_to_fortran_list(list_loc_horiz_rad)]
+    nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes]
+    nml['&assim_tools_nml']['special_localization_cutoffs'] = [list_loc_horiz_rad]
 
-    nml['&location_nml']['special_vert_normalization_obs_types'] = [_to_fortran_list(list_obstypes)]
-    nml['&location_nml']['special_vert_normalization_heights'] = [_to_fortran_list(list_loc_vert_km)]
-    nml['&location_nml']['special_vert_normalization_scale_heights'] = [_to_fortran_list(list_loc_vert_scaleheight)]
+    nml['&location_nml']['special_vert_normalization_obs_types'] = [list_obstypes]
+    nml['&location_nml']['special_vert_normalization_heights'] = [list_loc_vert_km]
+    nml['&location_nml']['special_vert_normalization_scale_heights'] = [list_loc_vert_scaleheight]
 
+    nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
+    nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
 
     # overwrite namelist with experiment configuration
     for section, sdata in exp.dart_nml.items():
@@ -255,8 +311,12 @@ def write_namelist(just_prior_values=False):
 
         for parameter, value in sdata.items():
 
-            if isinstance(value, list) and len(value) > 1:  # it is a real list
-                value = [value]  # value was a list of parameter values, but just one line
+            if isinstance(value, list) and len(value) > 1:  # it is a list
+
+                if isinstance(value[0], list):
+                    pass  # nothing to do, value is list(list())
+                else:
+                    value = [value]  # value was a list of parameter values, but just one line
             else:
                 value = [[value]]  # value was a single entry
 
@@ -274,5 +334,5 @@ def write_namelist(just_prior_values=False):
     write_namelist_from_dict(nml, cluster.dart_rundir + "/input.nml")
 
     # append section for RTTOV
-    rttov_nml = cluster.scriptsdir + "/../templates/obs_def_rttov.VIS.nml"
+    rttov_nml = cluster.dartwrf_dir + "/../templates/obs_def_rttov.VIS.nml"
     append_file(cluster.dart_rundir + "/input.nml", rttov_nml)

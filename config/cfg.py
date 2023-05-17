@@ -1,7 +1,7 @@
 from dartwrf import utils
 
 exp = utils.Experiment()
-exp.expname = "test_newcode"
+exp.expname = "test_newcode" #exp_v1.22_P2_rr_VIS_obs10_loc20_oe3"
 exp.model_dx = 2000
 exp.n_ens = 40
 exp.superob_km = False  # False or int (spatial averaging of observations)
@@ -16,20 +16,35 @@ exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-
 
 
 exp.dart_nml = {'&assim_tools_nml':
-                    dict(assim_tools_nml='.false.',
-                            filter_kind='1',
-                            sampling_error_correction='.true.',
-                            # obs_impact_filename='/jetfs/home/lkugler/DART-WRF/templates/impactfactor_T.txt',
-                            ),
+                    dict(filter_kind='1',
+                        sampling_error_correction='.true.',
+                        # obs_impact_filename='/jetfs/home/lkugler/DART-WRF/templates/impactfactor_T.txt',
+                        ),
                 '&filter_nml':
-                    dict(ens_size=str(exp.n_ens),
-                            num_output_state_members=str(exp.n_ens),
-                            num_output_obs_members=str(exp.n_ens),
-                            inf_flavor=['2', '0'],
+                    dict(ens_size=exp.n_ens,
+                            num_output_state_members=exp.n_ens,
+                            num_output_obs_members=exp.n_ens,
+                            inf_flavor=['0', '0'],
                         ),
                 '&location_nml':
                     dict(horiz_dist_only='.true.',
                         ),
+                '&model_nml':
+                    dict(wrf_state_variables = 
+                        [['U',     'QTY_U_WIND_COMPONENT',     'TYPE_U',    'UPDATE','999',],
+                         ['V',     'QTY_V_WIND_COMPONENT',     'TYPE_V',    'UPDATE','999',],
+                         ['W',     'QTY_VERTICAL_VELOCITY',    'TYPE_W',    'UPDATE','999',],
+                         ['PH',    'QTY_GEOPOTENTIAL_HEIGHT',  'TYPE_GZ',   'UPDATE','999',],
+                         ['THM',   'QTY_POTENTIAL_TEMPERATURE','TYPE_T',    'UPDATE','999',],
+                         ['MU',    'QTY_PRESSURE',             'TYPE_MU',   'UPDATE','999',],
+                         ['QVAPOR','QTY_VAPOR_MIXING_RATIO',   'TYPE_QV',   'UPDATE','999',],
+                         ['QICE',  'QTY_ICE_MIXING_RATIO',     'TYPE_QI',   'UPDATE','999',],
+                         ['QCLOUD','QTY_CLOUDWATER_MIXING_RATIO','TYPE_QC', 'UPDATE','999',],
+                         ['CLDFRA','QTY_CLOUD_FRACTION',       'TYPE_CFRAC','UPDATE','999',],
+                         ['PSFC',  'QTY_SURFACE_PRESSURE',     'TYPE_PSFC', 'UPDATE','999',],
+                         ['T2',    'QTY_2M_TEMPERATURE',       'TYPE_T',    'UPDATE','999',],
+                         ['TSK',   'QTY_SKIN_TEMPERATURE',     'TYPE_T',    'UPDATE','999',],
+                         ['REFL_10CM','QTY_RADAR_REFLECTIVITY','TYPE_REFL', 'UPDATE','999',]]),
                 }
 
 

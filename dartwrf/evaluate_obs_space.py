@@ -8,7 +8,7 @@ from config.cluster import cluster
 from dartwrf import assim_synth_obs as aso
 
 def get_previous_obsseq_file(time):
-     oso_input = cluster.archivedir+'/obs_seq_out' + init.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-beforeQC")
+     oso_input = cluster.archivedir+'/obs_seq_out' + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-beforeQC")
 
      if not os.path.isfile(oso_input):  # fallback
           oso_input = cluster.archivedir+'/obs_seq_out' + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
@@ -28,15 +28,22 @@ if __name__ == "__main__":
 
      use_other_obsseq = False
 
-     aso.write_list_of_inputfiles_posterior(time)
+     # we need an existing run_DART folder
+     aso.prepare_run_DART_folder()
 
-     # use the last assimilation obsseq file for the observation locations (note: observed values are not valid)
+     # # prepare nature and prior ensemble
+     aso.prepare_nature_dart(time)
+     aso.prepare_prior_ensemble(time, prior_init_time=init, prior_valid_time=time, prior_path_exp=cluster.archivedir)
+
+     # tell DART to use the prior as input
+     aso.write_list_of_inputfiles_prior()
 
      if use_other_obsseq:  # use a different obsseq file
           oso_input = use_other_obsseq
      else:  # from same exp
-          
-          oso_input = get_previous_obsseq_file(time)
+
+          # use the last assimilation obsseq file for the observation locations (note: observed values are not valid)     
+          oso_input = get_previous_obsseq_file(init)
           shutil.copy(oso_input, cluster.dart_rundir+'/obs_seq.out')
 
      aso.evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-evaluate")
