@@ -534,22 +534,25 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
     set_DART_nml()
 
+    do_QC_here = getattr(exp, "reject_smallFGD", False)  # True: triggers additional evaluations of prior & posterior
+
     print("prepare nature")
     prepare_nature_dart(time)  # link WRF files to DART directory
 
     print("prepare prior ensemble")
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
     
-    print(" 1) get observations with specified obs-error")
+    print(" get observations with specified obs-error")
     oso = get_obsseq_out(time)
 
-    print(" 2.1) evaluate prior for all observations (incl rejected)")
-    osf_prior = evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")
+    if do_QC_here:
+        print(" (optional) evaluate prior for all observations (incl rejected)")
+        osf_prior = evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")
 
-    print(" 2.2) assign observation-errors for assimilation ")
+    print(" assign observation-errors for assimilation ")
     set_obserr_assimilate_in_obsseqout(oso, osf_prior, outfile=cluster.dartrundir + "/obs_seq.out")
 
-    if getattr(exp, "reject_smallFGD", False):
+    if do_QC_here:
         print(" 2.3) reject observations? ")
         qc_obs(time, oso, osf_prior)
 
@@ -564,12 +567,13 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     if exp.prior_inflation == 2:
         archive_inflation_2(time)
 
-    print(" 4) evaluate posterior observations for all observations (incl rejected)")
-    write_list_of_inputfiles_posterior(time)
-    if getattr(exp, "reject_smallFGD", False):
+    if do_QC_here:
+        print(" 4) evaluate posterior observations for all observations (incl rejected)")
+        write_list_of_inputfiles_posterior(time)
+        
         copy(cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'), 
              cluster.dartrundir+'/obs_seq.out')
-    evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
+        evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
 
 
 if __name__ == "__main__":
