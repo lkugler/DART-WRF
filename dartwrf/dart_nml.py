@@ -258,12 +258,15 @@ def _get_list_of_localizations():
 
 
 def write_namelist(just_prior_values=False):
-    """Set DART namelist variables in 'input.nml' file.
+    """Write a DART namelist file ('input.nml')
     
-    1. Takes the default namelist is the one already defined in the DART source code
-    2. Calculates localization parameters from the observation configurations
+    1. Uses the default namelist (from the DART source code)
+    2. Calculates localization parameters from the experiment configuration
     3. Overwrites other parameters as defined in the experiment configuration
     4. Writes the namelist to the DART run directory
+
+    Note:
+        Vertical localization in pressure or levels is not implemented.
 
     Args:
         just_prior_values (bool, optional): If True, only compute prior values, not posterior. Defaults to False.
@@ -302,7 +305,7 @@ def write_namelist(just_prior_values=False):
     nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
     nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
 
-    # overwrite namelist with experiment configuration
+    # overwrite namelist parameters as defined in the experiment configuration
     for section, sdata in exp.dart_nml.items():
 
         # if section is not in namelist, add it
