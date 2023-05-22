@@ -166,11 +166,11 @@ def archive_filteroutput(time):
         )
 
     try:  # not necessary for next forecast run
-        for iens in range(1, exp.n_ens + 1):
-            copy(
-                cluster.dart_rundir + "/postassim_member_" + str(iens).zfill(4) + ".nc",
-                archive_assim + "/postassim_member_" + str(iens).zfill(4) + ".nc",
-            )
+        ftypes = ['preassim', 'postassim']
+        for ftype in ftypes:
+            for iens in range(1, exp.n_ens + 1):
+                fname = "/"+ftype+"_member_" + str(iens).zfill(4) + ".nc"
+                copy(cluster.dartrundir + fname, archive_assim + fname)
 
         for f in ["output_mean.nc", "output_sd.nc"]:  # copy mean and sd to archive
             copy(cluster.dart_rundir + "/" + f, archive_assim + "/" + f)
@@ -431,7 +431,7 @@ def prepare_inflation_2(time, prior_init_time):
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
         print(f_prior, 'copied to', f_new)
-    else:
+    else:  # no prior inflation file at the first assimilation
         warnings.warn(f_prior + ' does not exist. Using default file instead.')
         copy(f_default, f_new)
 
@@ -546,7 +546,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     print("prepare prior ensemble")
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
     
-    print(" 1) get observations with specified obs-error")
+    print(" get observations with specified obs-error")
     oso = get_obsseq_out(time)
 
     # is any observation error parametrized?
