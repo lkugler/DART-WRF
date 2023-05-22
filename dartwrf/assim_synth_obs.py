@@ -589,7 +589,7 @@ if __name__ == "__main__":
     """Assimilate synthetic observations
     
     Example:
-        python assim.py 2008-08-07_12:00 2008-08-06:00 2008-08-07_13:00 /home/fs71386/lkugler/data/sim_archive/exp_v1.18_Pwbub-1-ensprof_40mem
+        python assim_synth_obs.py 2008-08-07_13:00 2008-08_12:00 2008-08-07_13:00 /path/to/experiment/
     """
 
     time = dt.datetime.strptime(sys.argv[1], "%Y-%m-%d_%H:%M")
