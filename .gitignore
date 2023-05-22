@@ -7,3 +7,5 @@ dartwrf.egg*
 ._*
 .vscode
 docs/build
+cfg.py
+cluster.py
