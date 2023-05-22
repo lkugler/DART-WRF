@@ -1,16 +1,16 @@
 from dartwrf import utils
 
 exp = utils.Experiment()
-exp.expname = "advDA_Raso-T_inf2-4"
+exp.expname = "test_WV73_many_inf3"
 exp.model_dx = 2000
-exp.n_ens = 40
+exp.n_ens = 20
 
 exp.filter_kind = 1
-exp.prior_inflation = 2
+exp.prior_inflation = 3
 exp.inf_initial = 4
 exp.post_inflation = 0
 exp.sec = True
-exp.cov_loc_vert_km_horiz_km = (2, 100)
+exp.cov_loc_vert_km_horiz_km = False #(2, 10)
 exp.superob_km = False  # False or int (spatial averaging of observations)
 exp.adjust_obs_impact = False
 
@@ -40,9 +40,9 @@ wv62 = dict(plotname='Brightness temperature WV 6.2µm', plotunits='[K]',
 
 wv73 = dict(plotname='Brightness temperature WV 7.3µm', plotunits='[K]',
             kind='MSG_4_SEVIRI_TB', sat_channel=6, 
-            n_obs=961, obs_locations='square_array_evenly_on_grid',
-            error_generate=1., error_assimilate=1., 
-            cov_loc_radius_km=20)
+            n_obs=256, obs_locations='square_array_evenly_on_grid',
+            error_generate=2., error_assimilate=2., 
+            cov_loc_radius_km=10)
 
 ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
              kind='MSG_4_SEVIRI_TB', sat_channel=9, 
@@ -72,15 +72,17 @@ q = dict(plotname='Specific humidity', plotunits='[kg/kg]',
          cov_loc_radius_km=0.1)
 
 t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
-           kind='SYNOP_TEMPERATURE', n_obs=1, 
-           error_generate=0.1, error_assimilate=0.1,
-           cov_loc_radius_km=40)
+           kind='SYNOP_TEMPERATURE', 
+           #n_obs=1, obs_locations=[(45., 0.)],
+           n_obs=256, obs_locations='square_array_evenly_on_grid',
+           error_generate=1, error_assimilate=1,
+           cov_loc_radius_km=10)
 
 psfc = dict(plotname='SYNOP Pressure', plotunits='[Pa]',
             kind='SYNOP_SURFACE_PRESSURE', n_obs=1, 
             error_generate=50., error_assimilate=100.,
             cov_loc_radius_km=32)
 
-exp.observations = [t]
+exp.observations = [wv73]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
 
