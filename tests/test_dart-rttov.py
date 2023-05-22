@@ -35,7 +35,7 @@ else:
     datadir = '/jetfs/home/lkugler/data/sim_archive/'
     img_dir = '/jetfs/home/lkugler/analysis_plots/'
 
-dartrundir = datadir+'/../run_DART/test_jet'
+dart_rundir = datadir+'/../run_DART/test_jet'
 
 def test_rttov():
 
@@ -59,9 +59,9 @@ def test_rttov():
 
 
             shutil.copy(datadir+'/'+case+'/2008-07-30_12:00/1/'+time.strftime('wrfout_d01_2008-07-30_%H:%M:00'), 
-                        dartrundir + "/wrfout_d01")
+                        dart_rundir + "/wrfout_d01")
 
-            wrfout_add_geo.run(datadir+ "/geo_em.d01.nc", dartrundir + "/wrfout_d01")
+            wrfout_add_geo.run(datadir+ "/geo_em.d01.nc", dart_rundir + "/wrfout_d01")
            
 
             osq.create_obsseqin_alltypes(time, [obscfg])
@@ -69,7 +69,7 @@ def test_rttov():
             aso.run_perfect_model_obs(nproc=1) 
 
 
-            obs = obsseq.ObsSeq(dartrundir+'/obs_seq.out')
+            obs = obsseq.ObsSeq(dart_rundir+'/obs_seq.out')
             obs_map = obs.df.truth.values.reshape(150,150)
 
 
