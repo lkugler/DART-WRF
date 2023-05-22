@@ -476,7 +476,7 @@ def prepare_inflation_2(time, prior_init_time):
     if os.path.isfile(f_prior):
         copy(f_prior, f_new)
         print(f_prior, 'copied to', f_new)
-    else:
+    else:  # no prior inflation file at the first assimilation
         warnings.warn(f_prior + ' does not exist. Using default file instead.')
         copy(f_default, f_new)
 
