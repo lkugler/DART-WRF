@@ -529,6 +529,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
 
     prepare_run_DART_folder()
     nml = dart_nml.write_namelist()
+    prior_inflation_type = nml['&filter_nml']['inf_flavor'][0][0]
 
     print("prepare nature")
     prepare_nature_dart(time)  # link WRF files to DART directory
@@ -549,8 +550,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
         print(" 2.3) reject observations? ")
         qc_obs(time, oso, osf_prior)
 
-    print('prior inflation=', nml['&filter_nml']['inf_flavor'][0])
-    if nml['&filter_nml']['inf_flavor'][0]:
+    if prior_inflation_type == '2':
         prepare_inflation_2(time, prior_init_time)
 
     print(" 3) run filter ")
@@ -558,7 +558,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     filter(nproc=nproc)
     archive_filteroutput(time)
 
-    if exp.dart_nml:
+    if prior_inflation_type == '2':
         archive_inflation_2(time)
 
     print(" 4) evaluate posterior observations for all observations (incl rejected)")

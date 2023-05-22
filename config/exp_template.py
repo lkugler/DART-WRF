@@ -3,7 +3,7 @@ from dartwrf import utils
 exp = utils.Experiment()
 exp.expname = "test_newcode" #exp_v1.22_P2_rr_VIS_obs10_loc20_oe3"
 exp.model_dx = 2000
-exp.n_ens = 40
+exp.n_ens = 10
 exp.superob_km = False  # False or int (spatial averaging of observations)
 
 exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
@@ -25,10 +25,10 @@ exp.dart_nml = {'&assim_tools_nml':
                             num_output_state_members=exp.n_ens,
                             num_output_obs_members=exp.n_ens,
                             inf_flavor=['0', '0'],
-                            output_members='.true',
+                            output_members='.true.',
                             output_mean='.true.',
                             output_sd='.true.',
-                            stages_to_write=[''],
+                            stages_to_write='output',
                         ),
                 '&location_nml':
                     dict(horiz_dist_only='.true.',

@@ -24,7 +24,6 @@ class WorkFlows(object):
 
         we load the config from load the config from cluster.scripts_rundir/config/cfg.py
         """
-        print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
 
         def copy_dartwrf_to_archive():
             # Copy scripts to self.cluster.archivedir folder
@@ -49,6 +48,8 @@ class WorkFlows(object):
 
             # later, we can load the cluster cfg with `from config.cluster import cluster`
             shutil.copyfile('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
+
+        print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
 
         # copy config file to current config folder
         try:
