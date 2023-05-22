@@ -297,7 +297,7 @@ def qc_obs(time, oso):
         print('saved', f_out_dart)
 
 
-def evaluate(assim_time, 
+def evaluate(assim_time, obs_seq_out=False,
              output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"):
     """Calculates either prior or posterior obs space values.
 
@@ -307,7 +307,8 @@ def evaluate(assim_time,
 
     Args:
         assim_time (datetime): time of assimilation
-        output_format (str): format string for output filename, default is `"%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"`
+        obs_seq_out (str, optional):    use the argument as obs_seq.out file, defaults to use the existing obs_seq.out file
+        output_format (str, optional): format string for output filename, default is `"%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"`
 
     Returns:
         obsseq.ObsSeq
@@ -324,8 +325,12 @@ def evaluate(assim_time,
     print("prepare nature")
     prepare_nature_dart(assim_time)  # link WRF files to DART directory
 
-    if not os.path.isfile(cluster.dart_rundir+'/obs_seq.out'):
-        raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
+    if obs_seq_out:
+        copy(obs_seq_out, cluster.dart_rundir+'/obs_seq.out')
+    else:
+        # use existing obs_seq.out file
+        if not os.path.isfile(cluster.dart_rundir+'/obs_seq.out'):
+            raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
 
     dart_nml.write_namelist(just_prior_values=True)
     filter(nproc=6)
@@ -576,9 +581,8 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
         print(" 4) evaluate posterior observations for all observations (incl rejected)")
         write_list_of_inputfiles_posterior(time)
         
-        copy(cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'), 
-             cluster.dart_rundir+'/obs_seq.out')
-    evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
+        evaluate(time, obs_seq_out=cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'),
+                       output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
 
 
 if __name__ == "__main__":
