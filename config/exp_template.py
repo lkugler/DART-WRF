@@ -25,6 +25,10 @@ exp.dart_nml = {'&assim_tools_nml':
                             num_output_state_members=exp.n_ens,
                             num_output_obs_members=exp.n_ens,
                             inf_flavor=['0', '0'],
+                            output_members='.true',
+                            output_mean='.true.',
+                            output_sd='.true.',
+                            stages_to_write=[''],
                         ),
                 '&location_nml':
                     dict(horiz_dist_only='.true.',

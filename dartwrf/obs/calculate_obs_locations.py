@@ -56,7 +56,7 @@ def evenly_on_grid(n_obs, omit_covloc_radius_on_boundary=True):
     Returns
         tuple of (lat, lon) coordinates
     """
-    fcoords = cluster.geo_em
+    fcoords = cluster.geo_em_for_WRF_ideal  # TODO: in case of WRF real, need to find a file providing coordinates, e.g. nature wrfout
     ds = xr.open_dataset(fcoords)
 
     lons = ds.XLONG_M.isel(Time=0).values

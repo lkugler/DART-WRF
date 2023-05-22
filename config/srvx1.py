@@ -33,7 +33,8 @@ scriptsdir              path where DART-WRF scripts reside, e.g. /home/DART-WRF/
 namelist                path to a namelist template; strings like <hist_interval>, will be overwritten in scripts/prepare_namelist.py
 run_WRF                 path to script which runs WRF on a node of the cluster
 obs_impact_filename     path to obs_impact_filename (see DART guide; module assim_tools_mod and program obs_impact_tool)
-geo_em                  path to NetCDF file of WRF domain (see WRF guide)
+overwrite_coordinates_with_geo_em   if WRF ideal: path to NetCDF file of WRF domain (see WRF guide)
+                                    if WRF real: set to False
 
 slurm_cfg               python dictionary, containing options of SLURM
                             defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
@@ -66,7 +67,7 @@ cluster.srcdir = '/users/staff/lkugler/AdvDA23/DART/WRF-4.3/run'
 cluster.dart_srcdir = '/users/students/lehre/advDA_s2023/DART/models/wrf/work'
 cluster.rttov_srcdir = '/users/students/lehre/advDA_s2023/RTTOV13/rtcoef_rttov13/'
 cluster.dartwrf_dir = utils.userhome+'/AdvDA23/DART-WRF/'
-cluster.geo_em = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
+cluster.geo_em_for_WRF_ideal = '/users/students/lehre/advDA_s2023/data/geo_em.d01.nc'
 
 # templates/run scripts
 cluster.namelist = cluster.dartwrf_dir+'/../templates/namelist.input'

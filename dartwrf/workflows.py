@@ -34,7 +34,7 @@ class WorkFlows(object):
                 print('scripts have been copied to', self.cluster.archivedir)
             except FileExistsError as e:
                 warnings.warn(str(e))
-                if input('Scripts already exist and will not be overwritten. Continue? (Y/n) ') in ['Y', 'y']:
+                if input('The experiment name already exists! Scripts will not be overwritten. Continue? (Y/n) ') in ['Y', 'y']:
                     pass
                 else:
                     raise e

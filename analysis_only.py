@@ -11,7 +11,7 @@ prior_init_time = dt.datetime(2008,7,30,12)
 prior_valid_time = dt.datetime(2008,7,30,13)
 assim_time = prior_valid_time
 
-w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
+w = WorkFlows(exp_config='exp_template.py', server_config='srvx1.py')
 
 id = w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
 

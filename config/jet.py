@@ -72,7 +72,7 @@ cluster.rttov_srcdir = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/
 cluster.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
 
 # other inputs
-cluster.geo_em = '/jetfs/home/lkugler/data/geo_em.d01.nc'
+cluster.geo_em_for_WRF_ideal = '/jetfs/home/lkugler/data/geo_em.d01.nc'
 cluster.obs_impact_filename = cluster.scriptsdir+'/../templates/impactfactor_T.txt'
 cluster.namelist = cluster.scriptsdir+'/../templates/namelist.input'
 cluster.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'

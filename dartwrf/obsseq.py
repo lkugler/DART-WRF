@@ -620,7 +620,7 @@ class ObsSeq(object):
         import matplotlib.pyplot as plt
         import xarray as xr
 
-        georef = xr.open_dataset("/gpfs/data/fs71386/lkugler/run_DART/geo_em.d01.nc")
+        georef = xr.open_dataset(cluster.geo_em_for_WRF_ideal)
         lon = georef.XLONG_M.values.squeeze()
         lat = georef.XLAT_M.values.squeeze()
 

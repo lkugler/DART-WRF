@@ -334,5 +334,8 @@ def write_namelist(just_prior_values=False):
     write_namelist_from_dict(nml, cluster.dart_rundir + "/input.nml")
 
     # append section for RTTOV
-    rttov_nml = cluster.dartwrf_dir + "/../templates/obs_def_rttov.VIS.nml"
+    rttov_nml = cluster.dartwrf_dir + "/templates/obs_def_rttov.VIS.nml"
     append_file(cluster.dart_rundir + "/input.nml", rttov_nml)
+    # alternatively, we could do this in cfg.py or the template input.nml in DART's model/wrf/work folder
+
+    return nml  # in case we want to access namelist settings in python
