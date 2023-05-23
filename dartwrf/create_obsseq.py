@@ -14,7 +14,7 @@ from dartwrf import utils
 
 #####################
 # Global variables
-from config.obskind import obs_kind_nrs  # DART internal indices
+from dartwrf.obskind import obs_kind_nrs  # DART internal indices
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.

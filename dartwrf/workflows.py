@@ -121,7 +121,7 @@ class WorkFlows(object):
                 txt += '}'
                 f.write(txt)
 
-        _dict_to_py(_obskind_read(), self.cluster.scripts_rundir+'/config/obskind.py')
+        _dict_to_py(_obskind_read(), self.cluster.scripts_rundir+'/obskind.py')
         
         # probably not needed
         # shutil.copy('config/'+server_config, 'config/cluster.py')  # whatever server, the config name is always the same!
@@ -141,7 +141,7 @@ class WorkFlows(object):
         Returns:
             None
         """
-        cmd = self.cluster.python+' '+self.cluster.dartwrf_dir+'/dartwrf/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
+        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/prepare_wrfrundir.py '+init_time.strftime('%Y-%m-%d_%H:%M')
         print(cmd)
         os.system(cmd)
 
@@ -259,7 +259,7 @@ class WorkFlows(object):
         if not os.path.exists(prior_path_exp):
             raise IOError('prior_path_exp does not exist: '+prior_path_exp)
 
-        cmd = (self.cluster.python+' '+self.cluster.dartwrf_dir+'/dartwrf/assim_synth_obs.py '
+        cmd = (self.cluster.python+' '+self.cluster.scripts_rundir+'/assim_synth_obs.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
