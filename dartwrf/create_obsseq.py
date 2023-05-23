@@ -7,14 +7,10 @@ import numpy as np
 import datetime as dt
 from pysolar.solar import get_altitude, get_azimuth
 
-from config.cluster import cluster
+from server_config import cluster
 from dartwrf.obs import calculate_obs_locations as col
 from dartwrf import utils
-
-
-#####################
-# Global variables
-from dartwrf.obskind import obs_kind_nrs  # DART internal indices
+from obskind import obs_kind_nrs # dictionary string => DART internal indices
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.

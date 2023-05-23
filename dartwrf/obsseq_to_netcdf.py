@@ -1,7 +1,7 @@
 import os, sys, glob, warnings
 
-from config.cfg import exp
-from config.cluster import cluster
+from exp_config import exp
+from server_config import cluster
 import dartwrf.run_obs_diag as rod
 
 def listdir_dirs(path):

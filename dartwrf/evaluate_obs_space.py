@@ -3,8 +3,8 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp
-from config.cluster import cluster
+from exp_config import exp
+from server_config import cluster
 from dartwrf import assim_synth_obs as aso
 
 def get_previous_obsseq_file(time):

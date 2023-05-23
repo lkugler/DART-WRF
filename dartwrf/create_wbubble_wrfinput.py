@@ -3,8 +3,8 @@ from re import U
 import datetime as dt
 import numpy as np
 
-from config.cfg import exp
-from config.cluster import cluster
+from exp_config import exp
+from server_config import cluster
 import netCDF4 as nc
 
 dx_km = 2

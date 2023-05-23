@@ -9,8 +9,8 @@ Returns:
 import os, sys, shutil
 import datetime as dt
 
-from config.cfg import exp
-from config.cluster import cluster
+from exp_config import exp
+from server_config import cluster
 
 from utils import symlink, copy, link_contents
 import prepare_namelist

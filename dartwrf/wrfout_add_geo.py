@@ -1,8 +1,8 @@
 import os, sys
 import netCDF4 as nc
 
-from config.cfg import exp
-from config.cluster import cluster
+from exp_config import exp
+from server_config import cluster
 
 fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
                 "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
