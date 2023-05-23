@@ -2,8 +2,8 @@ import os, sys, warnings
 import datetime as dt
 import netCDF4 as nc
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 
 def update_initials_in_WRF_rundir(time):
     """Updates wrfrst-files in `/run_WRF/` directory 

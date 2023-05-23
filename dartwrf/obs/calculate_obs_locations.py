@@ -7,8 +7,8 @@ import numpy as np
 import datetime as dt
 import xarray as xr
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 
 #####################
 # Global variables

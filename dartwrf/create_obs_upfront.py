@@ -4,12 +4,11 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 from dartwrf.utils import copy, print
 import dartwrf.create_obsseq as osq
 from dartwrf import obsseq
-
 from dartwrf import assim_synth_obs as aso
 
 tformat = '%Y-%m-%d_%H:%M'

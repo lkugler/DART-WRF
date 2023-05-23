@@ -1,7 +1,7 @@
 from dartwrf.utils import append_file
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 
 earth_radius_km = 6370
 

@@ -19,7 +19,7 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from server_config import cluster
+from dartwrf.server_config import cluster
 from dartwrf import utils
 from dartwrf import assim_synth_obs as aso
 from dartwrf import obsseq

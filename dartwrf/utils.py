@@ -3,7 +3,6 @@ import builtins as __builtin__
 import subprocess
 import datetime as dt
 import re, tempfile
-import importlib
 
 class Experiment(object):
     """Collection of variables regarding the experiment configuration"""

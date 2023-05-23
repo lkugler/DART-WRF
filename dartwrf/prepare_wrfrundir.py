@@ -9,11 +9,11 @@ Returns:
 import os, sys, shutil
 import datetime as dt
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 
-from utils import symlink, copy, link_contents
-import prepare_namelist
+from dartwrf.utils import symlink, copy, link_contents
+from dartwrf import prepare_namelist
 
 if __name__ == '__main__':
 

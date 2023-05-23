@@ -128,7 +128,7 @@ class ObsRecord(pd.DataFrame):
 
     def determine_nlayers(self):
         nlayers = 1  # first guess
-        from config.cfg import exp
+        from dartwrf.exp_config import exp
 
         if len(exp.observations) == 1:
             # obscfg = exp.observations[0]

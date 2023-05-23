@@ -10,9 +10,7 @@ example call:
 """
 import os, sys
 import netCDF4 as nc
-
-from exp_config import exp
-from server_config import cluster
+from dartwrf.server_config import cluster
 
 def run(geo_data_file, wrfinput_file):
     geo_ds = nc.Dataset(geo_data_file, 'r')

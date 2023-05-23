@@ -1,7 +1,7 @@
 import os, filecmp, shutil
 import numpy as np
 
-from config.cfg import exp, cluster
+from dartwrf.server_config import cluster
 from dartwrf import obsseq
 
 

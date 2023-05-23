@@ -5,9 +5,8 @@ e.g. assimilate() calls dartwrf/assim_synth_obs.py through the shell.
 
 This would not be necessary, but some users might want to use queueing systems (e.g. SLURM) which must call scripts.
 """
-import os, sys, shutil, glob, warnings
+import os, sys, shutil, warnings
 import datetime as dt
-import importlib
 
 from dartwrf.utils import script_to_str
 
@@ -31,7 +30,7 @@ class WorkFlows(object):
             exp (obj): experiment configuration as defined in exp_config file
         """
 
-        def copy_dartwrf_to_archive():
+        def _copy_dartwrf_to_archive():
             # Copy scripts to self.cluster.archivedir folder
             try:
                 shutil.copytree(self.cluster.dartwrf_dir, self.cluster.archivedir+'/DART-WRF/')
@@ -45,52 +44,6 @@ class WorkFlows(object):
             except:
                 raise
 
-        # def copy_config_to_archive():
-        #     os.makedirs(self.cluster.scripts_rundir+'/config/', exist_ok=True)
-
-        #     # later, we can load the exp cfg with `from config.cfg import exp`
-        #     shutil.copyfile('config/'+exp_config, self.cluster.scripts_rundir+'/config/cfg.py')
-
-        #     # later, we can load the cluster cfg with `from config.cluster import cluster`
-        #     shutil.copyfile('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
-
-        print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
-
-        # experiment starts, we dont know where the code shall run
-        # => read the configuration file
-
-        # copy the config files to this folder
-        this_dir = '/'.join(__file__.split('/')[:-1])
-        try:
-            shutil.copyfile('config/'+server_config, this_dir+'/server_config.py')
-        except shutil.SameFileError:
-            pass
-        try:
-            shutil.copyfile('config/'+exp_config, this_dir+'/exp_config.py')
-        except shutil.SameFileError:
-            pass
-
-        sys.path.append(this_dir)
-        from server_config import cluster
-        self.cluster = cluster
-        from exp_config import exp
-        self.exp = exp
-
-        copy_dartwrf_to_archive()  # includes config files
-
-        # we set the path from where python should import dartwrf modules
-        self.cluster.python = 'export PYTHONPATH='+self.cluster.scripts_rundir+'; '+self.cluster.python
-
-        # Set paths and backup scripts
-        self.cluster.log_dir = self.cluster.archivedir+'/logs/'
-        print('logging to', self.cluster.log_dir)
-
-        if self.cluster.use_slurm:
-            self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
-            print('SLURM scripts will be in', self.cluster.slurm_scripts_dir)
-
-        # copy obs kind def to config, we will read a table from there
-        # file needs to exist within package so sphinx can read it
         def _obskind_read():
             """Read dictionary of observation types + ID numbers ("kind") 
             from DART f90 script and return it as python dictionary
@@ -135,10 +88,45 @@ class WorkFlows(object):
                 txt += '}'
                 f.write(txt)
 
-        _dict_to_py(_obskind_read(), self.cluster.scripts_rundir+'/obskind.py')
-        
-        # probably not needed
-        # shutil.copy('config/'+server_config, 'config/cluster.py')  # whatever server, the config name is always the same!
+        print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
+
+        # experiment starts, we dont know where the code shall run
+        # => read the configuration file
+
+        # copy the config files to this folder
+        this_dir = '/'.join(__file__.split('/')[:-1])
+        try:
+            shutil.copyfile('config/'+server_config, this_dir+'/server_config.py')
+        except shutil.SameFileError:
+            pass
+        try:
+            shutil.copyfile('config/'+exp_config, this_dir+'/exp_config.py')
+        except shutil.SameFileError:
+            pass
+
+        sys.path.append(this_dir)
+        from server_config import cluster
+        self.cluster = cluster
+        from exp_config import exp
+        self.exp = exp
+
+        # copy obs kind def to config, we will read a table from there
+        # file needs to exist within package so sphinx can read it
+        _dict_to_py(_obskind_read(), this_dir+'/obskind.py')
+
+        _copy_dartwrf_to_archive()  # includes config files
+
+        # we set the path from where python should import dartwrf modules
+        self.cluster.python = 'export PYTHONPATH='+self.cluster.scripts_rundir+'; '+self.cluster.python
+
+        # Set paths and backup scripts
+        self.cluster.log_dir = self.cluster.archivedir+'/logs/'
+        print('logging to', self.cluster.log_dir)
+
+        if self.cluster.use_slurm:
+            self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
+            print('SLURM scripts will be in', self.cluster.slurm_scripts_dir)
+
         print('------ dartwrf experiment initialized ------')
         print('--------------------------------------------')
         

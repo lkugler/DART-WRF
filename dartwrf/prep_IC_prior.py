@@ -2,8 +2,8 @@ import os, sys, warnings, glob
 import datetime as dt
 import numpy as np
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 from dartwrf.utils import copy, clean_wrfdir, try_remove
 
 """

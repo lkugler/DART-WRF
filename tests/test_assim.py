@@ -2,7 +2,7 @@ import os, shutil
 import datetime as dt
 
 from dartwrf import obsseq, assim_synth_obs
-from config.cfg import cluster
+from dartwrf.server_config import cluster
 
 class ExperimentConfiguration(object):
     def __init__(self):

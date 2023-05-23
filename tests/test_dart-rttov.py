@@ -3,7 +3,6 @@ import numpy as np
 import datetime as dt
 import pandas as pd
 
-from config.cfg import exp, cluster
 from dartwrf import obsseq
 import dartwrf.create_obsseq as osq
 import dartwrf.assim_synth_obs as aso

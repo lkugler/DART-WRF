@@ -10,8 +10,10 @@ from dartwrf import wrfout_add_geo
 from dartwrf import obsseq
 from dartwrf import dart_nml
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf import exp_config 
+exp = exp_config.exp
+from dartwrf import server_config
+cluster = server_config.cluster
 wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 

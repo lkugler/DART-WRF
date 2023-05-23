@@ -7,19 +7,10 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   dartwrf.config
    dartwrf.obs
 
 Submodules
 ----------
-
-dartwrf.workflows module
-------------------------
-
-.. automodule:: dartwrf.workflows
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 dartwrf.assim\_synth\_obs module
 --------------------------------
@@ -53,6 +44,22 @@ dartwrf.create\_wbubble\_wrfinput module
    :undoc-members:
    :show-inheritance:
 
+dartwrf.dart\_nml module
+------------------------
+
+.. automodule:: dartwrf.dart_nml
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+dartwrf.evaluate\_obs\_space module
+-----------------------------------
+
+.. automodule:: dartwrf.evaluate_obs_space
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 dartwrf.evaluate\_posterior module
 ----------------------------------
 
@@ -69,10 +76,18 @@ dartwrf.evaluate\_prior module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.link\_dart\_rttov module
---------------------------------
+dartwrf.exp\_config module
+--------------------------
 
-.. automodule:: dartwrf.link_dart_rttov
+.. automodule:: dartwrf.exp_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+dartwrf.obskind module
+----------------------
+
+.. automodule:: dartwrf.obskind
    :members:
    :undoc-members:
    :show-inheritance:
@@ -133,6 +148,14 @@ dartwrf.run\_obs\_diag module
    :undoc-members:
    :show-inheritance:
 
+dartwrf.server\_config module
+-----------------------------
+
+.. automodule:: dartwrf.server_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 dartwrf.update\_IC module
 -------------------------
 
@@ -145,6 +168,14 @@ dartwrf.utils module
 --------------------
 
 .. automodule:: dartwrf.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+dartwrf.workflows module
+------------------------
+
+.. automodule:: dartwrf.workflows
    :members:
    :undoc-members:
    :show-inheritance:

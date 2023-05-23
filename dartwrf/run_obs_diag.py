@@ -1,7 +1,7 @@
 import os, sys, shutil, glob
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, shell
 
 rundir_program = '/home/fs71386/lkugler/data/run_DART/'

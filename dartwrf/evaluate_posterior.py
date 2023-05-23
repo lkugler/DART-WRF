@@ -3,8 +3,8 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from exp_config import exp
-from server_config import cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 from dartwrf import assim_synth_obs as aso
 
 
