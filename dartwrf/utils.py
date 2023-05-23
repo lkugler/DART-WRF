@@ -51,11 +51,11 @@ class ClusterConfig(object):
                                                     if WRF real: set to False
         obs_impact_filename (str): Path to obs_impact_filename (see DART guide; module assim_tools_mod and program obs_impact_tool)
 
-        slurm_cfg               python dictionary, containing options of SLURM
-                                defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
-                                this configuration can be overwritten later on, for example:
-                                'dict(cluster.slurm_cfg, **cfg_update)' where
-                                'cfg_update = {"nodes": "2"}'
+        slurm_cfg (dict):   python dictionary, containing options of SLURM
+                            defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
+                            this configuration can be overwritten later on, for example:
+                            $ cfg_update = {"nodes": "2"}
+                            $ new_config = dict(cluster.slurm_cfg, **cfg_update)
 
     """
     def __init__(self, exp):
