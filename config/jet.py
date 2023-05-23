@@ -69,12 +69,12 @@ cluster.archive_base = '/jetfs/home/lkugler/data/sim_archive/'
 cluster.srcdir = '/jetfs/home/lkugler/data/compile/WRF-4.3/run'
 cluster.dart_srcdir = '/jetfs/home/lkugler/data/compile/DART/DART-10.5.3/models/wrf/work'
 cluster.rttov_srcdir = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/'
-cluster.scriptsdir = '/jetfs/home/lkugler/DART-WRF/dartwrf/'
+cluster.dartwrf_dir = '/jetfs/home/lkugler/DART-WRF/'
 
 # other inputs
 cluster.geo_em_for_WRF_ideal = '/jetfs/home/lkugler/data/geo_em.d01.nc'
-cluster.obs_impact_filename = cluster.scriptsdir+'/../templates/impactfactor_T.txt'
-cluster.namelist = cluster.scriptsdir+'/../templates/namelist.input'
+cluster.obs_impact_filename = cluster.dartwrf_dir+'/templates/impactfactor_T.txt'
+cluster.namelist = cluster.dartwrf_dir+'/templates/namelist.input'
 cluster.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
 
 cluster.slurm_cfg = {"account": "lkugler", "partition": "compute", #"nodelist": "jet07",

@@ -34,14 +34,13 @@ class ClusterConfig(object):
         """Path to the directory where the DART-WRF scripts are executed
 
         Note:
-            If you want to execute scripts from the folder where you develop code, use `self.dartwrf_dir`
+            If you want to execute scripts from the folder where you develop code, use `self.dartwrf_dir` (not sure if this works)
             If you want to execute the code from a different place ('research'), then use `self.archivedir+'/DART-WRF/'`
         
         Example:
-            `/user/data/sim_archive/DART-WRF/`
+            `/user/data/sim_archive/DART-WRF/dartwrf/`
         """
-        # return self.dartwrf_dir
-        return self.archivedir+'/DART-WRF/'
+        return self.archivedir+'/DART-WRF/dartwrf/'
 
     @property
     def dart_rundir(self):
