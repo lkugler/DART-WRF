@@ -80,7 +80,6 @@ class ClusterConfig(object):
         else:
             print(cmd)
             returncode = os.system(cmd)
-            print(cmd, 'returncode', returncode)
             if returncode != 0:
                 raise Exception('Error running command >>> '+cmd)
 
