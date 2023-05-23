@@ -15,22 +15,27 @@ class WorkFlows(object):
     def __init__(self, exp_config='cfg.py', server_config='server.py'):
         """Set up the experiment folder in `archivedir`.
 
+        1. Copy the DART-WRF scripts to `archivedir`
+        2. Copy the config files to `archivedir/dartwrf`
+        3. Set log paths
+        4. Write obskind.py file (dictionary of observation types)
+        
+        we load the config from load the config from cluster.scripts_rundir/config/cfg.py
+
         Args:
-            exp (str): Path to exp config file
-            config (str): Path to the cluster config file
+            exp_config (str): Path to exp config file
+            server_config (str): Path to the cluster config file
 
         Attributes:
             cluster (obj): cluster configuration as defined in server_config file
-
-        we load the config from load the config from cluster.scripts_rundir/config/cfg.py
+            exp (obj): experiment configuration as defined in exp_config file
         """
 
         def copy_dartwrf_to_archive():
             # Copy scripts to self.cluster.archivedir folder
-            os.makedirs(self.cluster.archivedir, exist_ok=True)
             try:
-                shutil.copytree(self.cluster.dartwrf_dir, self.cluster.scripts_rundir)
-                print('scripts have been copied to', self.cluster.archivedir)
+                shutil.copytree(self.cluster.dartwrf_dir, self.cluster.archivedir+'/DART-WRF/')
+                print('DART-WRF has been copied to', self.cluster.archivedir)
             except FileExistsError as e:
                 warnings.warn(str(e))
                 if input('The experiment name already exists! Scripts will not be overwritten. Continue? (Y/n) ') in ['Y', 'y']:
@@ -40,32 +45,41 @@ class WorkFlows(object):
             except:
                 raise
 
-        def copy_config_to_archive():
-            os.makedirs(self.cluster.scripts_rundir+'/config/', exist_ok=True)
+        # def copy_config_to_archive():
+        #     os.makedirs(self.cluster.scripts_rundir+'/config/', exist_ok=True)
 
-            # later, we can load the exp cfg with `from config.cfg import exp`
-            shutil.copyfile('config/'+exp_config, self.cluster.scripts_rundir+'/config/cfg.py')
+        #     # later, we can load the exp cfg with `from config.cfg import exp`
+        #     shutil.copyfile('config/'+exp_config, self.cluster.scripts_rundir+'/config/cfg.py')
 
-            # later, we can load the cluster cfg with `from config.cluster import cluster`
-            shutil.copyfile('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
+        #     # later, we can load the cluster cfg with `from config.cluster import cluster`
+        #     shutil.copyfile('config/'+server_config, self.cluster.scripts_rundir+'/config/cluster.py')  # whatever server, the config name is always the same!
 
         print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
 
-        # copy config file to current config folder
+        # experiment starts, we dont know where the code shall run
+        # => read the configuration file
+
+        # copy the config files to this folder
+        this_dir = '/'.join(__file__.split('/')[:-1])
         try:
-            shutil.copyfile('config/'+exp_config, '/'.join(__file__.split('/')[:-2])+'/config/cfg.py')
+            shutil.copyfile('config/'+server_config, this_dir+'/server_config.py')
+        except shutil.SameFileError:
+            pass
+        try:
+            shutil.copyfile('config/'+exp_config, this_dir+'/exp_config.py')
         except shutil.SameFileError:
             pass
 
-        # load python config files
-        self.cluster = importlib.import_module('config.'+server_config.strip('.py')).cluster
-        self.exp = importlib.import_module('config.'+exp_config.strip('.py')).exp
+        sys.path.append(this_dir)
+        from server_config import cluster
+        self.cluster = cluster
+        from exp_config import exp
+        self.exp = exp
+
+        copy_dartwrf_to_archive()  # includes config files
 
         # we set the path from where python should import dartwrf modules
         self.cluster.python = 'export PYTHONPATH='+self.cluster.scripts_rundir+'; '+self.cluster.python
-
-        copy_dartwrf_to_archive()
-        copy_config_to_archive()
 
         # Set paths and backup scripts
         self.cluster.log_dir = self.cluster.archivedir+'/logs/'
