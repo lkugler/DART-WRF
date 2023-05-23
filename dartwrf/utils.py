@@ -11,7 +11,53 @@ class Experiment(object):
         pass
 
 class ClusterConfig(object):
-    """Collection of variables regarding the cluster configuration"""
+    """Collection of variables regarding the cluster configuration
+    
+    Configuration name docs
+
+    When coding, use configuration settings like this:
+    $ from exp_config import exp
+    $ from cluster_config import cluster
+    $ path = cluster.archivedir
+
+    Attributes:
+        name (str): Name of the cluster
+        max_nproc (int): Maximum number of processors that can be used
+        use_slurm (bool): If True, use SLURM to submit jobs
+        size_jobarray (int): Size of SLURM job array
+
+        python (str): Path to python executable
+        python_verif (str): Path to python executable for verification
+        ncks (str): Path to ncks executable
+        ideal (str): Path to ideal.exe
+        wrfexe (str): Path to wrf.exe
+
+        dart_modules (str): Modules to load for DART
+        wrf_modules (str): Modules to load for WRF
+
+        wrf_rundir_base (str): Path to temporary files for WRF
+        dart_rundir_base (str): Path to temporary files for DART
+        archive_base (str): Path to long-time output storage
+
+        srcdir (str): Path to where WRF has been compiled, including the 'run' folder of WRF, e.g. /home/WRF-4.3/run
+        dart_srcdir (str): Path to DART compile directory, e.g. /home/DART-9.11.9/models/wrf/work
+        rttov_srcdir (str): Path to RTTOV compile directory, e.g. /home/RTTOV13/rtcoef_rttov13/
+        scriptsdir (str): Path where DART-WRF scripts reside, e.g. /home/DART-WRF/scripts
+
+        namelist (str): Path to a WRF namelist template; 
+                        strings like <hist_interval>, will be overwritten in scripts/prepare_namelist.py
+        run_WRF (str): Path to script which runs WRF on a node of the cluster
+        overwrite_coordinates_with_geo_em (bool):   If WRF ideal: path to NetCDF file of WRF domain (see WRF guide)
+                                                    if WRF real: set to False
+        obs_impact_filename (str): Path to obs_impact_filename (see DART guide; module assim_tools_mod and program obs_impact_tool)
+
+        slurm_cfg               python dictionary, containing options of SLURM
+                                defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
+                                this configuration can be overwritten later on, for example:
+                                'dict(cluster.slurm_cfg, **cfg_update)' where
+                                'cfg_update = {"nodes": "2"}'
+
+    """
     def __init__(self, exp):
         self.exp = exp  # makes derived properties available
 

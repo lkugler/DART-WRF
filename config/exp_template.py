@@ -1,10 +1,10 @@
 from dartwrf import utils
 
 exp = utils.Experiment()
-exp.expname = "test_newcode" #exp_v1.22_P2_rr_VIS_obs10_loc20_oe3"
+exp.expname = "template_experiment"
 exp.model_dx = 2000
-exp.n_ens = 10
-exp.superob_km = False  # False or int (spatial averaging of observations)
+exp.n_ens = 40
+exp.superob_km = False  # False or int (spatial averaging of observations, unit: km)
 
 exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
 #exp.use_existing_obsseq = '/users/students/lehre/advDA_s2023/dartwrf_tutorial/very_cold_observation.out'
@@ -17,7 +17,7 @@ exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-
 
 exp.dart_nml = {'&assim_tools_nml':
                     dict(filter_kind='1',
-                        sampling_error_correction='.true.',
+                        sampling_error_correction='.false.',
                         # obs_impact_filename='/jetfs/home/lkugler/DART-WRF/templates/impactfactor_T.txt',
                         ),
                 '&filter_nml':
@@ -57,10 +57,10 @@ exp.dart_nml = {'&assim_tools_nml':
 
 vis = dict(var_name='VIS 0.6µm', unit='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, 
-           n_obs=961, obs_locations='square_array_evenly_on_grid',
+           n_obs=256, obs_locations='square_array_evenly_on_grid',
            # n_obs=1, obs_locations=[(44.141, -0.99)],
            error_generate=0.03, error_assimilate=0.03,
-           loc_horiz_km=20)
+           loc_horiz_km=10)
 
 wv62 = dict(var_name='Brightness temperature WV 6.2µm', unit='[K]',
             kind='MSG_4_SEVIRI_TB', sat_channel=5, 
