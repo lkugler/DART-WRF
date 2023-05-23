@@ -7,7 +7,7 @@ if __name__ == "__main__":
     """
     Run a cycled OSSE with WRF and DART.
     """
-    w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
+    w = WorkFlows(exp_config='exp_template.py', server_config='jet.py')
 
     timedelta_integrate = dt.timedelta(minutes=15)
     timedelta_btw_assim = dt.timedelta(minutes=15)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         # id = w.wrfinput_insert_wbubble(depends_on=id)    
 
     if True:  # random
-        prior_path_exp = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
+        prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
         time = dt.datetime(2008, 7, 30, 13)
