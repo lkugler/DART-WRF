@@ -147,6 +147,23 @@ class WorkFlows(object):
         print(cmd)
         os.system(cmd)
 
+    def generate_obsseq_out(self, times, depends_on=None):
+        """Creates observations from a nature run and assimilates them.
+
+        Args:
+            times (list): list of datetime objects
+
+        Returns:
+            str: job ID of the submitted job
+        """
+        times_str = ','.join([t.strftime('%Y-%m-%d_%H:%M') for t in times])
+
+        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/obs/create_obsseq_out.py '+times_str
+
+        id = self.cluster.run_job(cmd, "obsgen-"+self.exp.expname, cfg_update={"ntasks": "12", "time": "30",
+                                "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2"}, depends_on=[depends_on])
+        return id
+
     def run_ideal(self, depends_on=None):
         """Run WRF's ideal.exe for every ensemble member
         
