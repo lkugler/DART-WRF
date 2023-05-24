@@ -280,9 +280,6 @@ def write_namelist(just_prior_values=False):
     list_obstypes, list_loc_horiz_rad, list_loc_vert_km, list_loc_vert_scaleheight = _get_list_of_localizations()
 
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
-
-    # make sure that observations defined in `exp.observations` are assimilated
-    nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes]
     
     # dont compute posterior, just evaluate prior
     if just_prior_values:  
@@ -293,17 +290,20 @@ def write_namelist(just_prior_values=False):
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
         nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
 
+    if len(list_obstypes) > 0:
+        # make sure that observations defined in `exp.observations` are assimilated
+        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes]
 
-    # write localization variables
-    nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes]
-    nml['&assim_tools_nml']['special_localization_cutoffs'] = [list_loc_horiz_rad]
+        # write localization variables
+        nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes]
+        nml['&assim_tools_nml']['special_localization_cutoffs'] = [list_loc_horiz_rad]
 
-    nml['&location_nml']['special_vert_normalization_obs_types'] = [list_obstypes]
-    nml['&location_nml']['special_vert_normalization_heights'] = [list_loc_vert_km]
-    nml['&location_nml']['special_vert_normalization_scale_heights'] = [list_loc_vert_scaleheight]
+        nml['&location_nml']['special_vert_normalization_obs_types'] = [list_obstypes]
+        nml['&location_nml']['special_vert_normalization_heights'] = [list_loc_vert_km]
+        nml['&location_nml']['special_vert_normalization_scale_heights'] = [list_loc_vert_scaleheight]
 
-    nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
-    nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
+        nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
+        nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
 
     # overwrite namelist parameters as defined in the experiment configuration
     for section, sdata in exp.dart_nml.items():

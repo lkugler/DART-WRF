@@ -9,8 +9,7 @@ exp.superob_km = False  # False or int (spatial averaging of observations, unit:
 exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
 #exp.use_existing_obsseq = '/users/students/lehre/advDA_s2023/dartwrf_tutorial/very_cold_observation.out'
 
-# path to the nature run, where we take observations from
-exp.nature_wrfout = '/mnt/jetfs/scratch/lkugler/data/sim_archive/exp_v1.18_P1_nature/2008-07-30_06:00/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+exp.nature_expname = 'exp_v1.18_P1_nature+1'
 
 exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'
 

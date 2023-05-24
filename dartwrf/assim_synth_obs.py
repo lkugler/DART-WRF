@@ -1,4 +1,4 @@
-import os, sys, shutil, warnings
+import os, sys, shutil, warnings, glob
 import time as time_module
 import datetime as dt
 import numpy as np
@@ -21,16 +21,16 @@ def link_nature_to_dart_truth(time):
     Args:
         time (dt.datetime): Time at which observations will be made
     """
-
     # get wrfout_d01 from nature run
-    shutil.copy(time.strftime(exp.nature_wrfout), 
-                cluster.dart_rundir + "/wrfout_d01")
+    # find the file in any init directory
+    fformat = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
+    f_nat = glob.glob(cluster.archive_base + '/' + exp.nature_expname + '/*/1/'+time.strftime(fformat))[0]
+    shutil.copy(f_nat, cluster.dart_rundir + "/wrfout_d01")
 
-    # DART may need a wrfinput file as well, which serves as a template for dimension sizes
+    # DART may need a wrfinput file as well ?!
     symlink(cluster.dart_rundir + "/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
-    print("linked", time.strftime(exp.nature_wrfout),
-          "to", cluster.dart_rundir + "/wrfout_d01")
+    print("linked", f_nat, "to", cluster.dart_rundir + "/wrfout_d01")
 
 
 def prepare_nature_dart(time):

@@ -49,6 +49,7 @@ if True:  # to continue a nature
                 depends_on=id)
 
         # integration time
+        start = time
         end = next_restart
 
         id = w.run_ENS(begin=start, end=end,
