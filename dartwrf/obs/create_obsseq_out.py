@@ -8,6 +8,14 @@ from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 
 def generate_obsseq_out(time):
+    """Generate an obs_seq.out file from the current experiment
+    
+    Args:
+        time (datetime): time of the observations
+    
+    Returns:
+        obsseq.ObsSeq: obs_seq.out representation
+    """
 
     def ensure_physical_vis(oso):  # set reflectance < surface albedo to surface albedo
         print(" 2.2) removing obs below surface albedo ")
@@ -56,6 +64,11 @@ def generate_obsseq_out(time):
     return oso
 
 def run_perfect_model_obs(nproc=12, verbose=True):
+    """Run the perfect_model_obs program to generate observations
+    
+    Returns:
+        None
+    """
     if verbose:
         print("generating observations - running ./perfect_model_obs")
     os.chdir(cluster.dart_rundir)
@@ -68,3 +81,33 @@ def run_perfect_model_obs(nproc=12, verbose=True):
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dart_rundir,
             "\n look for " + cluster.dart_rundir + "/log.perfect_model_obs")
+    
+if __name__ == '__main__':
+    """Generate obs_seq.out files from an experiment
+    
+    Usage:
+        python3 create_obsseq_out.py 2008-07-30_12:00,2008-07-30_12:01
+    
+    Args:
+        times (str): comma-separated list of times of the observations
+    """
+    import argparse
+    import datetime as dt
+    parser = argparse.ArgumentParser(description='Generate obs_seq.out files from an experiment')
+    parser.add_argument('times', type=str, help='times of the observations')
+
+    args = parser.parse_args()
+    times = args.times.split(',')
+
+    # before running perfect_model_obs, we need to set up the run_DART folder
+    from dartwrf import assim_synth_obs as aso
+    from dartwrf import dart_nml
+    aso.prepare_run_DART_folder()
+    nml = dart_nml.write_namelist()
+
+    for time in times:
+        print("time", time)
+        time = dt.datetime.strptime(time, '%Y-%m-%d_%H:%M')
+
+        aso.prepare_nature_dart(time)  # link WRF files to DART directory
+        generate_obsseq_out(time)
