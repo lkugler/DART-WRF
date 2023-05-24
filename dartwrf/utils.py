@@ -23,7 +23,7 @@ class ClusterConfig(object):
         name (str): Name of the cluster
         max_nproc (int): Maximum number of processors that can be used
         use_slurm (bool): If True, use SLURM to submit jobs
-        size_jobarray (int): Size of SLURM job array
+        size_jobarray (int): Size of SLURM job array for running the WRF ensemble
 
         python (str): Path to python executable
         python_verif (str): Path to python executable for verification
