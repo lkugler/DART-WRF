@@ -8,7 +8,7 @@ import pandas as pd
 from dartwrf.workflows import WorkFlows
 
 
-w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
+w = WorkFlows(exp_config='nature.py', server_config='jet.py')
 id = None
 
 
@@ -26,33 +26,61 @@ if False: # generate_nature
     # id = w.create_satimages(begin, depends_on=id)
 
 
-if False:  # to continue a nature after spinup
+if True:  # to continue a nature
 
-    start = dt.datetime(2008, 7, 30, 7)
-    end = dt.datetime(2008, 7, 30, 18)
-
+    start = dt.datetime(2008, 7, 30, 12)
     id = w.prepare_WRFrundir(start)  # create initial conditions
-    id = w.run_ideal(depends_on=id)
+    # id = w.run_ideal(depends_on=id)
 
-    prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5_nat2' # w.cluster.archivedir
-    prior_init_time = dt.datetime(2008, 7, 30, 7)
-    prior_valid_time = dt.datetime(2008, 7, 30, 12)
+    prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive//exp_v1.18_P1_nature+1/' # w.cluster.archivedir
 
-    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
-            new_start_time=start, # <---------- to start again after spinup
-            depends_on=id)
+    time = start
+    prior_init_time = dt.datetime(2008, 7, 30, 6) 
+    end = start + dt.timedelta(minutes=30)
 
-    id = w.run_ENS(begin=start, end=end,
-             input_is_restart=False,
-             output_restart_interval=(end-start).total_seconds()/60,
-             #output_restart_interval=9999,
-             depends_on=id)
+    restarts = pd.date_range(start=dt.datetime(2008, 7, 30, 12,30),
+                              end=dt.datetime(2008, 7, 30, 14),
+                              freq=dt.timedelta(minutes=30))
+
+    for i, next_restart in enumerate(restarts):
+
+        prior_valid_time = time
+        id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
+                depends_on=id)
+
+        # integration time
+        end = next_restart
+
+        id = w.run_ENS(begin=start, end=end,
+                input_is_restart=True,
+                first_minute=True,  # to get a +1 minute forecast after each restart
+                output_restart_interval=(end-start).total_seconds()/60,
+                #output_restart_interval=9999,
+                depends_on=id)
+            
+        w.create_satimages(start, depends_on=id)
+
+        prior_init_time = time  # this iteration's start
+        time = end  # this iteration's end = next iteration's start
         
-    id = w.create_satimages(start, depends_on=id)
+    # after last restart
+    prior_valid_time = time
+    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
+            depends_on=id)
+    
+    end = time + dt.timedelta(minutes=5)
+    id = w.run_ENS(begin=time, end=end,
+            input_is_restart=True,
+            first_minute=True,  # to get a +1 minute forecast after each restart
+            output_restart_interval=9999,
+            depends_on=id)
+        
+    w.create_satimages(start, depends_on=id)
 
 
-if True:   # do a free run (all inits)
-    begin = dt.datetime(2008, 7, 30, 7)
+
+if False:   # do a free run (all inits)
+    begin = dt.datetime(2008, 7, 30, 12)
     id = w.prepare_WRFrundir(begin)  # create initial conditions
     id = w.run_ideal(depends_on=id)
 
@@ -131,7 +159,7 @@ if False:  # to continue a free run after spinup
     prior_valid_time = dt.datetime(2008, 7, 30, 13,30)
 
     id = w.w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
-            # new_start_time=start, # <---------- to overwrite start time
+            # new_start_time=start, # <---------- to overwrite start time / leads to a call to `create_updated_wrfinput_from_wrfout()`
             depends_on=id)
 
     #frequency_restart = (end-start).total_seconds()/60
