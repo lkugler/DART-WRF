@@ -7,8 +7,8 @@ import numpy as np
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 from dartwrf.utils import copy, print
-import dartwrf.create_obsseq as osq
-from dartwrf import obsseq
+import dartwrf.obs.create_obsseq_in as osq
+from dartwrf.obs import obsseq
 from dartwrf import assim_synth_obs as aso
 
 tformat = '%Y-%m-%d_%H:%M'

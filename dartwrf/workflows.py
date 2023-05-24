@@ -112,7 +112,7 @@ class WorkFlows(object):
 
         # copy obs kind def to config, we will read a table from there
         # file needs to exist within package so sphinx can read it
-        _dict_to_py(_obskind_read(), this_dir+'/obskind.py')
+        _dict_to_py(_obskind_read(), this_dir+'/obs/obskind.py')
 
         _copy_dartwrf_to_archive()  # includes config files
 

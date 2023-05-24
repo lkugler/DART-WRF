@@ -22,7 +22,7 @@ import numpy as np
 from dartwrf.server_config import cluster
 from dartwrf import utils
 from dartwrf import assim_synth_obs as aso
-from dartwrf import obsseq
+from dartwrf.obs import obsseq
 
 def _get_n_obs_per_layer(oso):     
      """Get number of observations per layer"""

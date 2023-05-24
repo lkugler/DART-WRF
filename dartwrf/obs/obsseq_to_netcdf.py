@@ -2,7 +2,7 @@ import os, sys, glob, warnings
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
-import dartwrf.run_obs_diag as rod
+import dartwrf.obs.run_obs_diag as rod
 
 def listdir_dirs(path):
     return [a for a in os.listdir(path) if os.path.isdir(os.path.join(path, a))]

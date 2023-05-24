@@ -3,8 +3,8 @@ import numpy as np
 import datetime as dt
 import pandas as pd
 
-from dartwrf import obsseq
-import dartwrf.create_obsseq as osq
+from dartwrf.obs import obsseq
+import dartwrf.obs.create_obsseq_in as osq
 import dartwrf.assim_synth_obs as aso
 from dartwrf import wrfout_add_geo
 

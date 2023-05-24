@@ -3,17 +3,15 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell, write_txt
-from dartwrf.obs import error_models as err
-import dartwrf.create_obsseq as osq
+from dartwrf.utils import symlink, copy, mkdir, try_remove, print, shell, write_txt
 from dartwrf import wrfout_add_geo
-from dartwrf import obsseq
+from dartwrf.obs import error_models as err
+from dartwrf.obs import obsseq
+from dartwrf.obs import create_obsseq_out as osq_out
 from dartwrf import dart_nml
 
-from dartwrf import exp_config 
-exp = exp_config.exp
-from dartwrf import server_config
-cluster = server_config.cluster
+from dartwrf.exp_config import exp
+from dartwrf.server_config import cluster
 wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 
@@ -115,19 +113,6 @@ def write_list_of_outputfiles():
         files.append("./filter_restart_d01." + str(iens).zfill(4))
     write_txt(files, cluster.dart_rundir+'/output_list.txt')
 
-def run_perfect_model_obs(nproc=12, verbose=True):
-    if verbose:
-        print("generating observations - running ./perfect_model_obs")
-    os.chdir(cluster.dart_rundir)
-
-    try_remove(cluster.dart_rundir + "/obs_seq.out")
-    if not os.path.exists(cluster.dart_rundir + "/obs_seq.in"):
-        raise RuntimeError("obs_seq.in does not exist in " + cluster.dart_rundir)
-    shell(cluster.dart_modules+' mpirun -np '+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
-    if not os.path.exists(cluster.dart_rundir + "/obs_seq.out"):
-        raise RuntimeError(
-            "obs_seq.out does not exist in " + cluster.dart_rundir,
-            "\n look for " + cluster.dart_rundir + "/log.perfect_model_obs")
 
 def filter(nproc=12):
     print("time now", dt.datetime.now())
@@ -219,10 +204,11 @@ def set_obserr_assimilate_in_obsseqout(oso, outfile="./obs_seq.out"):
         osf_prior (ObsSeq): python representation of obs_seq.final (output of filter in evaluate-mode without posterior)
                         contains prior values; used for parameterized errors
     """
+    from dartwrf.obs.obskind import obs_kind_nrs
 
     for obscfg in exp.observations:
         kind_str = obscfg['kind']  # e.g. 'RADIOSONDE_TEMPERATURE'
-        kind = osq.obs_kind_nrs[kind_str]  # e.g. 263
+        kind = obs_kind_nrs[kind_str]  # e.g. 263
 
         # modify observation error of each kind sequentially
         where_oso_iskind = oso.df.kind == kind
@@ -343,80 +329,25 @@ def evaluate(assim_time, obs_seq_out=False,
     copy(cluster.dart_rundir + "/obs_seq.final", fout)
     print(fout, "saved.")
 
-
-
-def generate_obsseq_out(time):
-
-    def ensure_physical_vis(oso):  # set reflectance < surface albedo to surface albedo
-        print(" 2.2) removing obs below surface albedo ")
-        clearsky_albedo = 0.2928
-
-        if_vis_obs = oso.df['kind'].values == 262
-        if_obs_below_surface_albedo = oso.df['observations'].values < clearsky_albedo
-        oso.df.loc[if_vis_obs & if_obs_below_surface_albedo, ('observations')] = clearsky_albedo
-        oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
-        return oso
-
-
-    def apply_superobbing(oso):
-        try:
-            f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-before_superob")
-            shutil.copy(cluster.dart_rundir + "/obs_seq.out-before_superob", f_oso)
-            print('saved', f_oso)
-        except Exception as e:
-            warnings.warn(str(e))
-
-        print(" 2.3) superobbing to", exp.superob_km, "km")
-        oso.df = oso.df.superob(window_km=exp.superob_km)
-        oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
-
-
-    ##############################
-        
-    dir_obsseq=cluster.archivedir + "/obs_seq_out/"
-    os.makedirs(dir_obsseq, exist_ok=True)
-
-    osq.create_obs_seq_in(time, exp.observations)
-    run_perfect_model_obs()  # generate observation, draws from gaussian
-
-    print(" 2.1) obs preprocessing")
-    oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
-
-    oso = ensure_physical_vis(oso)
-
-    if getattr(exp, "superob_km", False):
-        oso = apply_superobbing(oso)
-
-    # archive complete obsseqout
-    f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-    shutil.copy(cluster.dart_rundir + "/obs_seq.out", f_oso)
-    print('saved', f_oso)
-    return oso
-
-
 def get_obsseq_out(time):
+    """Prepares an obs_seq.out file in the run_DART folder
 
-    # did we specify an obsseqout inputfile?
+    Args:
+        time (datetime): time of assimilation
+
+    Returns:
+        obsseq.ObsSeq
+    """
     if exp.use_existing_obsseq != False: 
+        # use an existing obs_seq.out file
         f_obsseq = time.strftime(exp.use_existing_obsseq)
         copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')
         print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
-        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
-    else:
-        # decision to NOT use existing obs_seq.out file
-        
-        # did we already generate observations?
-        # f_oso_thisexp = cluster.archivedir+'/obs_seq_out/'+time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-        # if os.path.isfile(f_oso_thisexp):
-        #     # oso exists
-        #     copy(f_oso_thisexp, cluster.dart_rundir+'/obs_seq.out')
-        #     print('copied existing obsseqout from', f_oso_thisexp)
-        #     oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
-        # else: 
-
-        # generate observations with new observation noise
-        oso = generate_obsseq_out(time)
-
+        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")  # read the obs_seq.out file
+    else: 
+        # do NOT use an existing obs_seq.out file
+        # but generate observations with new observation noise
+        oso = osq_out.generate_obsseq_out(time)
     return oso
 
 def prepare_inflation_2(time, prior_init_time):

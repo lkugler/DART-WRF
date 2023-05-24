@@ -2,7 +2,7 @@ import os, filecmp, shutil
 import numpy as np
 
 from dartwrf.server_config import cluster
-from dartwrf import obsseq
+from dartwrf.obs import obsseq
 
 
 def test_oso():
