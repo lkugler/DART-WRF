@@ -29,12 +29,12 @@ if __name__ == '__main__':
         symlink(cluster.ideal, rundir+'/ideal.exe')
         symlink(cluster.wrfexe, rundir+'/wrf.exe')
 
-        # time not important, but general settings
-        prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 23),
-                            archive=False)
-
         # prepare input profiles
         if hasattr(exp, 'input_profile'):
+
+            prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 23),
+                                archive=False) # time not important, but general settings
+            
             input_prof = (exp.input_profile).replace('<iens>', str(iens).zfill(3))
             symlink(input_prof, rundir+'/input_sounding')
 
