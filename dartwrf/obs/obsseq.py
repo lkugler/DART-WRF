@@ -1,13 +1,32 @@
-"""Read, modify and save DART obs_seq files.
+"""Read, modify and save DART obs_seq.out/obs_seq.final files in DART format.
 
-Not usable for creating obs_seq, since it does not know which metadata is necessary for each type
+Example:
+    from dartwrf.obs.obsseq import ObsSeq
+    obs = ObsSeq('path/to/obs_seq.final')
+
+    obs.df  # pandas.DataFrame with all observations (rows) 
+
+    obs.df['observations']  # observation values (np.array)
+    obs.df['truth']  # truth values (np.array)
+    obs.df['prior ensemble spread']  # spread of prior ensemble (np.array)
+    obs.df['variance']  # observation error variances (np.array)
+
+    obs.df.get_prior_Hx()  # H(x_prior) for all ensemble members (np.array)
+    obs.df.get_posterior_Hx()  # H(x_posterior) for all ensemble members (np.array)
+
+    obs.df.get_lon_lat()  # longitude and latitude of observations (pd.DataFrame)
+
+    obs.to_dart('path/to/obs_seq.final')  # write to file
+
+Note:
+    Can not create obs_seq from scratch, since it does not know which metadata is necessary for each observation type
 """
 
-import os, sys, shutil, warnings
+import os, warnings
 import numpy as np
 import pandas as pd
 
-def plot_box(m, lat, lon, label="", **kwargs):
+def _plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
 
     Args:
@@ -35,15 +54,13 @@ def plot_box(m, lat, lon, label="", **kwargs):
         **kwargs
     )
 
-
-def degrees_to_rad(degr):
+def _degrees_to_rad(degr):
     """Convert to DART convention = radians"""
     if degr < 0:
         degr += 360
     return degr / 360 * 2 * np.pi
 
-
-def rad_to_degrees(rad):
+def _rad_to_degrees(rad):
     """Convert to degrees from DART convention (radians)"""
     assert rad >= 0, "no negative radians allowed"
     degr = rad / np.pi * 180
@@ -52,8 +69,6 @@ def rad_to_degrees(rad):
     if degr > 180:
         degr -= 360
     return degr
-
-
 
 
 class ObsRecord(pd.DataFrame):
@@ -129,8 +144,8 @@ class ObsRecord(pd.DataFrame):
             x, y, z, z_coord = values
 
             # convert radian to degrees lon/lat
-            lon = rad_to_degrees(x)
-            lat = rad_to_degrees(y)
+            lon = _rad_to_degrees(x)
+            lat = _rad_to_degrees(y)
             lons[i] = lon
             lats[i] = lat
 
@@ -666,7 +681,7 @@ class ObsSeq(object):
         m.drawcoastlines(color="white")
         m.drawcountries(color="white")
 
-        plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
+        _plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
 
         # OBSERVATIONS
         original_df = self.df.attrs['df_pre_superob']
@@ -710,7 +725,7 @@ class ObsSeq(object):
             for lats, lons in self.df.attrs['boxes']:
                 lats, lons = np.meshgrid(lats, lons)
 
-                plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
+                _plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
                 label = ''
 
         plt.legend()
