@@ -1,12 +1,13 @@
 """Read, modify and save DART obs_seq.out/obs_seq.final files in DART format.
 
 Examples:
+    Load an obs seq file with
     >>> from dartwrf.obs.obsseq import ObsSeq
     >>> osf = ObsSeq('path/to/obs_seq.final')
     
-    pandas.DataFrame with all observations (rows) 
+    The content is a pandas.DataFrame with all observations (rows) 
     >>> osf.df
-        observations     truth  prior ensemble mean  posterior ensemble mean  ...  kind                                           metadata             time  variance
+    observations     truth  prior ensemble mean  posterior ensemble mean  ...  kind                                           metadata             time  variance
     0        0.292800  0.289466             0.360284                 0.330799  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
     1        0.292800  0.289466             0.398444                 0.380152  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
     2        0.310016  0.289466             0.355061                 0.369988  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
@@ -18,13 +19,14 @@ Examples:
     958      0.341627  0.348115             0.405534                 0.447314  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
     959      0.826649  0.835491             0.374459                 0.785951  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
     960      0.320477  0.343154             0.303468                 0.325203  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-
     [961 rows x 93 columns]
 
-    >>> osf.df.get_prior_Hx()  # H(x_prior) for all ensemble members (np.array)
-    >>> osf.df.get_posterior_Hx()  # H(x_posterior) for all ensemble members (np.array)
+    To get arrays of prior and posterior use
+    >>> osf.df.get_prior_Hx()
+    >>> osf.df.get_posterior_Hx()
 
-    >>> osf.to_dart('path/to/obs_seq.final')  # write to file
+    After modifying the contents, write them in DART format
+    >>> osf.to_dart('path/to/obs_seq.final')
 
 Note:
     Can not create obs_seq from scratch, since it does not know which metadata is necessary for each observation type
