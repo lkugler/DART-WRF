@@ -63,14 +63,16 @@ def generate_obsseq_out(time):
     print('saved', f_oso)
     return oso
 
-def run_perfect_model_obs(nproc=12, verbose=True):
-    """Run the perfect_model_obs program to generate observations
+def run_perfect_model_obs(nproc=12):
+    """Run the ./perfect_model_obs program
+
+    Args:
+        nproc (int): number of processors to use
     
     Returns:
-        None
+        None, creates obs_seq.out
     """
-    if verbose:
-        print("generating observations - running ./perfect_model_obs")
+    print("running ./perfect_model_obs")
     os.chdir(cluster.dart_rundir)
 
     try_remove(cluster.dart_rundir + "/obs_seq.out")

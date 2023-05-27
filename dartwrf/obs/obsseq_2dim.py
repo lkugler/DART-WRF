@@ -14,18 +14,23 @@ Example:
 """
 
 from copy import copy
-import os, sys, shutil, warnings
-import time as time_module
+import os, sys, warnings
 import datetime as dt
 import numpy as np
 
 from dartwrf.server_config import cluster
 from dartwrf import utils
-from dartwrf import assim_synth_obs as aso
 from dartwrf.obs import obsseq
 
 def _get_n_obs_per_layer(oso):     
-     """Get number of observations per layer"""
+     """Determine number of observations per layer from obsseq.ObsSeq object
+
+     Args:
+          oso (obsseq.ObsSeq): obsseq object
+
+     Returns:
+          int
+     """
      height_all = np.array([a[2] for a in oso.df.loc3d])
 
      height_first = height_all[0]
