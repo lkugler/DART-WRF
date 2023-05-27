@@ -42,7 +42,7 @@ def round_to_day(dtobj):
     return dtobj.replace(second=0, minute=0, hour=0)
 
 
-def add_timezone_UTC(t):
+def _add_timezone_UTC(t):
     return dt.datetime(t.year, t.month, t.day, t.hour, t.minute, tzinfo=dt.timezone.utc)
 
 
@@ -61,14 +61,7 @@ def get_dart_date(time_dt):
     return dart_date_day, secs_thatday
 
 
-def write_tuple_to_pickle(fpath_out, tuple):
-    import pickle
-    os.makedirs(os.path.dirname(fpath_out), exist_ok=True)
-    with open(fpath_out, 'wb') as f:
-        pickle.dump(tuple, f)
-    print(fpath_out, 'saved.')
-
-def write_file(msg, output_path='./'):
+def _write_file(msg, output_path='./'):
     try:
         os.remove(output_path)
     except OSError:
@@ -79,7 +72,7 @@ def write_file(msg, output_path='./'):
         print(output_path, 'saved.')
 
 
-def append_hgt_to_coords(coords, heights):
+def _append_hgt_to_coords(coords, heights):
     coords2 = []
     for i in range(len(coords)):
         for hgt_m in heights:
@@ -108,7 +101,7 @@ obs_kind_definitions
   first:            1  last:            """+n_obs_str
 
 
-def determine_vert_coords(sat_channel, kind, obscfg):
+def _determine_vert_coords(sat_channel, kind, obscfg):
     if not sat_channel:
         if 'SYNOP' in kind:
             vert_coord_sys = "-1"  # meters AGL
@@ -124,6 +117,15 @@ def determine_vert_coords(sat_channel, kind, obscfg):
 
 def write_sat_angle_appendix(sat_channel, lat0, lon0, time_dt):
     """Writes metadata str for an observation inside obs_seq.out
+
+    Args:
+        sat_channel (int or False): False if not a satellite observation
+        lat0 (float): latitude of point on earth
+        lon0 (float): longitude of point on earth
+        time_dt (dt.datetime): time of observation
+
+    Returns:
+        str
     """
     if sat_channel:
         sun_az = str(get_azimuth(lat0, lon0, time_dt))
@@ -146,6 +148,9 @@ def write_section(obs, last=False):
     Args:
         obs (object)
         last (bool): True if this is the last observation in the obs_seq file
+
+    Returns:
+        str
     """
     lon_rad = str(degr_to_rad(obs['lon']))
     lat_rad = str(degr_to_rad(obs['lat']))
@@ -188,7 +193,7 @@ def create_obs_seq_in(time_dt, list_obscfg,
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     print('creating obs_seq.in:')
-    time_dt = add_timezone_UTC(time_dt)
+    time_dt = _add_timezone_UTC(time_dt)
     dart_date_day, secs_thatday = get_dart_date(time_dt)
 
     txt = ''
@@ -216,8 +221,8 @@ def create_obs_seq_in(time_dt, list_obscfg,
         sat_channel = obscfg.get('sat_channel', False)
 
         # add observation locations in the vertical at different levels
-        vert_coord_sys, vert_coords = determine_vert_coords(sat_channel, kind, obscfg)
-        coords = append_hgt_to_coords(coords, vert_coords)
+        vert_coord_sys, vert_coords = _determine_vert_coords(sat_channel, kind, obscfg)
+        coords = _append_hgt_to_coords(coords, vert_coords)
         n_obs_3d_thistype = len(coords)
 
         # user defined generation error
@@ -252,57 +257,19 @@ def create_obs_seq_in(time_dt, list_obscfg,
     pretxt = preamble(n_obs_total, list_kinds)
 
     alltxt = pretxt + txt
-    write_file(alltxt, output_path=output_path)
+    _write_file(alltxt, output_path=output_path)
 
 
 if __name__ == '__main__':
     # for testing
     time_dt = dt.datetime(2008, 7, 30, 13, 0)
 
-
-    vis = dict(plotname='VIS 0.6µm',  plotunits='[1]',
-            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, 
-            n_obs=961, obs_locations='square_array_evenly_on_grid',
-            error_generate=0.03, error_assimilate=0.06,
-            cov_loc_radius_km=32)
-
-    # wv62 = dict(plotname='Brightness temperature WV 6.2µm', plotunits='[K]',
-    #             kind='MSG_4_SEVIRI_TB', sat_channel=5, 
-    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
-    #             error_generate=1., error_assimilate=False, 
-    #             cov_loc_radius_km=20)
-
-    # wv73 = dict(plotname='Brightness temperature WV 7.3µm',  plotunits='[K]',
-    #             kind='MSG_4_SEVIRI_TB', sat_channel=6, 
-    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
-    #             error_generate=1., error_assimilate=False,
-    #             cov_loc_radius_km=20)
-
-    # ir108 = dict(plotname='Brightness temperature IR 10.8µm', plotunits='[K]',
-    #             kind='MSG_4_SEVIRI_TB', sat_channel=9, 
-    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
-    #             error_generate=5., error_assimilate=10.,
-    #             cov_loc_radius_km=32)
-
-    radar = dict(plotname='Radar reflectivity', plotunits='[dBz]',
-                kind='RADAR_REFLECTIVITY',             
-                n_obs=1, obs_locations=[(45,0),],
-                error_generate=2.5, error_assimilate=5.,
-                heights=np.arange(1000, 15001, 1000),
-                cov_loc_radius_km=20, cov_loc_vert_km=4)
-
-    # t2m = dict(plotname='SYNOP Temperature', plotunits='[K]',
-    #         kind='SYNOP_TEMPERATURE',             
-    #         n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
-    #         error_generate=0.1, error_assimilate=1.,
-    #         cov_loc_radius_km=20, cov_loc_vert_km=3)
-
-    # psfc = dict(plotname='SYNOP Pressure', plotunits='[dBz]',
-    #             kind='SYNOP_SURFACE_PRESSURE', 
-    #             n_obs=n_obs, obs_locations='square_array_evenly_on_grid',
-    #             error_generate=50., error_assimilate=100.,
-    #             cov_loc_radius_km=32, cov_loc_vert_km=5)
-
+    radar = dict(var_name='Radar reflectivity', unit='[dBz]',
+                kind='RADAR_REFLECTIVITY', 
+                n_obs=5776, obs_locations='square_array_evenly_on_grid',
+                error_generate=2.5, error_assimilate=2.5,
+                heights=range(2000, 14001, 2000),
+                loc_horiz_km=20, loc_vert_km=2.5)
 
     create_obs_seq_in(time_dt, [radar],
                       output_path=utils.userhome+'/run_DART/obs_seq.in')
