@@ -1,22 +1,22 @@
 """Read, modify and save DART obs_seq.out/obs_seq.final files in DART format.
 
-Example:
-    from dartwrf.obs.obsseq import ObsSeq
-    obs = ObsSeq('path/to/obs_seq.final')
+Examples:
+    $ from dartwrf.obs.obsseq import ObsSeq
+    $ obs = ObsSeq('path/to/obs_seq.final')
 
-    obs.df  # pandas.DataFrame with all observations (rows) 
+    $ obs.df  # pandas.DataFrame with all observations (rows) 
 
-    obs.df['observations']  # observation values (np.array)
-    obs.df['truth']  # truth values (np.array)
-    obs.df['prior ensemble spread']  # spread of prior ensemble (np.array)
-    obs.df['variance']  # observation error variances (np.array)
+    $ obs.df['observations']  # observation values (np.array)
+    $ obs.df['truth']  # truth values (np.array)
+    $ obs.df['prior ensemble spread']  # spread of prior ensemble (np.array)
+    $ obs.df['variance']  # observation error variances (np.array)
 
-    obs.df.get_prior_Hx()  # H(x_prior) for all ensemble members (np.array)
-    obs.df.get_posterior_Hx()  # H(x_posterior) for all ensemble members (np.array)
+    $ obs.df.get_prior_Hx()  # H(x_prior) for all ensemble members (np.array)
+    $ obs.df.get_posterior_Hx()  # H(x_posterior) for all ensemble members (np.array)
 
-    obs.df.get_lon_lat()  # longitude and latitude of observations (pd.DataFrame)
+    $ obs.df.get_lon_lat()  # longitude and latitude of observations (pd.DataFrame)
 
-    obs.to_dart('path/to/obs_seq.final')  # write to file
+    $ obs.to_dart('path/to/obs_seq.final')  # write to file
 
 Note:
     Can not create obs_seq from scratch, since it does not know which metadata is necessary for each observation type
