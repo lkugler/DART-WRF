@@ -28,14 +28,6 @@ dartwrf.create\_obs\_upfront module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.create\_obsseq module
------------------------------
-
-.. automodule:: dartwrf.create_obsseq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dartwrf.create\_wbubble\_wrfinput module
 ----------------------------------------
 
@@ -84,38 +76,6 @@ dartwrf.exp\_config module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.obskind module
-----------------------
-
-.. automodule:: dartwrf.obskind
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.obsseq module
----------------------
-
-.. automodule:: dartwrf.obsseq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.obsseq\_2dim module
----------------------------
-
-.. automodule:: dartwrf.obsseq_2dim
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.obsseq\_to\_netcdf module
----------------------------------
-
-.. automodule:: dartwrf.obsseq_to_netcdf
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dartwrf.prep\_IC\_prior module
 ------------------------------
 
@@ -136,14 +96,6 @@ dartwrf.prepare\_wrfrundir module
 ---------------------------------
 
 .. automodule:: dartwrf.prepare_wrfrundir
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.run\_obs\_diag module
------------------------------
-
-.. automodule:: dartwrf.run_obs_diag
    :members:
    :undoc-members:
    :show-inheritance:
