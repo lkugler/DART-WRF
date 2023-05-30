@@ -160,7 +160,7 @@ if False:  # to continue a free run after spinup
     prior_init_time = dt.datetime(2008, 7, 30, 13)
     prior_valid_time = dt.datetime(2008, 7, 30, 13,30)
 
-    id = w.w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
+    id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, 
             # new_start_time=start, # <---------- to overwrite start time / leads to a call to `create_updated_wrfinput_from_wrfout()`
             depends_on=id)
 
