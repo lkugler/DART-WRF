@@ -216,7 +216,7 @@ class WorkFlows(object):
                                       depends_on=[id])
 
         # forecast for the whole forecast duration       
-        id = prepare_WRF_inputfiles(depends_on=id)
+        id = prepare_WRF_inputfiles(begin, end, depends_on=id)
         time_in_simulation_hours = (end-begin).total_seconds()/3600
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9)  # usually below 9 min/hour
         id = self.cluster.run_job(wrf_cmd, "WRF-"+exp.expname, 
