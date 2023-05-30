@@ -280,15 +280,6 @@ def write_namelist(just_prior_values=False):
     list_obstypes, list_loc_horiz_rad, list_loc_vert_km, list_loc_vert_scaleheight = _get_list_of_localizations()
 
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
-    
-    # dont compute posterior, just evaluate prior
-    if just_prior_values:  
-        nml['&filter_nml']['compute_posterior'] = [['.false.']]
-        nml['&filter_nml']['output_members'] = [['.false.']]
-        nml['&filter_nml']['output_mean'] = [['.false.']]
-        nml['&filter_nml']['output_sd'] = [['.false.']]
-        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
-        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
 
     if len(list_obstypes) > 0:
         # make sure that observations defined in `exp.observations` are assimilated
@@ -304,6 +295,15 @@ def write_namelist(just_prior_values=False):
 
         nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
         nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
+
+    # dont compute posterior, just evaluate prior
+    if just_prior_values:  
+        nml['&filter_nml']['compute_posterior'] = [['.false.']]
+        nml['&filter_nml']['output_members'] = [['.false.']]
+        nml['&filter_nml']['output_mean'] = [['.false.']]
+        nml['&filter_nml']['output_sd'] = [['.false.']]
+        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
 
     # overwrite namelist parameters as defined in the experiment configuration
     for section, sdata in exp.dart_nml.items():
