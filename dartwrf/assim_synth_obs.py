@@ -443,7 +443,7 @@ def link_DART_binaries_and_RTTOV_files():
 
         print('prepared DART & RTTOV links in', cluster.dart_rundir)
     except Exception as e:
-        if any([hasattr(obscfg, 'sat_channel') for obscfg in exp.observations]):
+        if any(['sat_channel' in obscfg for obscfg in exp.observations]):
             raise e
         else:
             pass  # we dont need RTTOV anyway
