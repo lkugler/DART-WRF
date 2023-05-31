@@ -356,6 +356,7 @@ class ObsSeq(object):
     """
 
     def __init__(self, filepath):
+        self.filepath = filepath
         self.ascii = open(filepath, "r").readlines()
 
         self._get_preamble_content()
