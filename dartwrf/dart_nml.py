@@ -1,5 +1,5 @@
+import warnings
 from dartwrf.utils import append_file
-
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 
@@ -191,36 +191,36 @@ def _get_list_of_localizations():
         loc_horiz_rad = to_radian_horizontal(loc_horiz_km)
         l_loc_horiz_rad.append(loc_horiz_rad)
 
-        # compute vertical localization
-
-        # do we have vertical localization?
-        if not hasattr(obscfg, "loc_vert_km") and not hasattr(obscfg, "loc_vert_scaleheight"):
-            l_loc_vert_km.append(-1)
-            l_loc_vert_scaleheight.append(-1)
-            # if not add dummy value
-
-        # choose either localization by height or by scale height
-        if hasattr(obscfg, "loc_vert_km") and hasattr(obscfg, "loc_vert_scaleheight"):
-            raise ValueError("Observation config contains both loc_vert_km and loc_vert_scaleheight. Please choose one.")
-        
-        elif hasattr(obscfg, "loc_vert_km"):  # localization by height
+        try:  # localization by height
             loc_vert_km = obscfg["loc_vert_km"]
 
             vert_norm_hgt = to_vertical_normalization(loc_vert_km, loc_horiz_km)
             l_loc_vert_km.append(vert_norm_hgt)
 
-        elif hasattr(obscfg, "loc_vert_scaleheight"):  # localization by scale height
-            loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
+            # set the other (unused) list to a dummy value
+            l_loc_vert_scaleheight = [-1,]
 
-            # no conversion necessary, take the values as defined in obscfg
-            l_loc_vert_scaleheight.append(loc_vert_scaleheight)
+        except AttributeError:  # localization by scale height
+            try:
+                loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
 
-    # set the other (unused) list to a dummy value
-    if len(l_loc_vert_km) > 0:
-        l_loc_vert_scaleheight = [-1,]
-    else:
-        l_loc_vert_km = [-1,]
-    
+                # no conversion necessary, take the values as defined in obscfg
+                l_loc_vert_scaleheight.append(loc_vert_scaleheight)
+
+                # set the other (unused) list to a dummy value
+                l_loc_vert_km = [-1,]
+
+            except AttributeError:
+
+                # do we have vertical localization?
+                # check parameter horiz_dist_only == true
+                if exp.dart_nml['&location_nml']['horiz_dist_only'][0] == '.true.':
+                    # no vertical localization
+                    l_loc_vert_km.append(-1)
+                    l_loc_vert_scaleheight.append(-1)
+                else:
+                    raise ValueError('Neither `loc_vert_km` nor `loc_vert_scaleheight` defined in obscfg.')
+                
     return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
 
 
@@ -330,8 +330,8 @@ def write_namelist(just_prior_values=False):
     # fail if horiz_dist_only == false but observations contain a satellite channel
     if nml['&location_nml']['horiz_dist_only'][0] == '.false.':
         for obscfg in exp.observations:
-            if hasattr(obscfg, "sat_channel"):
-                raise ValueError("Selected vertical localization, but observations contain satellite obs -> Not possible.")
+            if 'sat_channel' in obscfg:
+                warnings.warn("Selected vertical localization, but observations contain satellite obs -> Bug in DART.")
 
     # write to file
     write_namelist_from_dict(nml, cluster.dart_rundir + "/input.nml")
