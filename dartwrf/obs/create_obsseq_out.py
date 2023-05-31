@@ -92,6 +92,9 @@ if __name__ == '__main__':
     
     Args:
         times (str): comma-separated list of times of the observations
+
+    Returns:
+        None, creates obs_seq.out in cluster.archivedir
     """
     import argparse
     import datetime as dt
