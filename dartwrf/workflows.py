@@ -322,6 +322,16 @@ class WorkFlows(object):
         id = self.cluster.run_job("obsseq_netcdf", cfg_update={"time": "10", "mail-type": "FAIL,END"}, 
                 depends_on=[depends_on])
         return id
+    
+    def evaluate_plus1(self, list_assim_times, depends_on=None):
+        list_of_tuples = [(init, (init+dt.timedelta(minutes=1))) for init in list_assim_times]
+        arg = ' '.join([ttuple[0].strftime('%Y-%m-%d_%H:%M,')+ttuple[1].strftime('%Y-%m-%d_%H:%M') for ttuple in list_of_tuples])
+
+        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+arg
+        id = self.cluster.run_job(cmd, 'eval+1'+self.exp.expname, cfg_update={"ntasks": "12", "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2", 
+                                                                              "time": "15", "mail-type": "FAIL"}, 
+                depends_on=[depends_on])
+        return id
 
 
     def verify_sat(self, depends_on=None):
