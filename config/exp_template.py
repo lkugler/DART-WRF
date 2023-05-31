@@ -24,11 +24,13 @@ exp.dart_nml = {'&assim_tools_nml':
                             num_output_state_members=exp.n_ens,
                             num_output_obs_members=exp.n_ens,
                             inf_flavor=['0', '0'],
-                            outlier_threshold='-1',
                             output_members='.true.',
                             output_mean='.true.',
                             output_sd='.true.',
                             stages_to_write='output',
+                        ),
+                '&quality_control_nml': 
+                    dict(outlier_threshold='-1',
                         ),
                 '&location_nml':
                     dict(horiz_dist_only='.true.',
