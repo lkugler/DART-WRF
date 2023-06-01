@@ -36,7 +36,6 @@ import os, warnings
 import numpy as np
 import pandas as pd
 
-
 def _plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
 

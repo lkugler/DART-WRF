@@ -285,8 +285,11 @@ def qc_obs(time, oso):
         print('saved', f_out_dart)
 
 
-def evaluate(assim_time, obs_seq_out=False,
-             output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs"):
+def evaluate(assim_time, 
+             obs_seq_out=False,
+             prior=True, 
+             posterior=False,
+             output_format="%Y-%m-%d_%H:%M_obs_seq.final-evaluate"):
     """Calculates either prior or posterior obs space values.
 
     Note: Depends on a prepared input_list.txt, which defines the ensemble (prior or posterior).
@@ -301,6 +304,8 @@ def evaluate(assim_time, obs_seq_out=False,
     Returns:
         obsseq.ObsSeq
     """
+    if prior == posterior:
+        raise ValueError('either prior or posterior must be True, the other must be False')
 
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dart_rundir)
@@ -312,6 +317,11 @@ def evaluate(assim_time, obs_seq_out=False,
 
     print("prepare nature")
     prepare_nature_dart(assim_time)  # link WRF files to DART directory
+
+    if posterior:
+        write_list_of_inputfiles_posterior(time)
+    if prior:
+        write_list_of_inputfiles_prior()
 
     if obs_seq_out:
         copy(obs_seq_out, cluster.dart_rundir+'/obs_seq.out')
@@ -433,7 +443,7 @@ def link_DART_binaries_and_RTTOV_files():
 
         print('prepared DART & RTTOV links in', cluster.dart_rundir)
     except Exception as e:
-        if any([hasattr(obscfg, 'sat_channel') for obscfg in exp.observations]):
+        if any(['sat_channel' in obscfg for obscfg in exp.observations]):
             raise e
         else:
             pass  # we dont need RTTOV anyway
@@ -489,20 +499,21 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
 
     # is any observation error parametrized?
     if any(error_is_parametrized) or do_QC:
-        print(" (optional) evaluate prior for all observations (incl rejected)")
-        evaluate(time, output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_prior_allobs")
+        print(" (optional) evaluate prior for all observations (incl rejected) ")
+        evaluate(time, prior=True,
+                 output_format="%Y-%m-%d_%H:%M_obs_seq.final-evaluate_prior")
 
     print(" assign observation-errors for assimilation ")
     set_obserr_assimilate_in_obsseqout(oso, outfile=cluster.dart_rundir + "/obs_seq.out")
 
     if do_QC:
-        print(" 2.3) reject observations? ")
+        print(" reject observations? ")
         qc_obs(time, oso)
 
     if prior_inflation_type == '2':
         prepare_inflation_2(time, prior_init_time)
 
-    print(" 3) run filter ")
+    print(" run filter ")
     dart_nml.write_namelist()
     filter(nproc=nproc)
     archive_filteroutput(time)
@@ -510,12 +521,16 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     if prior_inflation_type == '2':
         archive_inflation_2(time)
 
+    print(" evaluate posterior in observation-space")
     if do_QC:
-        print(" 4) evaluate posterior observations for all observations (incl rejected)")
-        write_list_of_inputfiles_posterior(time)
-        
-        evaluate(time, obs_seq_out=cluster.archivedir+'/obs_seq_out/'+time.strftime('%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'),
-                       output_format="%Y-%m-%d_%H:%M_obs_seq.final-eval_posterior_allobs")
+        f_oso = '%Y-%m-%d_%H:%M_obs_seq.out-beforeQC'  # includes all observations (including rejected ones in qc_obs())
+    else:
+        f_oso = '%Y-%m-%d_%H:%M_obs_seq.out'
+    # evaluate() separately after ./filter is crucial when assimilating cloud variables
+    # as the obs_seq.final returned by ./filter was produced using un-clamped cloud variables
+    evaluate(time, obs_seq_out=cluster.archivedir+'/obs_seq_out/'+time.strftime(f_oso),
+             prior=False, posterior=True,
+             output_format="%Y-%m-%d_%H:%M_obs_seq.final-evaluate_posterior")
 
 
 if __name__ == "__main__":

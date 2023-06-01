@@ -29,6 +29,9 @@ exp.dart_nml = {'&assim_tools_nml':
                             output_sd='.true.',
                             stages_to_write='output',
                         ),
+                '&quality_control_nml': 
+                    dict(outlier_threshold='-1',
+                        ),
                 '&location_nml':
                     dict(horiz_dist_only='.true.',
                         ),

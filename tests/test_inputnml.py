@@ -53,5 +53,13 @@ def test_input_nml():
     
     os.remove(test_output)
 
+def test_get_list_of_localizations():
+
+    output = dart_nml._get_list_of_localizations()
+    assert (['SYNOP_TEMPERATURE'], [0.0015698587127158557], [1274000.0], [-1]) == output
+
+
 if __name__ == '__main__':
     test_input_nml()
+
+    test_get_list_of_localizations()
