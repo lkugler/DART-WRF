@@ -1,13 +1,43 @@
-"""Read, modify and save DART obs_seq files.
+"""Read, modify and save DART obs_seq.out/obs_seq.final files in DART format.
 
-Not usable for creating obs_seq, since it does not know which metadata is necessary for each type
+Examples:
+    Load an obs seq file with
+    >>> from dartwrf.obs.obsseq import ObsSeq
+    >>> osf = ObsSeq('path/to/obs_seq.final')
+    
+    The content is a pandas.DataFrame with all observations (rows) 
+    >>> osf.df
+    observations     truth  prior ensemble mean  posterior ensemble mean  ...  kind                                           metadata             time  variance
+    0        0.292800  0.289466             0.360284                 0.330799  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    1        0.292800  0.289466             0.398444                 0.380152  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    2        0.310016  0.289466             0.355061                 0.369988  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    3        0.297182  0.289466             0.305424                 0.302489  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    4        0.292800  0.293797             0.306238                 0.303252  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    ..            ...       ...                  ...                      ...  ...   ...                                                ...              ...       ...
+    956      0.762274  0.796486             0.664451                 0.833559  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    957      0.525743  0.500751             0.534391                 0.653267  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    958      0.341627  0.348115             0.405534                 0.447314  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    959      0.826649  0.835491             0.374459                 0.785951  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    960      0.320477  0.343154             0.303468                 0.325203  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
+    [961 rows x 93 columns]
+
+    To get arrays of prior and posterior use
+    >>> osf.df.get_prior_Hx()
+    >>> osf.df.get_posterior_Hx()
+
+    After modifying the contents, write them in DART format
+    >>> osf.to_dart('path/to/obs_seq.final')
+
+Note:
+    Can not create obs_seq from scratch, since it does not know which metadata is necessary for each observation type
 """
 
-import os, sys, shutil, warnings
+import os, warnings
 import numpy as np
 import pandas as pd
 
-def plot_box(m, lat, lon, label="", **kwargs):
+
+def _plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
 
     Args:
@@ -35,15 +65,13 @@ def plot_box(m, lat, lon, label="", **kwargs):
         **kwargs
     )
 
-
-def degrees_to_rad(degr):
+def _degrees_to_rad(degr):
     """Convert to DART convention = radians"""
     if degr < 0:
         degr += 360
     return degr / 360 * 2 * np.pi
 
-
-def rad_to_degrees(rad):
+def _rad_to_degrees(rad):
     """Convert to degrees from DART convention (radians)"""
     assert rad >= 0, "no negative radians allowed"
     degr = rad / np.pi * 180
@@ -54,12 +82,8 @@ def rad_to_degrees(rad):
     return degr
 
 
-
-
 class ObsRecord(pd.DataFrame):
-    """Content of obsseq.ObsSeq instances
-    provides additional methods for pd.DataFrame
-    created inside an ObsSeq instance
+    """Basically a pd.DataFrame with additional methods
     """
     @property
     def _constructor(self):
@@ -68,18 +92,31 @@ class ObsRecord(pd.DataFrame):
         return ObsRecord
 
     def get_prior_Hx(self):
-        """Return prior Hx array (n_obs, n_ens)"""
+        """Retrieve H(x_prior) for all ensemble members
+        
+        Returns:
+            np.array (n_obs, n_ens)
+        """
         return self._get_model_Hx('prior')
 
     def get_posterior_Hx(self):
-        """Return posterior Hx array (n_obs, n_ens)"""
+        """Retrieve H(x_posterior) for all ensemble members
+        
+        Returns:
+            np.array (n_obs, n_ens)
+        """
         return self._get_model_Hx('posterior')
 
     def get_truth_Hx(self):
+        """Retrieve H(x_truth)
+
+        Returns:
+            np.array (n_obs,)
+        """
         return self['truth'].values
 
     def _get_model_Hx(self, what):
-        """Return ensemble member info
+        """Retrieve a subset of the obs-sequence table, e.g. H(x_prior)
 
         Args:
             self (pd.DataFrame):      usually self.self
@@ -106,6 +143,11 @@ class ObsRecord(pd.DataFrame):
         return Hx.values
 
     def get_lon_lat(self):
+        """Retrieve longitude and latitude of observations
+
+        Returns:
+            pd.DataFrame (n_obs, 2)
+        """
         lats = np.empty(len(self), np.float32)
         lons = lats.copy()
 
@@ -113,20 +155,20 @@ class ObsRecord(pd.DataFrame):
             x, y, z, z_coord = values
 
             # convert radian to degrees lon/lat
-            lon = rad_to_degrees(x)
-            lat = rad_to_degrees(y)
+            lon = _rad_to_degrees(x)
+            lat = _rad_to_degrees(y)
             lons[i] = lon
             lats[i] = lat
 
         return pd.DataFrame(index=self.index, data=dict(lat=lats, lon=lons))
 
-    def get_from_cartesian_grid(self, i, j, k):
+    def _get_from_cartesian_grid(self, i, j, k):
         """Get the observation using cartesian grid indices (ix, iy, iz)
         """
         # find indices of observations within pandas.DataFrame
         return self.iloc[self.i_obs_grid[i, j, k].ravel()]
 
-    def determine_nlayers(self):
+    def _determine_nlayers(self):
         nlayers = 1  # first guess
         from config.cfg import exp
 
@@ -203,7 +245,7 @@ class ObsRecord(pd.DataFrame):
             print("window (#obs in x/y)=", win_obs)
 
         # superob in case of multiple layers, only implemented for single obstype
-        nlayers = self.determine_nlayers()
+        nlayers = self._determine_nlayers()
         
         # indices of observations (starting from 0)
         i_obs_grid = self.index.values  
@@ -237,7 +279,7 @@ class ObsRecord(pd.DataFrame):
                         print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs, k])
 
                     # find observations within superob window
-                    obs_box = self.get_from_cartesian_grid(slice(i, i + win_obs),
+                    obs_box = self._get_from_cartesian_grid(slice(i, i + win_obs),
                                                            slice(j, j + win_obs),
                                                            k)
 
@@ -245,10 +287,10 @@ class ObsRecord(pd.DataFrame):
                     # save boundary of box to list, for plotting later
                     eps = dx_obs_lat_deg/2  # for plotting
                     eps2 = eps*0.8  # for plotting
-                    lat1, lon1 = self.get_from_cartesian_grid(i, j, k).get_lon_lat().values[0]
-                    lat2, lon2 = self.get_from_cartesian_grid(i+win_obs-1, j, k).get_lon_lat().values[0]
-                    lat3, lon3 = self.get_from_cartesian_grid(i, j+win_obs-1, k).get_lon_lat().values[0]
-                    lat4, lon4 = self.get_from_cartesian_grid(i+win_obs-1, j+win_obs-1, k).get_lon_lat().values[0]
+                    lat1, lon1 = self._get_from_cartesian_grid(i, j, k).get_lon_lat().values[0]
+                    lat2, lon2 = self._get_from_cartesian_grid(i+win_obs-1, j, k).get_lon_lat().values[0]
+                    lat3, lon3 = self._get_from_cartesian_grid(i, j+win_obs-1, k).get_lon_lat().values[0]
+                    lat4, lon4 = self._get_from_cartesian_grid(i+win_obs-1, j+win_obs-1, k).get_lon_lat().values[0]
 
                     boxes.append(([lat1-eps2, lat2+eps2, lat3-eps2, lat4+eps2],
                                 [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
@@ -315,18 +357,20 @@ class ObsSeq(object):
     """
 
     def __init__(self, filepath):
+        self.filepath = filepath
         self.ascii = open(filepath, "r").readlines()
 
-        self.get_preamble_content()
-        self.read_preamble()
+        self._get_preamble_content()
+        self._read_preamble()
 
         self.df = ObsRecord(self.to_pandas())
 
     def __str__(self):
         return self.df.__str__()
 
-    def get_preamble_content(self):
+    def _get_preamble_content(self):
         """Split the obs_seq.out file into two parts
+
         1) First lines of obs_seq.out file until the first observation message
         2) Observation contents
         """
@@ -339,7 +383,7 @@ class ObsSeq(object):
         self.preamble = self.ascii[:i]
         self.content = self.ascii[i:]
 
-    def read_preamble(self):
+    def _read_preamble(self):
         """Defines 
         self.obstypes (tuple(kind_nr, kind_descriptor)) for each obs type
         """
@@ -394,7 +438,7 @@ class ObsSeq(object):
 
         self.keys_for_values = keys
 
-    def obs_to_dict(self):
+    def _obs_to_dict(self):
         """Convert an obs_seq.out file to a dictionary"""
         obs_begin_str = "OBS  "
 
@@ -492,10 +536,45 @@ class ObsSeq(object):
         list_of_obsdict = obs_list_to_dict(obs_list)
         return list_of_obsdict
 
+    def append_obsseq(self, list_of_obsseq):
+        """Append a list of ObsSeq objects
+        
+        Args:
+            list_of_obsseq (list of ObsSeq())
+            
+        """
+        from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
+        inverted_obs_kind_nrs = {v: k for k, v in obs_kind_nrs.items()}
+
+        for a in list_of_obsseq:
+            if not isinstance(a, ObsSeq):
+                raise ValueError('Input must be of type ObsSeq!')
+
+        # combine data of all inputs + self
+        list_of_obsseq_df = [self.df,]
+        list_of_obsseq_df.extend([a.df for a in list_of_obsseq])
+
+        combi_df = pd.concat(list_of_obsseq_df,
+                            ignore_index=True  # we use a new observation index now
+                            )
+
+        n_obstypes = combi_df.kind.nunique()
+        list_kinds = combi_df.kind.unique()
+
+        obstypes = []
+        for kind in list_kinds:
+            obstypes.append((kind, inverted_obs_kind_nrs[kind]))
+
+        oso3 = self
+        oso3.df = combi_df 
+        oso3.obstypes = obstypes 
+        return oso3
+
+
     def to_pandas(self):
         """Create pd.DataFrame with rows=observations
         """
-        obs_dict_list = self.obs_to_dict()
+        obs_dict_list = self._obs_to_dict()
 
         # convert to pandas.DataFrame
         # each observation is one line
@@ -649,7 +728,7 @@ class ObsSeq(object):
         m.drawcoastlines(color="white")
         m.drawcountries(color="white")
 
-        plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
+        _plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
 
         # OBSERVATIONS
         original_df = self.df.attrs['df_pre_superob']
@@ -693,7 +772,7 @@ class ObsSeq(object):
             for lats, lons in self.df.attrs['boxes']:
                 lats, lons = np.meshgrid(lats, lons)
 
-                plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
+                _plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
                 label = ''
 
         plt.legend()
