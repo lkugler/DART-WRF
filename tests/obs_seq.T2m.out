@@ -1,0 +1,36 @@
+ obs_sequence
+ obs_kind_definitions
+     1
+         102 SYNOP_TEMPERATURE
+ num_copies:            2  num_qc:            1
+ num_obs:           2     max_num_obs:            2
+ observations
+ truth
+ Quality Control
+ first:            1  last:            2
+OBS         1
+301.509009144877
+301.0021510973083
+0.0
+        -1           2          -1
+obdef
+loc3d
+6.250862521029294    0.7617386402731844    2.0    -1
+kind
+         102
+
+ 46800     148864
+ 1.0
+OBS         2
+299.99534143331243
+301.376166801592
+0.0
+        1           -1          -1
+obdef
+loc3d
+6.255199745180597    0.7618054856165454    2.0    -1
+kind
+         102
+
+ 46800     148864
+ 1.0
