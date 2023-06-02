@@ -97,9 +97,12 @@ def link_nature_to_dart_truth(time):
 
 
 def prepare_nature_dart(time):
-    print("linking nature to DART & georeferencing")
-    link_nature_to_dart_truth(time)
-    wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
+    if hasattr(exp, 'nature'):
+        print("linking nature to DART & georeferencing")
+        link_nature_to_dart_truth(time)
+        wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
+    else:
+        print('has no nature, not copying nature')
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -438,7 +441,7 @@ def get_obsseq_out(time):
     if exp.use_existing_obsseq != False: 
         f_obsseq = time.strftime(exp.use_existing_obsseq)
         copy(f_obsseq, cluster.dartrundir+'/obs_seq.out')
-        print(f_obsseq, 'copied to', cluster.dartrundir+'/obs_seq.out')
+        # print(f_obsseq, 'copied to', cluster.dartrundir+'/obs_seq.out')
         oso = obsseq.ObsSeq(cluster.dartrundir + "/obs_seq.out")
     else:
         # decision to NOT use existing obs_seq.out file
