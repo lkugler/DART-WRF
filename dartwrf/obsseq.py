@@ -543,7 +543,7 @@ class ObsSeq(object):
             list_of_obsseq (list of ObsSeq())
             
         """
-        from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
+        from dartwrf.config.obskind import obs_kind_nrs # dictionary string => DART internal indices
         inverted_obs_kind_nrs = {v: k for k, v in obs_kind_nrs.items()}
 
         for a in list_of_obsseq:
