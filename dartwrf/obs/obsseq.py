@@ -535,6 +535,41 @@ class ObsSeq(object):
         list_of_obsdict = obs_list_to_dict(obs_list)
         return list_of_obsdict
 
+    def append_obsseq(self, list_of_obsseq):
+        """Append a list of ObsSeq objects
+        
+        Args:
+            list_of_obsseq (list of ObsSeq())
+            
+        """
+        from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
+        inverted_obs_kind_nrs = {v: k for k, v in obs_kind_nrs.items()}
+
+        for a in list_of_obsseq:
+            if not isinstance(a, ObsSeq):
+                raise ValueError('Input must be of type ObsSeq!')
+
+        # combine data of all inputs + self
+        list_of_obsseq_df = [self.df,]
+        list_of_obsseq_df.extend([a.df for a in list_of_obsseq])
+
+        combi_df = pd.concat(list_of_obsseq_df,
+                            ignore_index=True  # we use a new observation index now
+                            )
+
+        n_obstypes = combi_df.kind.nunique()
+        list_kinds = combi_df.kind.unique()
+
+        obstypes = []
+        for kind in list_kinds:
+            obstypes.append((kind, inverted_obs_kind_nrs[kind]))
+
+        oso3 = self
+        oso3.df = combi_df 
+        oso3.obstypes = obstypes 
+        return oso3
+
+
     def to_pandas(self):
         """Create pd.DataFrame with rows=observations
         """

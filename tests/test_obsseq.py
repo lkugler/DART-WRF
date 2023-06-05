@@ -52,6 +52,43 @@ def test_superob():
 
     from IPython import embed; embed()
 
+def test_concat_obsseq():
+    """Test the concatenation of two obs_seq.out files"""
+
+
+
+    f1 = './obs_seq.T2m.out'
+    f2 = './obs_seq.WV73.out'
+    f_output = './obs_seq.combi.out'
+    f_expected = './obs_seq.combi-expected.out'
+
+    oso1 = obsseq.ObsSeq(f1)
+    oso2 = obsseq.ObsSeq(f2)
+
+    # #oso3 = oso1
+    # combi_df = pd.concat([oso1.df, oso2.df],
+    #                     ignore_index=True  # we use a new observation index now
+    #                     )
+
+    # n_obstypes = combi_df.kind.nunique()
+    # list_kinds = combi_df.kind.unique()
+
+    # obstypes = []
+    # for kind in list_kinds:
+    #     obstypes.append((kind, inverted_obs_kind_nrs[kind]))
+
+    # oso3 = oso1
+    # oso3.df = combi_df #setattr(oso3, 'df', combi_df)
+    # oso3.obstypes = obstypes #setattr(oso3, 'obstypes', obstypes)
+
+    oso3 = oso1.append_obsseq([oso2, ])
+    oso3.to_dart(f_output)
+
+    import filecmp
+    assert filecmp.cmp(f_output, f_expected)
+
+    os.remove(f_output)
+
+
 if __name__ == '__main__':
-    test_superob()
-    pass
+    test_concat_obsseq()

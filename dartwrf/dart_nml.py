@@ -198,7 +198,7 @@ def _get_list_of_localizations():
             l_loc_vert_km.append(vert_norm_hgt)
 
             # set the other (unused) list to a dummy value
-            l_loc_vert_scaleheight = [-1,]
+            l_loc_vert_scaleheight.append(-1)
 
         except KeyError:  # localization by scale height
             try:
@@ -208,7 +208,7 @@ def _get_list_of_localizations():
                 l_loc_vert_scaleheight.append(loc_vert_scaleheight)
 
                 # set the other (unused) list to a dummy value
-                l_loc_vert_km = [-1,]
+                l_loc_vert_km.append(-1)
 
             except KeyError:
 
@@ -223,38 +223,6 @@ def _get_list_of_localizations():
                 
     return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
 
-
-# def _fortran_format(l):
-
-#     # do we have multiples entries?
-#     # Caution: a string is iterable
-#     if isinstance(l, list):
-#         pass
-#     else:
-#         l = [l,]
-
-#     # do we have strings as elements?
-#     if isinstance(l[0], str):
-        
-
-#     return l
-
-# def _as_fortran_list(l):
-#     """Convert parameter list 
-    
-#     if l contains strings:
-#         output: "arg1", "arg2", "arg3"
-#     else
-#         output 1,2,3 
-#     """
-#     assert isinstance(l, list)
-
-#     if isinstance(l[0], str):
-#         # contains strings
-#         l = ['"'+a+'"' for a in l]  # add quotation marks
-        
-
-    
 
 
 def write_namelist(just_prior_values=False):
@@ -281,9 +249,11 @@ def write_namelist(just_prior_values=False):
 
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
 
-    if len(list_obstypes) > 0:
+    n_obstypes = len(list_obstypes)
+    if n_obstypes > 0:
         # make sure that observations defined in `exp.observations` are assimilated
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes]
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [[]]
 
         # write localization variables
         nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes]
@@ -293,8 +263,8 @@ def write_namelist(just_prior_values=False):
         nml['&location_nml']['special_vert_normalization_heights'] = [list_loc_vert_km]
         nml['&location_nml']['special_vert_normalization_scale_heights'] = [list_loc_vert_scaleheight]
 
-        nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]]
-        nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]]
+        nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]*n_obstypes]
+        nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]*n_obstypes]
 
     # dont compute posterior, just evaluate prior
     if just_prior_values:  
