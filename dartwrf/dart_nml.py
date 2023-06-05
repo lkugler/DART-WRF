@@ -200,7 +200,7 @@ def _get_list_of_localizations():
             # set the other (unused) list to a dummy value
             l_loc_vert_scaleheight = [-1,]
 
-        except AttributeError:  # localization by scale height
+        except KeyError:  # localization by scale height
             try:
                 loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
 
@@ -210,16 +210,16 @@ def _get_list_of_localizations():
                 # set the other (unused) list to a dummy value
                 l_loc_vert_km = [-1,]
 
-            except AttributeError:
+            except KeyError:
 
                 # do we have vertical localization?
                 # check parameter horiz_dist_only == true
-                if exp.dart_nml['&location_nml']['horiz_dist_only'][0] == '.true.':
+                if exp.dart_nml['&location_nml']['horiz_dist_only'] == '.true.':
                     # no vertical localization
                     l_loc_vert_km.append(-1)
                     l_loc_vert_scaleheight.append(-1)
                 else:
-                    raise ValueError('Neither `loc_vert_km` nor `loc_vert_scaleheight` defined in obscfg.')
+                    raise ValueError('DART namelist requires vertical localization, but neither `loc_vert_km` nor `loc_vert_scaleheight` are defined in obscfg.')
                 
     return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
 
