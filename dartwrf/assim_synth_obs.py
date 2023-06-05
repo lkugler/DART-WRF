@@ -78,31 +78,32 @@ def set_DART_nml(just_prior_values=False):
     append_file(cluster.dartrundir + "/input.nml", rttov_nml)
 
 
-def link_nature_to_dart_truth(time):
-    """Set a symlink from the WRFout file to be used as nature to the run_DART folder
-    
+def _prepare_DART_grid_template():
+    # DART needs a wrfinput file as a template for the grid
+    # No data will be read from this file, but the grid information must match exactly.
+    symlink(cluster.dartrundir + "/prior_ens1/wrfout_d01", 
+            cluster.dartrundir + "/wrfinput_d01")
+
+
+def prepare_nature_dart(time):
+    """Prepares DART nature (wrfout_d01) if available
+
     Args:
         time (dt.datetime): Time at which observations will be made
     """
 
-    # get wrfout_d01 from nature run
-    shutil.copy(time.strftime(exp.nature+'/'+wrfout_format), 
-                cluster.dartrundir + "/wrfout_d01")
+    try:
+        f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
+        os.path.exists(f_wrfout_nature)
+    except:  # if nature is not available due to any reason
+        print('-> has no nature, not copying nature')
+        return
 
-    # DART may need a wrfinput file as well, which serves as a template for dimension sizes
-    symlink(cluster.dartrundir + "/wrfout_d01", 
-            cluster.dartrundir + "/wrfinput_d01")
-    print("linked", time.strftime(exp.nature+'/'+wrfout_format),
-          "to", cluster.dartrundir + "/wrfout_d01")
+    print("linking nature to DART & georeferencing")
+    shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
+    print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
 
-
-def prepare_nature_dart(time):
-    if hasattr(exp, 'nature'):
-        print("linking nature to DART & georeferencing")
-        link_nature_to_dart_truth(time)
-        wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
-    else:
-        print('has no nature, not copying nature')
+    wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -186,6 +187,8 @@ def run_perfect_model_obs(nproc=12, verbose=True):
             "\n look for " + cluster.dartrundir + "/log.perfect_model_obs")
 
 def filter(nproc=12):
+    _prepare_DART_grid_template()
+
     print("time now", dt.datetime.now())
     print("running filter")
     os.chdir(cluster.dartrundir)
