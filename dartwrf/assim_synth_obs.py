@@ -363,8 +363,12 @@ def get_obsseq_out(time):
     if exp.use_existing_obsseq != False: 
         # use an existing obs_seq.out file
         f_obsseq = time.strftime(exp.use_existing_obsseq)
-        copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')
+        copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')  # copy to run_DART folder        
         print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
+
+        # copy to sim_archive
+        copy(f_obsseq,  time.strftime(cluster.archivedir+'/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'))
+
         oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")  # read the obs_seq.out file
     else: 
         # do NOT use an existing obs_seq.out file
