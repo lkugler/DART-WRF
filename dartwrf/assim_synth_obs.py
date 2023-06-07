@@ -32,13 +32,17 @@ def link_nature_to_dart_truth(time):
             cluster.dart_rundir + "/wrfinput_d01")
     print("linked", f_nat, "to", cluster.dart_rundir + "/wrfout_d01")
 
+    f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
+    if os.path.exists(f_wrfout_nature):
+        print("linking nature to DART & georeferencing")
+        shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
+        print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
+        if cluster.geo_em_for_WRF_ideal:
+            wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
 
-def prepare_nature_dart(time):
-    print("linking nature to DART & georeferencing")
-    link_nature_to_dart_truth(time)
+    else:  # if nature is not available due to any reason
+        print('-> has no nature, not copying nature')
 
-    if cluster.geo_em_for_WRF_ideal:
-        wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
