@@ -1,14 +1,22 @@
 import os, shutil, warnings
 
-from dartwrf.utils import try_remove, print, shell
+from dartwrf.utils import try_remove, print, shell, symlink
 import dartwrf.obs.create_obsseq_in as osi
 from dartwrf.obs import obsseq
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 
+
+def _prepare_DART_grid_template():
+    # DART needs a wrfinput file as a template for the grid
+    # No data will be read from this file, but the grid information must match exactly.
+    symlink(cluster.dart_rundir + "/wrfout_d01", 
+            cluster.dart_rundir + "/wrfinput_d01")
+
 def generate_obsseq_out(time):
     """Generate an obs_seq.out file from the current experiment
+    Expects an existing nature file in the cluster.dart_rundir
     
     Args:
         time (datetime): time of the observations
@@ -47,6 +55,8 @@ def generate_obsseq_out(time):
     os.makedirs(dir_obsseq, exist_ok=True)
 
     osi.create_obs_seq_in(time, exp.observations)
+
+    _prepare_DART_grid_template()
     run_perfect_model_obs()  # generate observation, draws from gaussian
 
     print(" 2.1) obs preprocessing")
