@@ -18,15 +18,14 @@ wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
 def _prepare_DART_grid_template():
     # DART needs a wrfinput file as a template for the grid
     # No data will be read from this file, but the grid information must match exactly.
-    symlink(cluster.dartrundir + "/prior_ens1/wrfout_d01", 
-            cluster.dartrundir + "/wrfinput_d01")
+    symlink(cluster.dart_rundir + "/prior_ens1/wrfout_d01", 
+            cluster.dart_rundir + "/wrfinput_d01")
 
 def _copy_nature_to_dart(time):
     """Copies wrfout_d01 from nature run to DART directory
-
-    TODO: This is a bit of a hack, because it is not explicit about where to take the nature from.
     """
     glob_pattern = time.strftime(exp.nature_wrfout_pattern)  # replace time in pattern
+    print('searching for nature in pattern:', glob_pattern)
     f_nat = glob.glob(glob_pattern)[0]  # find the nature wrfout-file
 
     # check user input
