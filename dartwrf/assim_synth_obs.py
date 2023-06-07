@@ -26,22 +26,17 @@ def _copy_nature_to_dart(time):
 
     TODO: This is a bit of a hack, because it is not explicit about where to take the nature from.
     """
-    # find the file in any init directory
-    fformat = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
-    f_nat = glob.glob(cluster.archive_base + '/' + exp.nature_expname + '/*/1/'+time.strftime(fformat))[0]
+    glob_pattern = time.strftime(exp.nature_wrfout_pattern)  # replace time in pattern
+    f_nat = glob.glob(glob_pattern)[0]  # find the nature wrfout-file
+
+    # check user input
+    if not 'wrfout' in f_nat.split('/')[-1]:
+        warnings.warn(f+" does not contain 'wrfout' in filename, are you sure this is a valid nature file?")
+
+    # copy nature wrfout to DART directory
     shutil.copy(f_nat, cluster.dart_rundir + "/wrfout_d01")
 
-    # DART may need a wrfinput file as well ?!
-    symlink(cluster.dart_rundir + "/wrfout_d01", 
-            cluster.dart_rundir + "/wrfinput_d01")
-    print("linked", f_nat, "to", cluster.dart_rundir + "/wrfout_d01")
-
-    f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
-    assert os.path.exists(f_wrfout_nature)
-
-    print("linking nature to DART & georeferencing")
-    shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
-    print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
+    # add coordinates if necessary
     if cluster.geo_em_for_WRF_ideal:
         wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
 
@@ -53,7 +48,7 @@ def prepare_nature_dart(time):
     """
     try:
         _copy_nature_to_dart(time)
-    except FileExistsError:  # if nature is not available due to any reason
+    except (FileNotFoundError, AttributeError) as e:  # if nature is not available due to any reason
         print('-> has no nature, not copying nature')
 
 
