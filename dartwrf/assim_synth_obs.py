@@ -15,13 +15,17 @@ from dartwrf.server_config import cluster
 wrfout_format = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
 
-def link_nature_to_dart_truth(time):
-    """Set a symlink from the WRFout file to be used as nature to the run_DART folder
-    
-    Args:
-        time (dt.datetime): Time at which observations will be made
+def _prepare_DART_grid_template():
+    # DART needs a wrfinput file as a template for the grid
+    # No data will be read from this file, but the grid information must match exactly.
+    symlink(cluster.dartrundir + "/prior_ens1/wrfout_d01", 
+            cluster.dartrundir + "/wrfinput_d01")
+
+def _copy_nature_to_dart(time):
+    """Copies wrfout_d01 from nature run to DART directory
+
+    TODO: This is a bit of a hack, because it is not explicit about where to take the nature from.
     """
-    # get wrfout_d01 from nature run
     # find the file in any init directory
     fformat = 'wrfout_d01_%Y-%m-%d_%H:%M:%S'
     f_nat = glob.glob(cluster.archive_base + '/' + exp.nature_expname + '/*/1/'+time.strftime(fformat))[0]
@@ -33,16 +37,24 @@ def link_nature_to_dart_truth(time):
     print("linked", f_nat, "to", cluster.dart_rundir + "/wrfout_d01")
 
     f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
-    if os.path.exists(f_wrfout_nature):
-        print("linking nature to DART & georeferencing")
-        shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
-        print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
-        if cluster.geo_em_for_WRF_ideal:
-            wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
+    assert os.path.exists(f_wrfout_nature)
 
-    else:  # if nature is not available due to any reason
+    print("linking nature to DART & georeferencing")
+    shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
+    print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
+    if cluster.geo_em_for_WRF_ideal:
+        wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
+
+def prepare_nature_dart(time):
+    """Prepares DART nature (wrfout_d01) if available
+    
+    Args:
+        time (dt.datetime): Time at which observations will be made
+    """
+    try:
+        _copy_nature_to_dart(time)
+    except FileExistsError:  # if nature is not available due to any reason
         print('-> has no nature, not copying nature')
-
 
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -119,6 +131,8 @@ def write_list_of_outputfiles():
 
 
 def filter(nproc=12):
+    _prepare_DART_grid_template()
+
     print("time now", dt.datetime.now())
     print("running filter")
     os.chdir(cluster.dart_rundir)
