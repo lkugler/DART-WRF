@@ -92,19 +92,15 @@ def prepare_nature_dart(time):
         time (dt.datetime): Time at which observations will be made
     """
 
-    try:
-        f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
-        os.path.exists(f_wrfout_nature)
-    except:  # if nature is not available due to any reason
+    f_wrfout_nature = time.strftime(exp.nature+'/'+wrfout_format)
+    if os.path.exists(f_wrfout_nature):
+        print("linking nature to DART & georeferencing")
+        shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
+        print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
+
+        wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
+    else:  # if nature is not available due to any reason
         print('-> has no nature, not copying nature')
-        return
-
-    print("linking nature to DART & georeferencing")
-    shutil.copy(f_wrfout_nature, cluster.dartrundir + "/wrfout_d01")
-    print("linked", f_wrfout_nature, "to", cluster.dartrundir + "/wrfout_d01")
-
-    wrfout_add_geo.run(cluster.geo_em, cluster.dartrundir + "/wrfout_d01")
-
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
     """Prepares DART files for running filter
