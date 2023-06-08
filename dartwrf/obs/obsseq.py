@@ -36,6 +36,8 @@ import os, warnings
 import numpy as np
 import pandas as pd
 
+missing_value = -888888.0
+
 def _plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
 
@@ -571,8 +573,16 @@ class ObsSeq(object):
                 if "kind" in line:  # find obs kind
                     line_kind = i + 1
 
+            # read values like 'observations', 'truth', 'prior ensemble mean'
             for k, key in enumerate(self.keys_for_values):
-                out[key] = float(lines[1+k].strip())
+
+                v = float(lines[1+k].strip())  # value in obs_seq file
+
+                if v == missing_value:  # e.g. -888888.0
+                    out[key] = np.nan
+                else:
+                    out[key] = v
+
 
             x, y, z, z_coord = lines[line_loc].split()
             out["loc3d"] = float(x), float(y), float(z), int(z_coord)
