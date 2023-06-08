@@ -367,6 +367,7 @@ def get_obsseq_out(time):
         print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
 
         # copy to sim_archive
+        os.makedirs(cluster.archivedir + "/obs_seq_out/", exist_ok=True)
         copy(f_obsseq,  time.strftime(cluster.archivedir+'/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'))
 
         oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")  # read the obs_seq.out file
