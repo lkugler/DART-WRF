@@ -206,7 +206,7 @@ class WorkFlows(object):
         id = self.cluster.run_job(cmd, "ins_wbub-"+self.exp.expname, cfg_update={"time": "5"}, depends_on=[depends_on])
         return id
 
-    def run_ENS(self, begin, end, depends_on=None, first_minute=False, 
+    def run_ENS(self, begin, end, depends_on=None, first_minutes=False, 
                 input_is_restart=True, output_restart_interval=720, hist_interval=5, radt=5):
         """Run the forecast ensemble
 
@@ -214,7 +214,7 @@ class WorkFlows(object):
             begin (datetime): start time of the forecast
             end (datetime): end time of the forecast
             depends_on (str, optional): job ID of a previous job after which to run this job
-            first_minute (bool, optional): if True, run the first minute of the forecast
+            first_minutes (bool, optional): if True, get wrfout of first 5 minutes every minute
             input_is_restart (bool, optional): if True, start WRF from WRFrst file (restart mode)
             output_restart_interval (int, optional): interval in minutes between output of WRFrst files
             hist_interval (int, optional): interval in minutes between output of WRF history files
@@ -243,9 +243,9 @@ class WorkFlows(object):
                 ).replace('<cluster.wrf_rundir_base>', self.cluster.wrf_rundir_base
                 ).replace('<cluster.wrf_modules>', self.cluster.wrf_modules)
 
-        # first minute forecast (needed for validating a radiance assimilation)
-        if first_minute:
-            id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=1), 
+        # every minute output within first 5 minutes (needed for validating a radiance assimilation)
+        if first_minutes:
+            id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=4), 
                     hist_interval=1,  # to get an output after 1 minute
                     radt = 1,  # to get a cloud fraction CFRAC after 1 minute
                     output_restart_interval=output_restart_interval, 
