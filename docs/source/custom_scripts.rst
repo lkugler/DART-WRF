@@ -5,6 +5,7 @@ Workflow methods are defined in the :class:`dartwrf.workflows.WorkFlows` class (
 A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this
 
 .. code-block:: python
+
     from dartwrf.workflows import WorkFlows
 
     prior_path_exp = '/users/students/lehre/advDA_s2023/data/sample_ensemble/'
