@@ -34,6 +34,7 @@ Other helpful resources
    notebooks/tutorial1
    notebooks/tutorial2
    notebooks/tutorial3
+   custom_scripts
    
 .. toctree::
    :hidden:
