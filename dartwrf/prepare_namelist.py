@@ -16,7 +16,7 @@ from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 from dartwrf.utils import sed_inplace, copy, symlink, mkdir
 
-def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
+def run(iens, begin, end, hist_interval_s=5*60, radt=5, archive=True,
         restart=False, restart_interval=720):
     """Create a namelist.input file for each ensemble member
 
@@ -34,7 +34,8 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
 
     sed_inplace(rundir+'/namelist.input', '<dx>', str(int(exp.model_dx)))
     #sed_inplace(rundir+'/namelist.input', '<timestep>', str(int(exp.timestep)))
-    sed_inplace(rundir+'/namelist.input', '<hist_interval>', str(int(hist_interval)))
+    sed_inplace(rundir+'/namelist.input', '<hist_interval_s>', str(int(hist_interval_s)))
+
     sed_inplace(rundir+'/namelist.input', '<radt>', str(int(radt)))
 
     rst_flag = '.true.' if restart else '.false.'
@@ -50,10 +51,10 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
 
     # set times
     for k, v in {'<y1>': '%Y', '<m1>': '%m', '<d1>': '%d',
-                 '<HH1>': '%H', '<MM1>': '%M'}.items():
+                 '<HH1>': '%H', '<MM1>': '%M', '<SS1>': '%S'}.items():
         sed_inplace(rundir+'/namelist.input', k, begin.strftime(v))
     for k, v in {'<y2>': '%Y', '<m2>': '%m', '<d2>': '%d',
-                 '<HH2>': '%H', '<MM2>': '%M'}.items():
+                 '<HH2>': '%H', '<MM2>': '%M', '<SS2>': '%S'}.items():
         sed_inplace(rundir+'/namelist.input', k, end.strftime(v))
 
     print(rundir+'/namelist.input created')
@@ -78,8 +79,8 @@ def run(iens, begin, end, hist_interval=5, radt=5, archive=True,
 if __name__ == '__main__':
 
     args = docopt(__doc__)
-    begin = dt.datetime.strptime(args['<begin>'], '%Y-%m-%d_%H:%M')
-    end = dt.datetime.strptime(args['<end>'], '%Y-%m-%d_%H:%M')
+    begin = dt.datetime.strptime(args['<begin>'], '%Y-%m-%d_%H:%M:%S')
+    end = dt.datetime.strptime(args['<end>'], '%Y-%m-%d_%H:%M:%S')
     intv = int(args['<intv>'])
 
     radt = int(args['--radt']) 
@@ -97,5 +98,5 @@ if __name__ == '__main__':
     print('prepare namelists for all ens members',intv,radt,restart,restart_interval)
     for iens in range(1, exp.n_ens+1):
 
-        run(iens, begin, end, hist_interval=intv, radt=radt, 
+        run(iens, begin, end, hist_interval_s=intv, radt=radt, 
             restart=restart, restart_interval=restart_interval)
