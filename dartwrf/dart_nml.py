@@ -266,14 +266,7 @@ def write_namelist(just_prior_values=False):
         nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]*n_obstypes]
         nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]*n_obstypes]
 
-    # dont compute posterior, just evaluate prior
-    if just_prior_values:  
-        nml['&filter_nml']['compute_posterior'] = [['.false.']]
-        nml['&filter_nml']['output_members'] = [['.false.']]
-        nml['&filter_nml']['output_mean'] = [['.false.']]
-        nml['&filter_nml']['output_sd'] = [['.false.']]
-        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
-        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
+
 
     # overwrite namelist parameters as defined in the experiment configuration
     for section, sdata in exp.dart_nml.items():
@@ -296,7 +289,21 @@ def write_namelist(just_prior_values=False):
             # overwrite entry in each dictionary
             nml[section][parameter] = value  # every entry in this list is one line
 
-    # final checks
+    # necessary options if we dont compute posterior but only evaluate prior
+    if just_prior_values:  
+        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
+
+        nml['&filter_nml']['compute_posterior'] = [['.false.']]
+        
+        # inf_flavor posterior must be 0 if posterior is not computed
+        # inf_flavor keyword exists, so we can just overwrite it
+        nml['&filter_nml']['inf_flavor'] = [['0', '0']]
+
+        nml['&filter_nml']['output_members'] = [['.false.']]
+        nml['&filter_nml']['output_mean'] = [['.false.']]
+        nml['&filter_nml']['output_sd'] = [['.false.']]
+
     # fail if horiz_dist_only == false but observations contain a satellite channel
     if nml['&location_nml']['horiz_dist_only'][0] == '.false.':
         for obscfg in exp.observations:
