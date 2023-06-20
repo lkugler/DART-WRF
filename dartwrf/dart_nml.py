@@ -298,6 +298,7 @@ def write_namelist(just_prior_values=False):
         
         # inf_flavor posterior must be 0 if posterior is not computed
         # inf_flavor keyword exists, so we can just overwrite it
+        # prior inf must be 0, because we only want to evaluate the prior, not assimilate anything
         nml['&filter_nml']['inf_flavor'] = [['0', '0']]
 
         nml['&filter_nml']['output_members'] = [['.false.']]
