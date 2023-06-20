@@ -6,18 +6,19 @@ import datetime as dt
 from dartwrf.workflows import WorkFlows
 
 w = WorkFlows(exp_config='exp_nonlin.py', server_config='jet.py')
+id = None
 
-
-assim_times = [dt.datetime(2008,7,30,12), 
-                dt.datetime(2008,7,30,12,30),  
-                dt.datetime(2008,7,30,13),
-                dt.datetime(2008,7,30,13,30),  
-                dt.datetime(2008,7,30,14),]
+assim_times = [dt.datetime(2008,7,30,12), ]
+                # dt.datetime(2008,7,30,12,30),  
+                # dt.datetime(2008,7,30,13),
+                # dt.datetime(2008,7,30,13,30),  
+                # dt.datetime(2008,7,30,14),]
 
 # generate observations at +1 minute after the assimilation time
-obs_times = [each+dt.timedelta(minutes=1) for each in assim_times]
-w.generate_obsseq_out(obs_times)
 
+tuples = []
+for init in assim_times:
+    for s in range(30,3*60+1,30):
+        tuples.append((init, init+dt.timedelta(seconds=s)))
 
-# evaluate the forecast at +1 minute after the assimilation time
-w.evaluate_plus1(assim_times)
+w.evaluate_obs_posterior_after_analysis(tuples, depends_on=id)
