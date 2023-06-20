@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     id = None
 
-    if False:  # warm bubble
+    if True:  # warm bubble
         prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_noDA'
 
         init_time = dt.datetime(2008, 7, 30, 12)
@@ -26,19 +26,18 @@ if __name__ == "__main__":
         # id = w.run_ideal(depends_on=id)
         # id = w.wrfinput_insert_wbubble(depends_on=id)    
 
-    if True:  # random
+    if False:  # random
         prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P2_noDA'
 
-        init_time = dt.datetime(2008, 7, 30, 12)
-        time = dt.datetime(2008, 7, 30, 13)
-        last_assim_time = dt.datetime(2008, 7, 30, 13)
-        forecast_until = dt.datetime(2008, 7, 30, 13, 15)
+        init_time = dt.datetime(2008, 7, 30, 7)
+        time = dt.datetime(2008, 7, 30, 12)
+        last_assim_time = dt.datetime(2008, 7, 30, 14)
+        forecast_until = dt.datetime(2008, 7, 30, 18)
 
         w.prepare_WRFrundir(init_time)
         # id = w.run_ideal(depends_on=id)
 
     # prior_path_exp = w.cluster.archivedir
-    # prior_path_exp = '/gpfs/data/fs71386/lkugler/sim_archive/exp_v1.19_P5+su_noDA'
     
     prior_init_time = init_time
     prior_valid_time = time
@@ -69,10 +68,12 @@ if __name__ == "__main__":
         id = w.run_ENS(begin=time,  # start integration from here
                     end=time + timedelta_integrate,  # integrate until here
                     output_restart_interval=output_restart_interval,
+                    first_minutes=True,
                     depends_on=id)
         
         # as we have WRF output, we can use own exp path as prior
-        prior_path_exp = w.cluster.archivedir       
+        prior_path_exp = w.cluster.archivedir
+        # prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P2_noDA/'
 
         id_sat = w.create_satimages(time, depends_on=id)
         
@@ -84,3 +85,16 @@ if __name__ == "__main__":
 
     w.verify_sat(id_sat)
     w.verify_wrf(id)
+
+
+# assim_times = [dt.datetime(2008,7,30,12,30), ] 
+# time range from 12:30 to 13:30 every 15 minutes
+assim_times = [dt.datetime(2008,7,30,12,30) + dt.timedelta(minutes=15*i) for i in range(5)]
+tuples = []
+for init in assim_times:
+    for s in range(30,3*60+1,30):
+        tuples.append((init, init+dt.timedelta(seconds=s)))
+
+
+# evaluate the forecast at +1 minute after the assimilation time
+w.evaluate_obs_posterior_after_analysis(tuples, depends_on=id)

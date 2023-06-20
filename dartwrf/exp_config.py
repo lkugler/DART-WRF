@@ -4,14 +4,17 @@ exp = utils.Experiment()
 exp.expname = "template_experiment"
 exp.model_dx = 2000
 exp.n_ens = 40
-exp.superob_km = False  # False or int (spatial averaging of observations)
+exp.superob_km = False  # False or int (spatial averaging of observations, unit: km)
+exp.do_quality_control = False  # bool
 
-exp.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
-#exp.use_existing_obsseq = '/jetfs/home/lkugler/data/sim_archive//exp_v1.18_P1_nature+1//obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'
+# Use existing observations (path to obs_seq.out) or generate observations (False)
+exp.use_existing_obsseq = False
+#exp.use_existing_obsseq = '/users/students/lehre/advDA_s2023/dartwrf_tutorial/very_cold_observation.out'
 
-# path to the nature run, where we take observations from
-exp.nature_expname = 'exp_v1.18_P1_nature+1'
+# path from where observations can be generated
+exp.nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
+# for initialization profiles
 exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'
 
 
@@ -30,7 +33,7 @@ exp.dart_nml = {'&assim_tools_nml':
                             output_sd='.true.',
                             stages_to_write='output',
                         ),
-                '&quality_control_nml':
+                '&quality_control_nml': 
                     dict(outlier_threshold='-1',
                         ),
                 '&location_nml':
@@ -73,9 +76,9 @@ wv62 = dict(var_name='Brightness temperature WV 6.2µm', unit='[K]',
 
 wv73 = dict(var_name='Brightness temperature WV 7.3µm', unit='[K]',
             kind='MSG_4_SEVIRI_TB', sat_channel=6, 
-            n_obs=256, obs_locations='square_array_evenly_on_grid',
-            error_generate=1., error_assimilate=1., 
-            loc_horiz_km=10)
+            n_obs=961, obs_locations='square_array_evenly_on_grid',
+            error_generate=1., error_assimilate=3., 
+            loc_horiz_km=20)
 
 ir108 = dict(var_name='Brightness temperature IR 10.8µm', unit='[K]',
              kind='MSG_4_SEVIRI_TB', sat_channel=9, 
@@ -99,22 +102,25 @@ t = dict(var_name='Temperature', unit='[K]',
          loc_horiz_km=50, loc_vert_km=2.5)
 
 q = dict(var_name='Specific humidity', unit='[kg/kg]',
-         kind='RADIOSONDE_SPECIFIC_HUMIDITY', n_obs=1,
+         kind='RADIOSONDE_SPECIFIC_HUMIDITY', 
+         n_obs=961,  obs_locations='square_array_evenly_on_grid',
          error_generate=0., error_assimilate=5*1e-5,
          heights=[1000], #range(1000, 17001, 2000),
          loc_horiz_km=0.1, loc_vert_km=2.5)
 
 t2m = dict(var_name='SYNOP Temperature', unit='[K]',
            kind='SYNOP_TEMPERATURE', 
-           n_obs=256, obs_locations='square_array_evenly_on_grid',
-           error_generate=0.3, error_assimilate=0.3,
-           loc_horiz_km=10, loc_vert_km=2)
+           n_obs=961,  obs_locations='square_array_evenly_on_grid',
+           error_generate=0.1, error_assimilate=0.1,
+           loc_horiz_km=40, loc_vert_km=2.5)
 
 psfc = dict(var_name='SYNOP Pressure', unit='[Pa]',
-            kind='SYNOP_SURFACE_PRESSURE', n_obs=1, 
+            kind='SYNOP_SURFACE_PRESSURE', 
+            n_obs=961,  obs_locations='square_array_evenly_on_grid',
             error_generate=50., error_assimilate=100.,
             loc_horiz_km=32, loc_vert_km=5)
 
-exp.observations = [wv73]
+exp.observations = [vis]
 exp.update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'PSFC']
+
 
