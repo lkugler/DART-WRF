@@ -217,18 +217,18 @@ class WorkFlows(object):
             first_minutes (bool, optional): if True, get wrfout of first 5 minutes every minute
             input_is_restart (bool, optional): if True, start WRF from WRFrst file (restart mode)
             output_restart_interval (int, optional): interval in minutes between output of WRFrst files
-            hist_interval (int, optional): interval in minutes between output of WRF history files
+            hist_interval (float, optional): interval in minutes between output of WRF history files
             radt (int, optional): time step of radiation scheme
 
         Returns:
             str: job ID of the submitted job
         """
 
-        def prepare_WRF_inputfiles(begin, end, hist_interval=5, radt=5, output_restart_interval=False, depends_on=None):
+        def prepare_WRF_inputfiles(begin, end, hist_interval_s=300, radt=5, output_restart_interval=False, depends_on=None):
             
             args = [self.cluster.python, self.cluster.scripts_rundir+'/prepare_namelist.py',
-                    begin.strftime('%Y-%m-%d_%H:%M'), end.strftime('%Y-%m-%d_%H:%M'),
-                    str(hist_interval), '--radt='+str(radt), '--restart='+restart_flag,]
+                    begin.strftime('%Y-%m-%d_%H:%M:%S'), end.strftime('%Y-%m-%d_%H:%M:%S'),
+                    str(hist_interval_s), '--radt='+str(radt), '--restart='+restart_flag,]
 
             if output_restart_interval:
                 args.append('--restart_interval='+str(int(float(output_restart_interval))))
@@ -245,8 +245,8 @@ class WorkFlows(object):
 
         # every minute output within first 5 minutes (needed for validating a radiance assimilation)
         if first_minutes:
-            id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=4), 
-                    hist_interval=1,  # to get an output after 1 minute
+            id = prepare_WRF_inputfiles(begin, begin+dt.timedelta(minutes=3), 
+                    hist_interval_s=30,  # to get an output every 30 seconds
                     radt = 1,  # to get a cloud fraction CFRAC after 1 minute
                     output_restart_interval=output_restart_interval, 
                     depends_on=id)
@@ -258,7 +258,7 @@ class WorkFlows(object):
 
         # forecast for the whole forecast duration       
         id = prepare_WRF_inputfiles(begin, end, 
-                                    hist_interval=hist_interval, 
+                                    hist_interval_s=hist_interval*60, 
                                     radt=radt,
                                     output_restart_interval=output_restart_interval,
                                     depends_on=id)
@@ -332,22 +332,12 @@ class WorkFlows(object):
                 depends_on=[depends_on])
         return id
     
-    def evaluate_plus1(self, list_assim_times, depends_on=None):
-        list_of_tuples = [(init, (init+dt.timedelta(minutes=1))) for init in list_assim_times]
-        arg = ' '.join([ttuple[0].strftime('%Y-%m-%d_%H:%M,')+ttuple[1].strftime('%Y-%m-%d_%H:%M') for ttuple in list_of_tuples])
+    def evaluate_obs_posterior_after_analysis(self, init_valid_tuples, depends_on=None):
+
+        arg = ' '.join([init.strftime('%Y-%m-%d_%H:%M,')+valid.strftime('%Y-%m-%d_%H:%M:%S') for (init, valid) in init_valid_tuples])
 
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+arg
         id = self.cluster.run_job(cmd, 'eval+1'+self.exp.expname, cfg_update={"ntasks": "12", "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2", 
-                                                                              "time": "15", "mail-type": "FAIL"}, 
-                depends_on=[depends_on])
-        return id
-
-    def evaluate_plus0(self, list_assim_times, depends_on=None):
-        list_of_tuples = [(init, init) for init in list_assim_times]
-        arg = ' '.join([ttuple[0].strftime('%Y-%m-%d_%H:%M,')+ttuple[1].strftime('%Y-%m-%d_%H:%M') for ttuple in list_of_tuples])
-
-        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+arg
-        id = self.cluster.run_job(cmd, 'eval+0'+self.exp.expname, cfg_update={"ntasks": "12", "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2", 
                                                                               "time": "15", "mail-type": "FAIL"}, 
                 depends_on=[depends_on])
         return id

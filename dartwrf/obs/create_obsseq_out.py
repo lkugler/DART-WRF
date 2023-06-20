@@ -3,6 +3,7 @@ import os, shutil, warnings
 from dartwrf.utils import try_remove, print, shell, symlink
 import dartwrf.obs.create_obsseq_in as osi
 from dartwrf.obs import obsseq
+from dartwrf import assim_synth_obs as aso
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
@@ -11,6 +12,11 @@ from dartwrf.server_config import cluster
 def _prepare_DART_grid_template():
     # DART needs a wrfinput file as a template for the grid
     # No data will be read from this file, but the grid information must match exactly.
+    
+    # error if the source does not exist
+    if not os.path.exists(cluster.dart_rundir + "/wrfout_d01"):
+        raise FileNotFoundError("wrfout_d01 not found in " + cluster.dart_rundir, 
+                                "but necessary to create observations")
     symlink(cluster.dart_rundir + "/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
 
@@ -38,7 +44,7 @@ def generate_obsseq_out(time):
 
     def apply_superobbing(oso):
         try:
-            f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out-before_superob")
+            f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M:%S_obs_seq.out-before_superob")
             shutil.copy(cluster.dart_rundir + "/obs_seq.out-before_superob", f_oso)
             print('saved', f_oso)
         except Exception as e:
@@ -68,7 +74,7 @@ def generate_obsseq_out(time):
         oso = apply_superobbing(oso)
 
     # archive complete obsseqout
-    f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
+    f_oso = dir_obsseq + time.strftime(aso.pattern_obs_seq_out)
     shutil.copy(cluster.dart_rundir + "/obs_seq.out", f_oso)
     print('saved', f_oso)
     return oso
@@ -90,9 +96,11 @@ def run_perfect_model_obs(nproc=12):
         raise RuntimeError("obs_seq.in does not exist in " + cluster.dart_rundir)
     shell(cluster.dart_modules+' mpirun -np '+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
     if not os.path.exists(cluster.dart_rundir + "/obs_seq.out"):
+        log_file_content = str(open(cluster.dart_rundir + "/log.perfect_model_obs",'r').read())
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dart_rundir,
-            "\n look for " + cluster.dart_rundir + "/log.perfect_model_obs")
+            "\n probably perfect_model_obs failed, log file says:\n",
+            log_file_content)
     
 if __name__ == '__main__':
     """Generate obs_seq.out files from an experiment
