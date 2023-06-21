@@ -184,9 +184,12 @@ class WorkFlows(object):
         mpirun -np 1 ./ideal.exe &
     done
     wait
+
+    # move log file to sim_archive
     for ((n=1; n<="""+str(self.exp.n_ens)+"""; n++))
     do
         rundir="""+self.cluster.wrf_rundir_base+'/'+self.exp.expname+"""/$n
+        touch -a $rundir/rsl.out.0000  # create log file if it doesnt exist, to avoid error in mv if it doesnt exist
         mv $rundir/rsl.out.0000 $rundir/rsl.out.input
     done
     """
