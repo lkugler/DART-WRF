@@ -6,13 +6,15 @@ Welcome to the DART-WRF documentation!
 Installation
 ------------
 
-DART-WRF is available at `github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_ using the command line: 
+DART-WRF is available at `github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_ using the command line. To use it, you don't need to install it, but only its requirements:
 
 .. code-block::
    
    git clone https://github.com/lkugler/DART-WRF.git
-   cd DART-WRF
-   pip install -e .
+   pip install xarray netCDF4 docopt pysolar==0.10.0
+
+Note that `pysolar` is only necessary if you will be using satellite observations.
+
 
 
 Other helpful resources
