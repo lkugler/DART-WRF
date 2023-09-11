@@ -182,17 +182,22 @@ def _get_list_of_localizations():
 
     for obscfg in exp.observations:
 
+        if obscfg["loc_vert_km"] == False or obscfg["loc_vert_scaleheight"] == False:
+            continue  # no vertical localization for this observation type, in all other cases we need it
+
         l_obstypes.append(obscfg["kind"])
         loc_horiz_km = obscfg["loc_horiz_km"]
         if not loc_horiz_km >= 0:
             raise ValueError('Invalid value for `loc_horiz_km`, set loc_horiz_km >= 0 !')
 
-        # compute horizontal localization
+        # compute horizontal localization value
         loc_horiz_rad = to_radian_horizontal(loc_horiz_km)
         l_loc_horiz_rad.append(loc_horiz_rad)
 
-        try:  # localization by height
-            loc_vert_km = obscfg["loc_vert_km"]
+        # compute vertical localization value
+
+        try:  # do we localize by height?
+            loc_vert_km = obscfg["loc_vert_km"]  
 
             vert_norm_hgt = to_vertical_normalization(loc_vert_km, loc_horiz_km)
             l_loc_vert_km.append(vert_norm_hgt)
@@ -200,7 +205,7 @@ def _get_list_of_localizations():
             # set the other (unused) list to a dummy value
             l_loc_vert_scaleheight.append(-1)
 
-        except KeyError:  # localization by scale height
+        except KeyError:  # do we localize by scale height?
             try:
                 loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
 
@@ -210,9 +215,9 @@ def _get_list_of_localizations():
                 # set the other (unused) list to a dummy value
                 l_loc_vert_km.append(-1)
 
-            except KeyError:
+            except KeyError:  # if neither is defined
 
-                # do we have vertical localization?
+                # do we have vertical localization at all?
                 # check parameter horiz_dist_only == true
                 if exp.dart_nml['&location_nml']['horiz_dist_only'] == '.true.':
                     # no vertical localization
