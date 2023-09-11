@@ -141,12 +141,15 @@ def filter(nproc=12):
     print("running filter")
     os.chdir(cluster.dart_rundir)
     try_remove(cluster.dart_rundir + "/obs_seq.final")
+
     t = time_module.time()
-    if nproc < 12:
-        shell(cluster.dart_modules+' mpirun -np 12 ./filter &> log.filter')
-    else:  # -genv I_MPI_PIN_PROCESSOR_LIST=0-"+str(int(nproc) - 1)
-        shell(cluster.dart_modules+" mpirun -np "+str(int(nproc))+" ./filter > log.filter")
+    if nproc > 1:
+        # -genv I_MPI_PIN_PROCESSOR_LIST=0-"+str(int(nproc) - 1)
+        shell(cluster.dart_modules+" mpirun -np "+str(int(nproc))+" ./filter > log.filter") 
+    else:
+        shell(cluster.dart_modules+" ./filter > log.filter")
     print("./filter took", int(time_module.time() - t), "seconds")
+    
     if not os.path.isfile(cluster.dart_rundir + "/obs_seq.final"):
         raise RuntimeError(
             "obs_seq.final does not exist in " + cluster.dart_rundir,
@@ -322,7 +325,8 @@ def qc_obs(time, oso):
 def evaluate(assim_time, 
              obs_seq_out=False,
              prior_is_filter_output=False,
-             output_format=pattern_obs_seq_final+"-evaluate"):
+             output_format=pattern_obs_seq_final+"-evaluate",
+             nproc=12):
     """Calculates either prior or posterior obs space values.
 
     Note: Depends on a prepared input_list.txt, which defines the ensemble (prior or posterior).
@@ -350,7 +354,7 @@ def evaluate(assim_time,
 
     if prior_is_filter_output:
         print('using filter_restart files from last assimilation as prior')
-        use_filter_output_as_prior(time)
+        use_filter_output_as_prior(assim_time)
     else:
         print('using files linked to `run_DART/<exp>/prior_ens*/wrfout_d01` as prior')
         use_linked_files_as_prior()
@@ -363,7 +367,7 @@ def evaluate(assim_time,
             raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
 
     dart_nml.write_namelist(just_prior_values=True)
-    filter(nproc=6)
+    filter(nproc=nproc)
 
     # archiving
     fout = cluster.archivedir + "/obs_seq_final/" + assim_time.strftime(output_format)
