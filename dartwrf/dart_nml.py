@@ -144,9 +144,39 @@ def write_namelist_from_dict(d, filepath):
             f.write('   /\n\n')
 
 
-def _get_list_of_localizations():
+def _get_horiz_localization():
     """Compile the list of localizations for the DART namelist variables
 
+    Args:
+        exp (Experiment): Experiment object
+    
+    Returns:
+        l_obstypes (list of str): entries for `special_vert_normalization_obs_types`
+        l_loc_horiz_rad (list of str): entries for `special_localization_cutoffs`
+    """
+    def to_radian_horizontal(cov_loc_horiz_km):
+        cov_loc_radian = cov_loc_horiz_km / earth_radius_km
+        return cov_loc_radian
+
+    l_obstypes_all = []  # list of all observation types
+    l_loc_horiz_rad = []  # list of respective horizontal localization values
+
+    for obscfg in exp.observations:
+        l_obstypes_all.append(obscfg["kind"])
+
+        # compute horizontal localization value
+        loc_horiz_km = obscfg["loc_horiz_km"]
+        if not loc_horiz_km >= 0:
+            raise ValueError('Invalid value for `loc_horiz_km`, set loc_horiz_km >= 0 !')
+        loc_horiz_rad = to_radian_horizontal(loc_horiz_km)
+        l_loc_horiz_rad.append(loc_horiz_rad)
+
+    return l_obstypes_all, l_loc_horiz_rad
+
+
+def _get_vertical_localization():
+    """Compile the list of vertical localizations for the DART namelist variables
+    
     Vertical localization can be defined in section &location_nml of 'input.nml'
     using following namelist variables:
         special_vert_normalization_obs_types     (list of str)
@@ -162,71 +192,68 @@ def _get_list_of_localizations():
         exp (Experiment): Experiment object
     
     Returns:
-        l_obstypes (list of str): entries for `special_vert_normalization_obs_types`
-        l_loc_horiz_rad (list of str): entries for `special_localization_cutoffs`
-        l_loc_vert_km (list of str): entries for `special_vert_normalization_heights`
-        l_loc_vert_scaleheight (list of str): entries for `special_vert_normalization_scale_heights`
+        l_obstypes_vert (list of str): entries for `special_vert_normalization_obs_types`
+        vert_norm_heights (list of str): entries for `special_vert_normalization_heights`
+        vert_norm_scale_heights (list of str): entries for `special_vert_normalization_scale_heights`
+        same for vert_norm_levels and vert_norm_pressures
     """
-    def to_radian_horizontal(cov_loc_horiz_km):
-        cov_loc_radian = cov_loc_horiz_km / earth_radius_km
-        return cov_loc_radian
 
     def to_vertical_normalization(cov_loc_vert_km, cov_loc_horiz_km):
         vert_norm_rad = earth_radius_km * cov_loc_vert_km / cov_loc_horiz_km * 1000
         return vert_norm_rad
-
-    l_obstypes = []
-    l_loc_horiz_rad = []
-    l_loc_vert_km = []
-    l_loc_vert_scaleheight = []
+    
+    l_obstypes_vert = []  # list of observation types that have vertical localization
+    vert_norm_heights = []  # list of respective vertical localization values
+    vert_norm_scale_heights = []  # list of respective vertical localization values (alternative to vert_norm_heights)
+    vert_norm_levels = []
+    vert_norm_pressures = []
 
     for obscfg in exp.observations:
 
-        if obscfg["loc_vert_km"] == False or obscfg["loc_vert_scaleheight"] == False:
+        # if both loc_vert_km and loc_vert_scaleheight are False or not defined, then continue without localization
+        if obscfg.get("loc_vert_km", False) == False and obscfg.get("loc_vert_scaleheight", False) == False:
             continue  # no vertical localization for this observation type, in all other cases we need it
 
-        l_obstypes.append(obscfg["kind"])
-        loc_horiz_km = obscfg["loc_horiz_km"]
-        if not loc_horiz_km >= 0:
-            raise ValueError('Invalid value for `loc_horiz_km`, set loc_horiz_km >= 0 !')
-
-        # compute horizontal localization value
-        loc_horiz_rad = to_radian_horizontal(loc_horiz_km)
-        l_loc_horiz_rad.append(loc_horiz_rad)
-
-        # compute vertical localization value
-
+        l_obstypes_vert.append(obscfg["kind"])
+        
         try:  # do we localize by height?
             loc_vert_km = obscfg["loc_vert_km"]  
+            loc_horiz_km = obscfg["loc_horiz_km"]
 
             vert_norm_hgt = to_vertical_normalization(loc_vert_km, loc_horiz_km)
-            l_loc_vert_km.append(vert_norm_hgt)
+            vert_norm_heights.append(vert_norm_hgt)
 
             # set the other (unused) list to a dummy value
-            l_loc_vert_scaleheight.append(-1)
+            vert_norm_scale_heights.append(-1)
+            vert_norm_levels.append(-1)
+            vert_norm_pressures.append(-1)
 
         except KeyError:  # do we localize by scale height?
             try:
                 loc_vert_scaleheight = obscfg["loc_vert_scaleheight"]
 
                 # no conversion necessary, take the values as defined in obscfg
-                l_loc_vert_scaleheight.append(loc_vert_scaleheight)
+                vert_norm_scale_heights.append(loc_vert_scaleheight)
 
                 # set the other (unused) list to a dummy value
-                l_loc_vert_km.append(-1)
+                vert_norm_heights.append(-1)
+                vert_norm_levels.append(-1)
+                vert_norm_pressures.append(-1)
 
             except KeyError:  # if neither is defined
 
                 # do we have vertical localization at all?
                 # check parameter horiz_dist_only == true
                 if exp.dart_nml['&location_nml']['horiz_dist_only'] == '.true.':
-                    # no vertical localization
-                    l_loc_vert_km.append(-1)
-                    l_loc_vert_scaleheight.append(-1)
+                    # no vertical localization => set all to dummy values
+                    vert_norm_heights.append(-1)
+                    vert_norm_scale_heights.append(-1)
+                    vert_norm_levels.append(-1)
+                    vert_norm_pressures.append(-1)
                 else:
                     raise ValueError('DART namelist requires vertical localization, but neither `loc_vert_km` nor `loc_vert_scaleheight` are defined in obscfg.')
                 
-    return l_obstypes, l_loc_horiz_rad, l_loc_vert_km, l_loc_vert_scaleheight
+    return l_obstypes_vert, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures
 
 
 
@@ -250,27 +277,27 @@ def write_namelist(just_prior_values=False):
     Returns:
         None
    """
-    list_obstypes, list_loc_horiz_rad, list_loc_vert_km, list_loc_vert_scaleheight = _get_list_of_localizations()
+    list_obstypes_all, list_loc_horiz_rad = _get_horiz_localization()
+    
+    vert_norm_obs_types, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures = _get_vertical_localization() 
 
     nml = read_namelist(cluster.dart_srcdir + "/input.nml")
 
-    n_obstypes = len(list_obstypes)
+    n_obstypes = len(list_obstypes_all)
     if n_obstypes > 0:
         # make sure that observations defined in `exp.observations` are assimilated
-        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes]
+        nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes_all]
         nml['&obs_kind_nml']['evaluate_these_obs_types'] = [[]]
 
         # write localization variables
-        nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes]
+        nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes_all]
         nml['&assim_tools_nml']['special_localization_cutoffs'] = [list_loc_horiz_rad]
 
-        nml['&location_nml']['special_vert_normalization_obs_types'] = [list_obstypes]
-        nml['&location_nml']['special_vert_normalization_heights'] = [list_loc_vert_km]
-        nml['&location_nml']['special_vert_normalization_scale_heights'] = [list_loc_vert_scaleheight]
-
-        nml['&location_nml']['special_vert_normalization_levels'] = [[-1,]*n_obstypes]
-        nml['&location_nml']['special_vert_normalization_pressures'] = [[-1,]*n_obstypes]
-
+        nml['&location_nml']['special_vert_normalization_obs_types'] = [vert_norm_obs_types]
+        nml['&location_nml']['special_vert_normalization_heights'] = [vert_norm_heights]
+        nml['&location_nml']['special_vert_normalization_scale_heights'] = [vert_norm_scale_heights]
+        nml['&location_nml']['special_vert_normalization_levels'] = [vert_norm_levels]
+        nml['&location_nml']['special_vert_normalization_pressures'] = [vert_norm_pressures]
 
 
     # overwrite namelist parameters as defined in the experiment configuration
@@ -297,7 +324,7 @@ def write_namelist(just_prior_values=False):
     # necessary options if we dont compute posterior but only evaluate prior
     if just_prior_values:  
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = [[]]
-        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes]
+        nml['&obs_kind_nml']['evaluate_these_obs_types'] = [list_obstypes_all]
 
         nml['&filter_nml']['compute_posterior'] = [['.false.']]
         
