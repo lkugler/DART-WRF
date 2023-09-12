@@ -289,10 +289,10 @@ def write_namelist(just_prior_values=False):
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes_all]
         nml['&obs_kind_nml']['evaluate_these_obs_types'] = [[]]
 
-        # write localization variables
         nml['&assim_tools_nml']['special_localization_obs_types'] = [list_obstypes_all]
         nml['&assim_tools_nml']['special_localization_cutoffs'] = [list_loc_horiz_rad]
 
+    if len(vert_norm_obs_types) > 0:  # avoid to write lists like [""]
         nml['&location_nml']['special_vert_normalization_obs_types'] = [vert_norm_obs_types]
         nml['&location_nml']['special_vert_normalization_heights'] = [vert_norm_heights]
         nml['&location_nml']['special_vert_normalization_scale_heights'] = [vert_norm_scale_heights]
