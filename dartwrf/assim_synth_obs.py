@@ -159,25 +159,31 @@ def filter(nproc=12):
 ############### archiving
 
 def archive_filteroutput(time):
-    print("archiving ...")
-
+    """Archive filter output files (filter_restart, preassim, postassim, output_mean, output_sd)
+    """
     archive_dir = cluster.archivedir + "/obs_seq_final/"
     mkdir(archive_dir)
+
+    # copy obs_seq.final to archive
     fout = archive_dir + time.strftime(pattern_obs_seq_final)
     copy(cluster.dart_rundir + "/obs_seq.final", fout)
     print(fout, "saved.")
 
     archive_assim = cluster.archivedir + time.strftime(pattern_init_time+"/assim_stage0/")
     mkdir(archive_assim)
+
+    # copy input.nml to archive
     copy(cluster.dart_rundir + "/input.nml", archive_assim + "/input.nml")
 
+    # copy filter_restart files to archive (initial condition for next run)
     for iens in range(1, exp.n_ens + 1):  # single members
         copy(
             cluster.dart_rundir + "/filter_restart_d01." + str(iens).zfill(4),
             archive_assim + "/filter_restart_d01." + str(iens).zfill(4),
         )
 
-    try:  # not necessary for next forecast run
+    # copy preassim/postassim files to archive (not necessary for next forecast run)
+    try:  
         ftypes = ['preassim', 'postassim']
         for ftype in ftypes:
             for iens in range(1, exp.n_ens + 1):
