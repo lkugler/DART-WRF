@@ -34,7 +34,7 @@ def calc_lin_posterior(assim_time):
 
      # does an observation exist at this time?
      #f_oso = assim_time.strftime(aso.pattern_obs_seq_out)
-     f_oso = cluster.archivedir+assim_time.strftime("/diagnostics/%Y-%m-%d_%H:%M/assim_stage0/obs_seq.out")
+     f_oso = cluster.archivedir+assim_time.strftime("/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out")
 
      if os.path.exists(f_oso):
           # use the existing file
