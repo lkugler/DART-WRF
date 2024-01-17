@@ -281,7 +281,7 @@ def write_namelist(just_prior_values=False):
     
     vert_norm_obs_types, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures = _get_vertical_localization() 
 
-    nml = read_namelist(cluster.dart_srcdir + "/input.nml")
+    nml = read_namelist(cluster.dart_srcdir + "/input.nml")  # default compilation namelist
 
     n_obstypes = len(list_obstypes_all)
     if n_obstypes > 0:

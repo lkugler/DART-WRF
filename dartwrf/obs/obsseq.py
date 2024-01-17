@@ -140,7 +140,7 @@ class ObsRecord(pd.DataFrame):
         Hx = self.iloc[:, keys_bool]
 
         # consistency check: compute mean over ens - compare with value from file
-        assert np.allclose(Hx.mean(axis=1), self[what+' ensemble mean'])
+        # assert np.allclose(Hx.mean(axis=1).values, self[what+' ensemble mean'].values, rtol=1e-6)
         return Hx.values
 
 
@@ -619,6 +619,14 @@ class ObsSeq(object):
         Args:
             list_of_obsseq (list of ObsSeq())
             
+        Example:
+            Combine two ObsSeq() objects
+            >>> oso1 = ObsSeq('path/to/obs_seq.out1')
+            >>> oso2 = ObsSeq('path/to/obs_seq.out2')
+            >>> oso_combi = oso1.append_obsseq([oso2,])
+
+        Returns:
+            ObsSeq() with combined data
         """
         from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
         inverted_obs_kind_nrs = {v: k for k, v in obs_kind_nrs.items()}

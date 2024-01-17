@@ -4,8 +4,53 @@ import subprocess
 import datetime as dt
 import re, tempfile
 
+# class Stage(object):
+#     """Collection of variables describing the assimilation stage"""
+#     def __init__(self, **kwargs):
+#         self.superob_km = False  # False or int (spatial averaging of observations)
+#         self.use_existing_obsseq = False  # False or pathname (use precomputed obs_seq.out files)
+#         self.__dict__.update(kwargs)
+
+#         # raise ValueError if attributes are not set
+#         needed_attributes = ['observations', 'dart_nml',]
+#         for attr in needed_attributes:
+#             if not hasattr(self, attr):
+#                 raise ValueError('Stage.'+attr+' is not set')
+
 class Experiment(object):
-    """Collection of variables regarding the experiment configuration"""
+    """Collection of variables which define the experiment
+    
+    Attributes:
+        expname (str): Name of the experiment
+        model_dx (int): WRF grid spacing in meters
+        n_ens (int): Ensemble size
+        do_quality_control (bool): If True, activate "quality control" function in assim_synth_obs.py
+        
+        nature_wrfout_pattern (str): Path to the nature run, where we take observations from; 
+            the path can contain wildcards (*,?), e.g. '/jetfs/exp1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+        input_profile (str): Path to WRF idealized input profiles; 
+            e.g. '/data/initial_profiles/wrf/ens/raso.fc.<iens>.wrfprof';
+            <iens> is replaced by 001-040 for a 40-member ensemble
+        
+        update_vars (list of str): Variables which will be updated after assimilation (update_IC.py)
+            e.g. ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR',]
+            
+        observations (list of dict): Dictionaries which define an observation;
+            keys: 
+            `error_generate`: measurement error standard-deviation;
+            `error_assimilate`: assigned observation error std-dev;
+            `heights`: list of integers at which observations are taken;
+            `loc_horiz_km`: float of horizontal localization half-width in km;
+            `loc_vert_km`: float of vertical localization half-width in km;
+        
+        use_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
+            time string is replaced by actual time: /path/%Y-%m-%d_%H:%M_obs_seq.out
+        
+        dart_nml (dict): updates to the default input.nml of DART (in dart_srcdir)
+            keys are namelist section headers (e.g. &filter_nml)
+            values are dictionaries of parameters and values (e.g. dict(ens_size=exp.n_ens,))
+
+    """
     def __init__(self):
         pass
 
@@ -22,8 +67,9 @@ class ClusterConfig(object):
     Attributes:
         name (str): Name of the cluster
         max_nproc (int): Maximum number of processors that can be used
+        np_WRF (int): Number of cores for WRF (mpirun -np xx ./wrf.exe)
         use_slurm (bool): If True, use SLURM to submit jobs
-        size_jobarray (int): Size of SLURM job array for running the WRF ensemble
+        size_WRF_jobarray (int): Size of SLURM job array for running the WRF ensemble
 
         python (str): Path to python executable
         python_verif (str): Path to python executable for verification
@@ -31,8 +77,8 @@ class ClusterConfig(object):
         ideal (str): Path to ideal.exe
         wrfexe (str): Path to wrf.exe
 
-        dart_modules (str): Modules to load for DART
-        wrf_modules (str): Modules to load for WRF
+        dart_modules (str): Command to load modules before running DART 
+        wrf_modules (str): Command to load modules before running WRF
 
         wrf_rundir_base (str): Path to temporary files for WRF
         dart_rundir_base (str): Path to temporary files for DART
@@ -41,20 +87,17 @@ class ClusterConfig(object):
         srcdir (str): Path to where WRF has been compiled, including the 'run' folder of WRF, e.g. /home/WRF-4.3/run
         dart_srcdir (str): Path to DART compile directory, e.g. /home/DART-9.11.9/models/wrf/work
         rttov_srcdir (str): Path to RTTOV compile directory, e.g. /home/RTTOV13/rtcoef_rttov13/
-        scriptsdir (str): Path where DART-WRF scripts reside, e.g. /home/DART-WRF/scripts
+        dartwrf_dir (str): Path where DART-WRF scripts reside, e.g. /home/DART-WRF/
 
+        geo_em_for_WRF_ideal (str, False): Path to the geo_em.d01.nc file for idealized nature runs
+        obs_impact_filename
         namelist (str): Path to a WRF namelist template; 
                         strings like <hist_interval>, will be overwritten in scripts/prepare_namelist.py
         run_WRF (str): Path to script which runs WRF on a node of the cluster
-        overwrite_coordinates_with_geo_em (bool):   If WRF ideal: path to NetCDF file of WRF domain (see WRF guide)
-                                                    if WRF real: set to False
-        obs_impact_filename (str): Path to obs_impact_filename (see DART guide; module assim_tools_mod and program obs_impact_tool)
 
-        slurm_cfg (dict):   python dictionary, containing options of SLURM
-                            defined in SLURM docs (https://slurm.schedmd.com/sbatch.html)
-                            this configuration can be overwritten later on, for example:
-                            $ cfg_update = {"nodes": "2"}
-                            $ new_config = dict(cluster.slurm_cfg, **cfg_update)
+        slurm_cfg (dict):   Dictionary containing the default configuration of SLURM
+                            as defined in SLURM docs (https://slurm.schedmd.com/sbatch.html).
+                            This configuration can be customized for any job (e.g. in workflows.py)
 
     """
     def __init__(self, exp):
@@ -138,6 +181,8 @@ def print(*args):
     __builtin__.print(*args, flush=True)
 
 def copy(src, dst, remove_if_exists=True):
+    if src == dst:
+        return  # the link already exists, nothing to do
     if remove_if_exists:
         try:
             os.remove(dst)

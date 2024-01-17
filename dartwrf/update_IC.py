@@ -1,9 +1,11 @@
+print('load imports')
 import os, sys, warnings
 import datetime as dt
 import netCDF4 as nc
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
+print('loaded imports')
 
 def update_initials_in_WRF_rundir(time):
     """Updates wrfrst-files in `/run_WRF/` directory 
@@ -28,12 +30,14 @@ def update_initials_in_WRF_rundir(time):
             raise IOError(ic_file+' does not exist, updating impossible!')
         else:
             # overwrite DA updated variables
-            filter_out = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/assim_stage0/filter_restart_d01.'+str(iens).zfill(4))
+            
+            filter_out = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/filter_restart_d01.'+str(iens).zfill(4))
 
             with nc.Dataset(filter_out, 'r') as ds_filter:
                 with nc.Dataset(ic_file, 'r+') as ds_new:
 
-                    ds_new.variables['T'][:] = ds_filter.variables['THM'][:]
+                    if 'T' in update_vars or 'THM' in update_vars:
+                        ds_new.variables['T'][:] = ds_filter.variables['THM'][:]
 
                     # update all other variables
                     for var in update_vars:

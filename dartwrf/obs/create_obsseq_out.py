@@ -3,7 +3,7 @@ import os, shutil, warnings
 from dartwrf.utils import try_remove, print, shell, symlink
 import dartwrf.obs.create_obsseq_in as osi
 from dartwrf.obs import obsseq
-from dartwrf import assim_synth_obs as aso
+from dartwrf import assimilate as aso
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
@@ -20,19 +20,23 @@ def _prepare_DART_grid_template():
     symlink(cluster.dart_rundir + "/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
 
-def generate_obsseq_out(time):
+def generate_obsseq_out(time, nproc=12):
     """Generate an obs_seq.out file from the current experiment
     Expects an existing nature file in the cluster.dart_rundir
     
     Args:
         time (datetime): time of the observations
+        nproc (int, optional): number of cores for call to ./perfect_model_obs
     
     Returns:
         obsseq.ObsSeq: obs_seq.out representation
     """
 
-    def ensure_physical_vis(oso):  # set reflectance < surface albedo to surface albedo
-        print(" 2.2) removing obs below surface albedo ")
+    def _ensure_physical_vis(oso):  # set reflectance < surface albedo to surface albedo
+        """ Set values smaller than surface albedo to surface albedo
+        Highly hacky. Your albedo might be different.
+        """
+        print(" removing obs below surface albedo ")
         clearsky_albedo = 0.2928
 
         if_vis_obs = oso.df['kind'].values == 262
@@ -42,41 +46,30 @@ def generate_obsseq_out(time):
         return oso
 
 
-    def apply_superobbing(oso):
+    def _apply_superobbing(oso):
         try:
-            f_oso = dir_obsseq + time.strftime("/%Y-%m-%d_%H:%M:%S_obs_seq.out-before_superob")
-            shutil.copy(cluster.dart_rundir + "/obs_seq.out-before_superob", f_oso)
+            f_oso = aso.pattern_obs_seq_out + '-before_superob'
+            shutil.copy(cluster.dart_rundir + "/obs_seq.out", f_oso)
             print('saved', f_oso)
         except Exception as e:
             warnings.warn(str(e))
 
-        print(" 2.3) superobbing to", exp.superob_km, "km")
+        print(" superobbing to", exp.superob_km, "km")
         oso.df = oso.df.superob(window_km=exp.superob_km)
         oso.to_dart(f=cluster.dart_rundir + "/obs_seq.out")
+        return oso
 
-
-    ##############################
-        
-    dir_obsseq=cluster.archivedir + "/obs_seq_out/"
-    os.makedirs(dir_obsseq, exist_ok=True)
-
-    osi.create_obs_seq_in(time, exp.observations)
+    osi.create_obs_seq_in(time, exp.observations)  # create obs definition file
 
     _prepare_DART_grid_template()
-    run_perfect_model_obs()  # generate observation, draws from gaussian
+    run_perfect_model_obs(nproc=nproc)  # generate observation, draws from gaussian
 
-    print(" 2.1) obs preprocessing")
     oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
 
-    oso = ensure_physical_vis(oso)
+    oso = _ensure_physical_vis(oso)
 
     if getattr(exp, "superob_km", False):
-        oso = apply_superobbing(oso)
-
-    # archive complete obsseqout
-    f_oso = dir_obsseq + time.strftime(aso.pattern_obs_seq_out)
-    shutil.copy(cluster.dart_rundir + "/obs_seq.out", f_oso)
-    print('saved', f_oso)
+        oso = _apply_superobbing(oso)
     return oso
 
 def run_perfect_model_obs(nproc=12):
@@ -90,17 +83,16 @@ def run_perfect_model_obs(nproc=12):
     """
     print("running ./perfect_model_obs")
     os.chdir(cluster.dart_rundir)
+    nproc = min(nproc, cluster.max_nproc)
 
     try_remove(cluster.dart_rundir + "/obs_seq.out")
     if not os.path.exists(cluster.dart_rundir + "/obs_seq.in"):
         raise RuntimeError("obs_seq.in does not exist in " + cluster.dart_rundir)
     shell(cluster.dart_modules+' mpirun -np '+str(nproc)+" ./perfect_model_obs > log.perfect_model_obs")
     if not os.path.exists(cluster.dart_rundir + "/obs_seq.out"):
-        log_file_content = str(open(cluster.dart_rundir + "/log.perfect_model_obs",'r').read())
         raise RuntimeError(
             "obs_seq.out does not exist in " + cluster.dart_rundir,
-            "\n probably perfect_model_obs failed, log file says:\n",
-            log_file_content)
+            "\n see "+cluster.dart_rundir + "/log.perfect_model_obs")
     
 if __name__ == '__main__':
     """Generate obs_seq.out files from an experiment
@@ -123,7 +115,7 @@ if __name__ == '__main__':
     times = args.times.split(',')
 
     # before running perfect_model_obs, we need to set up the run_DART folder
-    from dartwrf import assim_synth_obs as aso
+    from dartwrf import assimilate as aso
     from dartwrf import dart_nml
     aso.prepare_run_DART_folder()
     nml = dart_nml.write_namelist()

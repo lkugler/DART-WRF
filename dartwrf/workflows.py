@@ -218,7 +218,7 @@ class WorkFlows(object):
             begin (datetime): start time of the forecast
             end (datetime): end time of the forecast
             depends_on (str, optional): job ID of a previous job after which to run this job
-            first_minutes (bool, optional): if True, get wrfout of first 5 minutes every minute
+            first_minutes (bool, optional): if True, get wrfout of first 2 minutes
             input_is_restart (bool, optional): if True, start WRF from WRFrst file (restart mode)
             output_restart_interval (int, optional): interval in minutes between output of WRFrst files
             hist_interval (float, optional): interval in minutes between output of WRF history files
@@ -270,10 +270,11 @@ class WorkFlows(object):
 
         time_in_simulation_hours = (end-begin).total_seconds()/3600
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9)  # usually below 9 min/hour
-        id = self.cluster.run_job(wrf_cmd, "WRF-"+self.exp.expname, 
-                            cfg_update={"array": "1-"+str(self.cluster.size_WRF_jobarray), "ntasks": "10", "nodes": "1",
-                                "time": str(runtime_wallclock_mins_expected), "mem": "40G", }, 
-                            depends_on=[id])
+        cfg_update = {"array": "1-"+str(self.cluster.size_WRF_jobarray), "ntasks": "10", "nodes": "1",
+                      "time": str(runtime_wallclock_mins_expected), "mem": "40G", }
+        #if runtime_wallclock_mins_expected > 10:
+        #    cfg_update.update({"nodelist": "jet08"})
+        id = self.cluster.run_job(wrf_cmd, "WRF-"+self.exp.expname, cfg_update=cfg_update, depends_on=[id])
         return id
 
 
@@ -292,7 +293,7 @@ class WorkFlows(object):
         if not os.path.exists(prior_path_exp):
             raise IOError('prior_path_exp does not exist: '+prior_path_exp)
 
-        cmd = (self.cluster.python+' '+self.cluster.scripts_rundir+'/assim_synth_obs.py '
+        cmd = (self.cluster.python+' '+self.cluster.scripts_rundir+'/assimilate.py '
                 +assim_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_init_time.strftime('%Y-%m-%d_%H:%M ')
                 +prior_valid_time.strftime('%Y-%m-%d_%H:%M ')
@@ -327,7 +328,7 @@ class WorkFlows(object):
 
     def create_satimages(self, init_time, depends_on=None):
         """Run a job array, one job per ensemble member, to create satellite images"""
-        cmd = 'module purge; module load netcdf-fortran/4.5.3-gcc-8.5.0-qsqbozc; ' \
+        cmd = 'module purge; module load rttov; ' \
             + 'python ~/RTTOV-WRF/run_init.py '+self.cluster.archivedir+init_time.strftime('/%Y-%m-%d_%H:%M/ ') \
             + '$SLURM_ARRAY_TASK_ID'
         id = self.cluster.run_job(cmd, "RTTOV-"+self.exp.expname, 
@@ -352,23 +353,15 @@ class WorkFlows(object):
         return id
 
     def verify_sat(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node sat verif1d FSS BS'
+        cmd = '/jetfs/home/lkugler/miniforge3/envs/verif/bin/python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node sat verif1d FSS BS'
 
         self.cluster.run_job(cmd, "verif-SAT-"+self.exp.expname, 
                         cfg_update={"time": "60", "mail-type": "FAIL,END", "ntasks": "15", 
                                     "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "100G",}, depends_on=[depends_on])
 
     def verify_wrf(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node wrf verif1d verif3d FSS BS'
+        cmd = '/jetfs/home/lkugler/miniforge3/envs/verif/bin/python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node wrf verif1d FSS BS'
         
         self.cluster.run_job(cmd, "verif-WRF-"+self.exp.expname, 
                         cfg_update={"time": "180", "mail-type": "FAIL,END", "ntasks": "21", 
                                     "ntasks-per-node": "21", "ntasks-per-core": "1", "mem": "230G"}, depends_on=[depends_on])
-
-    def verify_fast(self, depends_on=None):
-        cmd = self.cluster.python_verif+' /jetfs/home/lkugler/osse_analysis/plot_fast/plot_single_exp.py '+self.exp.expname
-
-        self.cluster.run_job(cmd, "verif-fast-"+self.exp.expname, 
-                        cfg_update={"time": "10", "mail-type": "FAIL", "ntasks": "1",
-                                    "ntasks-per-node": "1", "ntasks-per-core": "1"}, depends_on=[depends_on])
-

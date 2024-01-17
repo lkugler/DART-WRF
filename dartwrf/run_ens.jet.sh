@@ -10,8 +10,8 @@ RUNDIR=$MAINDIR/$EXPNAME/$IENS
 echo "ENSEMBLE NR: "$IENS" in "$RUNDIR
 cd $RUNDIR
 rm -rf rsl.out.0*
-echo "mpirun -np 10 ./wrf.exe"
-mpirun -np 10 ./wrf.exe
+echo "mpirun -np <exp.np_WRF> ./wrf.exe"
+mpirun -np <exp.np_WRF> ./wrf.exe
 
 
 # error checking

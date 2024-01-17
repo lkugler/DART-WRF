@@ -73,7 +73,24 @@ def _write_file(msg, output_path='./'):
 
 
 def _append_hgt_to_coords(coords, heights):
+    """Adds vertical position to list of coordinates
+    
+    if heights is a scalar, then all obs have the same height
+    if heights is a list, then you get multiple levels
+
+    Args:
+        coords (list of 2-tuples): (lat, lon) in degrees north/east
+        heights (float or list of float): height in meters
+    
+    Returns:
+        list of 3-tuples
+    """
     coords2 = []
+    try:
+        len(heights)  # fails with scalar
+    except TypeError:
+        heights = [heights, ]
+        
     for i in range(len(coords)):
         for hgt_m in heights:
             coords2.append(coords[i] + (hgt_m,))
@@ -112,6 +129,11 @@ def _determine_vert_coords(sat_channel, kind, obscfg):
     else:
         vert_coord_sys = "-2"  # undefined height
         vert_coords = ["-888888.0000000000", ]
+        
+        if 'height' in obscfg:
+            # hypothetical height, only used for localization
+            vert_coord_sys = "3"  # meters AMSL
+            vert_coords = obscfg['height']
     return vert_coord_sys, vert_coords
 
 
