@@ -1,13 +1,23 @@
 dartwrf package
 ===============
 
-Subpackages
------------
+Configuration: dartwrf.utils module
+--------------------
 
-.. toctree::
-   :maxdepth: 4
+.. automodule:: dartwrf.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   dartwrf.obs
+
+Job-Submission: dartwrf.workflows module
+------------------------
+
+.. automodule:: dartwrf.workflows
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Submodules
 ----------
@@ -16,22 +26,6 @@ dartwrf.assimilate module
 --------------------------------
 
 .. automodule:: dartwrf.assimilate
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.create\_obs\_upfront module
------------------------------------
-
-.. automodule:: dartwrf.create_obs_upfront
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.create\_wbubble\_wrfinput module
-----------------------------------------
-
-.. automodule:: dartwrf.create_wbubble_wrfinput
    :members:
    :undoc-members:
    :show-inheritance:
@@ -48,30 +42,6 @@ dartwrf.evaluate\_obs\_space module
 -----------------------------------
 
 .. automodule:: dartwrf.evaluate_obs_space
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.evaluate\_posterior module
-----------------------------------
-
-.. automodule:: dartwrf.evaluate_posterior
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.evaluate\_prior module
-------------------------------
-
-.. automodule:: dartwrf.evaluate_prior
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.exp\_config module
---------------------------
-
-.. automodule:: dartwrf.exp_config
    :members:
    :undoc-members:
    :show-inheritance:
@@ -116,22 +86,6 @@ dartwrf.update\_IC module
    :undoc-members:
    :show-inheritance:
 
-dartwrf.utils module
---------------------
-
-.. automodule:: dartwrf.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dartwrf.workflows module
-------------------------
-
-.. automodule:: dartwrf.workflows
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dartwrf.wrfinput\_add\_geo module
 ---------------------------------
 
@@ -148,10 +102,10 @@ dartwrf.wrfout\_add\_geo module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+Subpackages
+-----------
 
-.. automodule:: dartwrf
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 4
+
+   dartwrf.obs
