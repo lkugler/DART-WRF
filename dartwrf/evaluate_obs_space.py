@@ -3,40 +3,49 @@ import datetime as dt
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
-from dartwrf import assim_synth_obs as aso
+from dartwrf import assimilate as aso
+from dartwrf import dart_nml
+from dartwrf.obs import create_obsseq_out as osq_out
 
 def evaluate_one_time(assim_time, valid_time, use_other_obsseq=False):
      """Evaluate the ensemble forecast in observation space at a given time, apart from the analysis time.
 
      Args:
           assim_time (datetime): initialization time of the forecast
-          valid_time (datetime): valid_time of the forecast
+          valid_time (datetime): valid_time of the forecast (e.g. +1 minute after assim_time)
 
      Returns:
           None
      """
-     aso.prepare_nature_dart(valid_time)
+     aso.prepare_run_DART_folder()
      aso.prepare_prior_ensemble(valid_time, prior_init_time=assim_time, prior_valid_time=valid_time, prior_path_exp=cluster.archivedir)
+     dart_nml.write_namelist()
 
      # does an observation exist at this time?
+     f_oso = valid_time.strftime(aso.pattern_obs_seq_out)
      f_oso = cluster.archivedir+valid_time.strftime("/obs_seq_out/%Y-%m-%d_%H:%M:%S_obs_seq.out")
 
      if os.path.exists(f_oso):
           # use the existing file
           shutil.copy(f_oso, cluster.dart_rundir+'/obs_seq.out')
      else:
-          # use an old obsseq file and 
-          f_oso = cluster.archivedir+assim_time.strftime("/obs_seq_out/%Y-%m-%d_%H:%M:%S_obs_seq.out")
+          if False:
+               # use an old obsseq file and overwrite obs/truth values with "missing value"
+               f_oso = cluster.archivedir+valid_time.strftime("/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out")
+          
+               from dartwrf.obs import obsseq
+               oso = obsseq.ObsSeq(f_oso)
 
-          from dartwrf.obs import obsseq
-          oso = obsseq.ObsSeq(f_oso)
-
-          # overwrite obs/truth values with "missing value"
-          oso.df['observations'] = -888888.0
-          oso.df['truth'] = -888888.0
-          oso.to_dart(cluster.dart_rundir+'/obs_seq.out')
-
-     aso.evaluate(valid_time, output_format="%Y-%m-%d_%H:%M:%S_obs_seq.final-evaluate")
+               # overwrite obs/truth values with "missing value"
+               oso.df['observations'] = -888888.0
+               oso.df['truth'] = -888888.0
+               oso.to_dart(cluster.dart_rundir+'/obs_seq.out')
+          else:
+               # generate the observations for the specified valid_time
+               aso.prepare_nature_dart(valid_time)
+               osq_out.generate_obsseq_out(valid_time)
+     
+     aso.evaluate(valid_time, f_out_pattern=cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M:%S_obs_seq.final-evaluate")
 
 
 if __name__ == "__main__":
