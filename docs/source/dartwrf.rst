@@ -12,10 +12,10 @@ Subpackages
 Submodules
 ----------
 
-dartwrf.assim\_synth\_obs module
+dartwrf.assimilate module
 --------------------------------
 
-.. automodule:: dartwrf.assim_synth_obs
+.. automodule:: dartwrf.assimilate
    :members:
    :undoc-members:
    :show-inheritance:
