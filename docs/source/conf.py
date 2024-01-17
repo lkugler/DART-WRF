@@ -22,8 +22,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
-    'nbsphinx',
-    'sphinx_rtd_theme',
+    'nbsphinx',,
 ]
 
 autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils']
