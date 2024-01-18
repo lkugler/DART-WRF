@@ -23,11 +23,19 @@ Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of
 Recipe to add new functionality
 *******************************
 
-Do you need a new script? If not, use an existing one.
-If you need write a new script, you need to 
+Option 1: Add a function in an existing script
+----------------------------------------------
 
-#. write a workflow method (`dartwrf/workflows.py`), e.g. copy and modify an existing one, 
-#. therein you call the script with :meth:`dartwrf.utils.ClusterConfig.run_job` available via `self.cluster.run_job`, be careful which command-line arguments you need
-#. write the script and parse the command-line arguments
-#. call whatever python functions you may need
+Easy. Only change the respective script in ``dartwrf/``.
+
+
+Option 2: Add a new script
+--------------------------
+
+Let's say you need a new script ``verification.py``. Then you need to do the following:
+
+#. Write a workflow method ``WorkFlow.call_verif()`` in ``dartwrf/workflows.py``, e.g. copy and modify an existing one, 
+#. Inside, you call ``verification.py`` with :meth:`dartwrf.utils.ClusterConfig.run_job` (this will submit a SLURM job). Be careful which command-line arguments you need.
+#. Write the script ``verification.py`` and parse the command-line arguments.
+#. Lastly, call the workflow method ``WorkFlow.call_verif()`` from your control-script, e.g. ``cycled_exp.py``.
 
