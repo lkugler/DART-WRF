@@ -399,6 +399,13 @@ def archive_filter_diagnostics(time, f_out_pattern):
     copy(cluster.dart_rundir + "/obs_seq.final", f_archive)
     print(f_archive, "saved.")
 
+def txtlink_to_prior(time, prior_init_time, prior_path_exp):
+    """For documentation: Which prior was used? -> write into txt file"""
+    os.makedirs(cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/'), exist_ok=True)
+    os.system('echo "'+prior_path_exp+'\n'+prior_init_time.strftime('/%Y-%m-%d_%H:%M/')
+                +'\n'+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')+'" > '
+                +cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/')+'link_to_prior.txt')
+
 def get_obsseq_out(time):
     """Prepares an obs_seq.out file in the run_DART folder
     If `exp.use_existing_obsseq` points to an existing file, then this is used.
@@ -584,6 +591,7 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     filter()
     archive_filteroutput(time)
     archive_filter_diagnostics(time, pattern_obs_seq_final)
+    txtlink_to_prior(time, prior_init_time, prior_path_exp)
 
     if prior_inflation_type == '2':
         archive_inflation_2(time)
