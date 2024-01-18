@@ -8,7 +8,7 @@ fields_new = ["XLAT",     "XLONG",      "CLAT",
                 "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
 
 def run(geo_data_file, wrfout_file):
-    """Add geogrid data to wrfinput
+    """Add geogrid data to a wrfout file
     DART needs a georeference, but ideal.exe does not provide it
 
     Takes LAT,LON, mapfac from geogrid, so that they are consistent.

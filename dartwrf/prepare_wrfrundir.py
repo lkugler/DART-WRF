@@ -1,7 +1,11 @@
-"""Prepare WRF run directories, to use wrf.exe then
+"""Prepare WRF run directories, to use wrf.exe later
+Creates a directory where WRF will run (temporary);
+Creates softlinks from WRF's `run/` directory;
+Links executables set in `cluster.ideal` and `cluster.wrfexe`;
+If `exp.input_profile` is set, links the input profiles.
 
 Args:
-    init_time (str): YYYY-MM-DD_HH:MM
+    init_time (str): Initialization time in format YYYY-MM-DD_HH:MM
 
 Returns:
     None

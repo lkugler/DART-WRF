@@ -1,8 +1,8 @@
-"""Add geogrid data to wrfinput
-this is needed for DART, but not provided by ideal.exe
+"""Add geogrid data to wrfinput. 
+DART needs a georeference, but ideal.exe does not provide it
 
-take LAT,LON, mapfac from geogrid, so that they are consistent.
-do not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
+Takes LAT,LON, mapfac from geogrid, so that they are consistent.
+Does not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
 
 example call:
     ./wrfinput_add_geo.py geo_em.d01.nc wrfinput_d01
