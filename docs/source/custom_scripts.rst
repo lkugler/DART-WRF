@@ -19,8 +19,6 @@ A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`,
 
 Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of the script `dartwrf/assimilate.py`.
 
-- Why do I need a separate script (in this case `assimilate.py`) to execute a script?
-Because some users need to use SLURM, which can only call scripts, not run python code directly.
 
 Recipe to add new functionality
 *******************************
@@ -32,3 +30,4 @@ If you need write a new script, you need to
 #. therein you call the script with :meth:`dartwrf.utils.ClusterConfig.run_job` available via `self.cluster.run_job`, be careful which command-line arguments you need
 #. write the script and parse the command-line arguments
 #. call whatever python functions you may need
+
