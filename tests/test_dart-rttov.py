@@ -5,7 +5,7 @@ import pandas as pd
 
 from dartwrf.obs import obsseq
 import dartwrf.obs.create_obsseq_in as osq
-import dartwrf.assim_synth_obs as aso
+import dartwrf.assimilate as aso
 from dartwrf import wrfout_add_geo
 
 import matplotlib as mpl
