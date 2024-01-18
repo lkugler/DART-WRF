@@ -1,21 +1,3 @@
-Tutorial 1: The assimilation step
-##################################
-
-DART-WRF is a python package which automates many things like configuration, program dependencies, archiving code, configuration and output, handling computing resources, etc.
-
-This tutorial can be executed with pre-existing input data accessible for students of the "University of Vienna - Department of Meteorology and Geophysics" on the server `srvx1`/Teachinghub.
-
-The main control scripts are in the main folder of DART-WRF, e.g. ``analysis_only.py``.
-A control script defines the jobs (work packages, programs) which need to be completed and in which order they need to be done.
-Every control script starts with setting up the experiment.
-
-.. code-block:: python
-
-    from dartwrf.workflows import WorkFlows
-    w = WorkFlows(exp_config='exp_template.py', server_config='srvx1.py')
-
-
-
 Tutorial 2: Forecast after DA
 ###############################
 
