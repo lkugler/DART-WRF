@@ -66,31 +66,27 @@ Now we can go to step 3 to run the forecast.
 2) Initialize a forecast from a previous forecast
 *************************************************
 
-To run a forecast from initial conditions of a previous forecasts, we import these modules
+Let's say you want to run a forecast starting at 9 UTC until 12 UTC.
+We use initial conditions of a previous experiment ``/user/test/data/sim_archive/exp_abc`` which was initialized at 6 UTC and there are WRF restart files for 9 UTC.
+Documentation can be found at :func:`dartwrf.workflows.WorkFlows.prepare_IC_from_prior`.
 
 .. code-block:: python
 
     import datetime as dt
     from dartwrf.workflows import WorkFlows
-
-Let's say you want to run a forecast starting at 9 UTC until 12 UTC.
-Initial conditions shall be taken from a previous experiment in `/user/test/data/sim_archive/exp_abc` which was initialized at 6 UTC and there are WRF restart files for 9 UTC.
-Then the code would be
-
-.. code-block:: python
+    w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
 
     prior_path_exp = '/user/test/data/sim_archive/exp_abc'
     prior_init_time = dt.datetime(2008,7,30,6)
     prior_valid_time = dt.datetime(2008,7,30,9)
 
-    w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
-
     begin = dt.datetime(2008, 7, 30, 9)
     end = dt.datetime(2008, 7, 30, 12)
 
     w.prepare_WRFrundir(begin)
-
     w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time)
+
+Now, we are ready :ref:`to start a forecast <1) Run the Forecast>`.
 
 
 2b) Optional: Update posterior with increments from assimilation
@@ -98,7 +94,7 @@ Then the code would be
 
 In order to continue a forecast after assimilation you need the posterior = prior (1) + increments (2)
 
-1. Prepare initial conditions from a prior forecast:
+1. Prepare initial conditions from a prior forecast (see above)
 
 .. code-block:: python
 
@@ -106,19 +102,23 @@ In order to continue a forecast after assimilation you need the posterior = prio
 
 
 
-2. Update the initial conditions from data assimilation:
+1. Update the initial conditions from data assimilation.
+:func:`dartwrf.workflows.WorkFlows.update_IC_from_DA` updates the initial conditions (WRFrst files) with assimilation increments from DART output and copies them to the WRF run directories.
 
 .. code-block:: python
 
     w.update_IC_from_DA(time)
 
 
-After this, the wrfrst files are updated with assimilation increments from DART output and copied to the WRF's run directories so you can continue to run the forecast ensemble.
+Now you can run the forecast ensemble.
+
 
 1) Run the Forecast
 *******************
 
-Define how long you want to run the forecast and when you want WRF-restart files. Since they take a lot of space, we want as few as possible.
+Define how long you want to run the forecast and how often you want WRF-restart files. 
+Since they take a lot of space, we want as few restart files as possible. 
+However, we can only assimilate observations for times at which we have WRF restart files.
 
 .. code-block:: python
 
@@ -143,3 +143,4 @@ If you want to assimilate in 15 minutes again, use
                 )
 
 By default, it assumes that the input data is a WRF restart file. To use WRF input file as initial conditions, set keyword ``input_is_restart=False``.
+More documentation is in the docstring of :func:`dartwrf.workflows.WorkFlows.run_ENS`.

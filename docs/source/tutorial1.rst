@@ -184,7 +184,8 @@ Set up the workflow
 
 We start by importing some modules. 
 To assimilate observations at dt.datetime `time` we set the directory paths and times of the prior ensemble forecasts.
-Then we set up the experiment with the ``WorkFlow()`` call. It will also create the output folders and backup the configuration files and scripts. Finally, we run the data assimilation by calling :func:`dartwrf.workflows.WorkFlows.assimilate`.
+Then we set up the experiment with the ``WorkFlow()`` call. It will also create the output folders and backup the configuration files and scripts. 
+Finally, we run the data assimilation by calling :func:`dartwrf.workflows.WorkFlows.assimilate`.
 
 
 .. code-block:: python
