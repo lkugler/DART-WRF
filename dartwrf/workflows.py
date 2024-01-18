@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
-These functions mostly call python scripts via the shell,
-e.g. assimilate() calls dartwrf/assim_synth_obs.py through the shell.
+These functions call python scripts via the shell,
+e.g. assimilate() calls dartwrf/assimilate.py through the shell.
 
 This would not be necessary, but some users might want to use queueing systems (e.g. SLURM) which must call scripts.
 """
@@ -19,7 +19,8 @@ class WorkFlows(object):
         3. Set log paths
         4. Write obskind.py file (dictionary of observation types)
         
-        we load the config from load the config from cluster.scripts_rundir/config/cfg.py
+        Note:
+            Later, the config is loaded from dartwrf/config/exp_config.py and dartwrf/config/server_config.py
 
         Args:
             exp_config (str): Path to exp config file
@@ -150,7 +151,7 @@ class WorkFlows(object):
         os.system(cmd)
 
     def generate_obsseq_out(self, times, depends_on=None):
-        """Creates observations from a nature run and assimilates them.
+        """Creates observations from a nature run for a list of times
 
         Args:
             times (list): list of datetime objects
@@ -199,8 +200,17 @@ class WorkFlows(object):
         return id
 
     def wrfinput_insert_wbubble(self, perturb=True, depends_on=None):
-        """Given that directories with wrfinput files exist,
-        update these wrfinput files with warm bubbles
+        """Inserts warm-bubble temperature perturbations into wrfinput files
+
+        Note:
+            Assumes that WRF run directories with wrfinput files exist.
+
+        Args:
+            perturb (bool, optional): if True, perturb the location of the warm-bubble (False: nature run)
+            depends_on (str, optional): job ID of a previous job after which to run this job
+
+        Returns:
+            str: job ID of the submitted job
         """
         pstr = ' '
         if perturb:
@@ -305,7 +315,20 @@ class WorkFlows(object):
 
 
     def prepare_IC_from_prior(self, prior_path_exp, prior_init_time, prior_valid_time, new_start_time=None, depends_on=None):
+        """Create initial conditions from prior wrfrst files
 
+        Args:
+            prior_path_exp (str):           Path to experiment which provides the prior
+            prior_init_time (dt.datetime):  Timestamp of the prior's initialization (directory of prior wrfrst files)
+            prior_valid_time (dt.datetime): Timestamp of prior wrfrst files
+            new_start_time (dt.datetime, optional):   If provided, overwrites the valid time of the initial conditions; 
+                                                      This hack allows you to use a prior of a different time than your forecast start time.
+                                                      Usually, you don't want to do this.
+            depends_on (str, optional):     job ID of a previous job after which to run this job
+        
+        Returns:
+            str: job ID of the submitted job
+        """
         if new_start_time != None:
             tnew = new_start_time.strftime(' %Y-%m-%d_%H:%M')
         else:
@@ -321,6 +344,15 @@ class WorkFlows(object):
 
 
     def update_IC_from_DA(self, assim_time, depends_on=None):
+        """Update existing initial conditions with the output from the assimilation
+
+        Args:
+            assim_time (dt.datetime):       Timestamp of the assimilation
+            depends_on (str, optional):     job ID of a previous job after which to run this job
+
+        Returns:
+            str: job ID of the submitted job
+        """
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/update_IC.py '+assim_time.strftime('%Y-%m-%d_%H:%M')
         id = self.cluster.run_job(cmd, "IC-update-"+self.exp.expname, cfg_update=dict(time="18"), depends_on=[depends_on])
         return id
@@ -337,13 +369,13 @@ class WorkFlows(object):
 
 
     def gen_obsseq(self, depends_on=None):
+        """(not included in DART-WRF)"""
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/obsseq_to_netcdf.py'
         id = self.cluster.run_job("obsseq_netcdf", cfg_update={"time": "10", "mail-type": "FAIL,END"}, 
                 depends_on=[depends_on])
         return id
     
     def evaluate_obs_posterior_after_analysis(self, init_valid_tuples, depends_on=None):
-
         arg = ' '.join([init.strftime('%Y-%m-%d_%H:%M,')+valid.strftime('%Y-%m-%d_%H:%M:%S') for (init, valid) in init_valid_tuples])
 
         cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+arg
@@ -353,6 +385,7 @@ class WorkFlows(object):
         return id
 
     def verify_sat(self, depends_on=None):
+        """(not included in DART-WRF)"""
         cmd = '/jetfs/home/lkugler/miniforge3/envs/verif/bin/python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node sat verif1d FSS BS'
 
         self.cluster.run_job(cmd, "verif-SAT-"+self.exp.expname, 
@@ -360,6 +393,7 @@ class WorkFlows(object):
                                     "ntasks-per-node": "15", "ntasks-per-core": "1", "mem": "100G",}, depends_on=[depends_on])
 
     def verify_wrf(self, depends_on=None):
+        """(not included in DART-WRF)"""
         cmd = '/jetfs/home/lkugler/miniforge3/envs/verif/bin/python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py '+self.exp.expname+' has_node wrf verif1d FSS BS'
         
         self.cluster.run_job(cmd, "verif-WRF-"+self.exp.expname, 
