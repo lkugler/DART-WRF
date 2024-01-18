@@ -40,7 +40,7 @@ To get started, go through the tutorials in the :ref:`tutorials` section.
    :caption: Tutorials
 
    tutorial1
-   notebooks/tutorial2
+   tutorial2
    notebooks/tutorial3
    custom_scripts
 
