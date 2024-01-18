@@ -2,6 +2,7 @@ DART-WRF documentation
 =======================
 
 **DART-WRF** is a python package which allows you to
+
 * run the `weather research and forecast model` (`WRF <https://www2.mmm.ucar.edu/wrf/users/docs/docs_and_pubs.html>`_),
 * generate (satellite) observations from a nature run,
 * and assimilate these observations in ensemble data assimilation using `DART <https://docs.dart.ucar.edu/en/latest/>`_,
@@ -25,9 +26,9 @@ First steps
 ************
 
 To get started, go through the tutorials in the :ref:`tutorials` section.
-:ref:`tutorial1` shows you how to configure DART-WRF, generate observations and assimilate them.
-:ref:`tutorial2` shows you how to run a WRF forecast with the output from data assimilation.
-:ref:`tutorial3` shows you how assimilation and forecast can be run in a cycle.
+:ref:`Tutorial 1<Tutorial 1: The assimilation step>` shows you how to configure DART-WRF, generate observations and assimilate them.
+:ref:`Tutorial 2<Tutorial 2: Forecast after DA>` shows you how to run a WRF forecast with the output from data assimilation.
+:ref:`Tutorial 3<Tutorial 3: Cycle forecast and assimilation>` shows you how assimilation and forecast can be run in a cycle.
 
 .. toctree::
    :hidden:
@@ -45,12 +46,10 @@ To get started, go through the tutorials in the :ref:`tutorials` section.
 
 
 Other helpful resources
-=======================
+***********************
 
 **DART documentation** `[here] <https://docs.dart.ucar.edu/en/latest/README.html>`_
 **WRF user guide** `[here] <http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_v4/v4.2/WRFUsersGuide_v42.pdf>`_
-
-
 
    
 .. toctree::
@@ -62,8 +61,7 @@ Other helpful resources
    
 
 API
-===
-
+***
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
