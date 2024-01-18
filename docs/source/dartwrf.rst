@@ -2,7 +2,7 @@ dartwrf package
 ===============
 
 Configuration: dartwrf.utils module
---------------------
+------------------------------------
 
 .. automodule:: dartwrf.utils
    :members:
@@ -11,7 +11,7 @@ Configuration: dartwrf.utils module
 
 
 Job-Submission: dartwrf.workflows module
-------------------------
+-----------------------------------------
 
 .. automodule:: dartwrf.workflows
    :members:

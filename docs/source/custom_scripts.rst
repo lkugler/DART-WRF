@@ -17,9 +17,9 @@ A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`,
 
     id = w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
 
-Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of the script `dartwrf/assim_synth_obs.py`.
+Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of the script `dartwrf/assimilate.py`.
 
-- Why do I need a separate script (in this case `assim_synth_obs.py`) to execute a script?
+- Why do I need a separate script (in this case `assimilate.py`) to execute a script?
 Because some users need to use SLURM, which can only call scripts, not run python code directly.
 
 Recipe to add new functionality

@@ -33,7 +33,7 @@ Other helpful resources
    :maxdepth: 2
    :caption: Tutorials
 
-   notebooks/tutorial1
+   tutorial1
    notebooks/tutorial2
    notebooks/tutorial3
    custom_scripts
