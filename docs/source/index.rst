@@ -29,6 +29,7 @@ To get started, go through the tutorials in the :ref:`tutorials` section.
 :ref:`Tutorial 1<Tutorial 1: The assimilation step>` shows you how to configure DART-WRF, generate observations and assimilate them.
 :ref:`Tutorial 2<Tutorial 2: Forecast after DA>` shows you how to run a WRF forecast with the output from data assimilation.
 :ref:`Tutorial 3<Tutorial 3: Cycle forecast and assimilation>` shows you how assimilation and forecast can be run in a cycle.
+See also the `[DART-WRF overview over directory structure, in- and output files] <https://github.com/lkugler/DART-WRF/docs/source/DART_WRF_visual.pdf>`_
 
 .. toctree::
    :hidden:
