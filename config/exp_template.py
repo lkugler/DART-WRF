@@ -20,7 +20,6 @@ exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-
 exp.dart_nml = {'&assim_tools_nml':
                     dict(filter_kind='1',
                         sampling_error_correction='.true.',
-                        # obs_impact_filename='/jetfs/home/lkugler/DART-WRF/templates/impactfactor_T.txt',
                         ),
                 '&filter_nml':
                     dict(   ens_size=exp.n_ens,
