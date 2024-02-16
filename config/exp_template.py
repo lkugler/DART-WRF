@@ -1,3 +1,7 @@
+"""
+This configuration file is designed for the course Advanced Data Assimilation at the University of Vienna.
+Copy and customize it as you wish.
+"""
 from dartwrf.utils import Experiment
 
 exp = Experiment()
@@ -6,14 +10,13 @@ exp.model_dx = 2000
 exp.n_ens = 4
 exp.do_quality_control = False
 
-# path to the nature run, where we take observations from
-#exp.nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/exp_v1.18_P1_nature+1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-#exp.nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/exp_v1.18_P1_nature/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-exp.nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P3_wbub7_nat/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+# Path to the nature run. From there, observations are generated. Wildcards "*" are allowed in this path.
+exp.nature_wrfout_pattern = '/users/students/lehre/advDA_s2023/data/sample_nature/wrfout_d01_%Y-%m-%d_%H:%M:%S'
 
+# Path to sounding profiles for ensemble initialization. Not used in the Advanced DA course.
 exp.input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof'
 
-
+# Configuration of DART. For details see the DART or DART-WRF documentation.
 exp.dart_nml = {'&assim_tools_nml':
                     dict(filter_kind='1',
                         sampling_error_correction='.true.',
@@ -88,9 +91,12 @@ exp.dart_nml = {'&assim_tools_nml':
 
 
 
-# n_obs can be 22500: 2km, 5776: 4km, 121: 30km, 256:16x16 (20km); 961: 10km resoltn 
-# if radar: then n_obs is for each observation height level
-oeinf = 4.**.5
+# n_obs is the number of observations
+# currently allowed values are 22500 for one observation approximately every 2km; 5776 for 4km, and 961 for 10km resolution; 256 for 20km; 121 for 30km 
+# Note for radar, n_obs is the number of observations at each observation height level
+
+# oeinf is the observation inflation factor (1 means no inflation)
+oeinf = 1
 
 vis = dict(var_name='VIS 0.6µm', unit='[1]',
            kind='MSG_4_SEVIRI_BDRF', sat_channel=1, 
