@@ -613,7 +613,7 @@ if __name__ == "__main__":
     """Assimilate observations
     
     Example:
-        python assim_synth_obs.py 2008-08-07_13:00 2008-08_12:00 2008-08-07_13:00 /path/to/experiment/
+        python assimilate.py 2008-08-07_13:00 2008-08_12:00 2008-08-07_13:00 /path/to/experiment/
     """
 
     time = dt.datetime.strptime(sys.argv[1], "%Y-%m-%d_%H:%M")
