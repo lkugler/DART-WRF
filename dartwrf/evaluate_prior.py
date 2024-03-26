@@ -6,7 +6,7 @@ import numpy as np
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 from dartwrf.utils import symlink, copy, sed_inplace, append_file, mkdir, try_remove, print, shell
-from dartwrf import assim_synth_obs as aso
+from dartwrf import assimilate as aso
 
 from osselyze.utils import get_prior_config
 

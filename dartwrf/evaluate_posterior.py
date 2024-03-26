@@ -5,7 +5,7 @@ import numpy as np
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
-from dartwrf import assim_synth_obs as aso
+from dartwrf import assimilate as aso
 
 
 if __name__ == "__main__":
