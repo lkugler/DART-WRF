@@ -35,9 +35,8 @@ if __name__ == '__main__':
 
         # prepare input profiles
         if hasattr(exp, 'input_profile'):
-
-            prepare_namelist.run(iens, begin=init_time, end=dt.datetime(2008, 7, 30, 23),
-                                archive=False) # time not important, but general settings
+            # prep namelist for ./ideal.exe
+            prepare_namelist.run(iens, begin=init_time, end=init_time, archive=False) # time not important
             
             input_prof = (exp.input_profile).replace('<iens>', str(iens).zfill(3))
             symlink(input_prof, rundir+'/input_sounding')
