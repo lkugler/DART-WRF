@@ -98,9 +98,7 @@ Now you can run the forecast ensemble.
 3) Run the Forecast
 *******************
 
-Define how long you want to run the forecast and how often you want WRF-restart files. 
-Since they take a lot of space, we want as few restart files as possible. 
-However, we can only assimilate observations for times at which we have WRF restart files.
+Define how long you want to run the forecast (keywords `begin` and `end`) and how often you want WRF-restart files (`output_restart_interval` in minutes, only integers allowed, default is 12 hours).
 
 .. code-block:: python
 
@@ -108,21 +106,16 @@ However, we can only assimilate observations for times at which we have WRF rest
 
     w.run_ENS(begin=begin,  # start integration from here
             end=time + timedelta_integrate,  # integrate until here
-            output_restart_interval=9999,  # do not write WRF restart files
             )
 
-If you want to assimilate in 15 minutes again, use
+If you want to assimilate in 15 minutes again, you can use
 
 .. code-block:: python
 
-    timedelta_integrate = dt.timedelta(hours=5)
-    timedelta_btw_assim = dt.timedelta(minutes=15)
-    output_restart_interval = timedelta_btw_assim.total_seconds()/60
-
     w.run_ENS(begin=time,  # start integration from here
-                end=time + timedelta_integrate,  # integrate until here
-                output_restart_interval=output_restart_interval
+                end=time + dt.timedelta(hours=5),  # integrate until here
+                output_restart_interval=15  # in minutes, only integers allowed
                 )
 
-By default, it assumes that the input data is a WRF restart file. To use WRF input file as initial conditions, set keyword ``input_is_restart=False``.
+By default, it assumes that the input data is a WRF restart file. To use a WRF input file for initial conditions, set the keyword ``input_is_restart=False``.
 More documentation is in the docstring of :func:`dartwrf.workflows.WorkFlows.run_ENS`.
