@@ -84,7 +84,7 @@ In order to continue a forecast after assimilation you need the posterior = prio
 
 
 
-1. Update the initial conditions from data assimilation.
+2. Update the initial conditions from data assimilation.
 :func:`dartwrf.workflows.WorkFlows.update_IC_from_DA` updates the initial conditions (WRFrst files) with assimilation increments from DART output and copies them to the WRF run directories.
 
 .. code-block:: python
@@ -95,7 +95,7 @@ In order to continue a forecast after assimilation you need the posterior = prio
 Now you can run the forecast ensemble.
 
 
-1) Run the Forecast
+3) Run the Forecast
 *******************
 
 Define how long you want to run the forecast and how often you want WRF-restart files. 
