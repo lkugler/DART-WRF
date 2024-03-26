@@ -493,12 +493,16 @@ def link_DART_binaries_and_RTTOV_files():
             symlink(joinp(cluster.dart_srcdir, b),
                     joinp(cluster.dart_rundir, b))
 
-    # link RTTOV files
-    rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
-                    'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.H5',
-                    'cldaer_visir/sccldcoef_msg_4_seviri.dat']
+    symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
+            +'work/sampling_error_correction_table.nc',
+            cluster.dart_rundir+'/sampling_error_correction_table.nc')
 
-    try:  # may fail quietly if we dont need RTTOV
+    # link RTTOV files
+    if cluster.rttov_srcdir != False:
+        rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
+                        'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.H5',
+                        'cldaer_visir/sccldcoef_msg_4_seviri.dat']
+
         for f_src in rttov_files:
                 destname = os.path.basename(f_src)
                 if 'rtcoef' in f_src:
@@ -513,17 +517,12 @@ def link_DART_binaries_and_RTTOV_files():
         symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sensor_db.csv',
                 cluster.dart_rundir+'/rttov_sensor_db.csv')
 
-        symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
-                +'work/sampling_error_correction_table.nc',
-                cluster.dart_rundir+'/sampling_error_correction_table.nc')
-
-        print('prepared DART & RTTOV links in', cluster.dart_rundir)
-    except Exception as e:
-        # will any satellite channel be assimilated?
+    else:
+        # check if we need RTTOV, but rttov_srcdir is not set
         for obscfg in exp.observations:
             if 'sat_channel' in obscfg:
-                raise e
-        pass  # we dont need RTTOV anyway
+                raise RuntimeError('cluster.rttov_srcdir not set, but satellite channel will be assimilated')
+
 
 def prepare_run_DART_folder():
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
