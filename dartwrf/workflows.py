@@ -14,13 +14,12 @@ class WorkFlows(object):
     def __init__(self, exp_config='cfg.py', server_config='server.py'):
         """Set up the experiment folder in `archivedir`.
 
-        1. Copy the DART-WRF scripts to `archivedir`
-        2. Copy the config files to `archivedir/dartwrf`
-        3. Set log paths
-        4. Write obskind.py file (dictionary of observation types)
-        
-        Note:
-            Later, the config is loaded from dartwrf/config/exp_config.py and dartwrf/config/server_config.py
+        1. Copy the selected config files
+        2. Import configurations
+        3. Prepare obskind.py file (dictionary of observation types)
+        4. Copy the scripts and configs to `archivedir`
+        5. Set python path
+        6. Set log path and slurm scripts path
 
         Args:
             exp_config (str): Path to exp config file
@@ -75,11 +74,11 @@ class WorkFlows(object):
         
         def _dict_to_py(d, outfile):
             """Write a python dictionary to a .py file
-            
+
             Args:
                 d (dict): dictionary to write
                 outfile (str): path to output file
-                
+
             Returns:
                 None
             """
@@ -92,40 +91,49 @@ class WorkFlows(object):
 
         print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
 
-        # experiment starts, we dont know where the code shall run
-        # => read the configuration file
-
-        # copy the config files to this folder
-        this_dir = '/'.join(__file__.split('/')[:-1])
+        #### 1
+        # copy the selected config files (arguments to Workflows(...)) to the scripts directory
+        # ./DART-WRF/dartwrf/server_config.py and ./DART-WRF/dartwrf/exp_config.py
+        # these config files will be used later, and no others!
+        original_scripts_dir = '/'.join(__file__.split('/')[:-1])  # usually /home/DART-WRF/dartwrf/
         try:
-            shutil.copyfile('config/'+server_config, this_dir+'/server_config.py')
+            shutil.copyfile('config/'+server_config, original_scripts_dir+'/server_config.py')
         except shutil.SameFileError:
             pass
         try:
-            shutil.copyfile('config/'+exp_config, this_dir+'/exp_config.py')
+            shutil.copyfile('config/'+exp_config, original_scripts_dir+'/exp_config.py')
         except shutil.SameFileError:
             pass
 
-        sys.path.append(this_dir)
+        #### 2
+        # import the configuration files from where we copied them just before
+        sys.path.append(original_scripts_dir)
         from server_config import cluster
         self.cluster = cluster
         from exp_config import exp
         self.exp = exp
 
-        # copy obs kind def to config, we will read a table from there
-        # file needs to exist within package so sphinx can read it
-        _dict_to_py(_obskind_read(), this_dir+'/obs/obskind.py')
+        #### 3
+        # to be able to generate obs_seq.in files, we need a dictionary to convert obs kinds to numbers
+        # a) we read the obs kind definitions (obs_kind_mod.f90 from DART code) 
+        # b) we generate a python file with this dictionary
+        # Note: to include it in the documentary, the file needs to exist also in the repository 
+        # (so the documentation generator SPHINX can read it)
+        _dict_to_py(_obskind_read(), original_scripts_dir+'/obs/obskind.py')
 
-        _copy_dartwrf_to_archive()  # includes config files
+        #### 4
+        # Copy scripts and config files to `self.cluster.archivedir` folder
+        _copy_dartwrf_to_archive() 
 
+        #### 5
         # we set the path from where python should import dartwrf modules
-        # pythonpath is the folder above the dartwrf folder
+        # every python command then imports DART-WRF from self.cluster.archivedir+'/DART-WRF/dartwrf/'
         self.cluster.python = 'export PYTHONPATH='+self.cluster.scripts_rundir+'/../; '+self.cluster.python
 
+        #### 6
         # Set paths and backup scripts
         self.cluster.log_dir = self.cluster.archivedir+'/logs/'
         print('logging to', self.cluster.log_dir)
-
         if self.cluster.use_slurm:
             self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
             print('SLURM scripts will be in', self.cluster.slurm_scripts_dir)
@@ -282,8 +290,8 @@ class WorkFlows(object):
         runtime_wallclock_mins_expected = int(8+time_in_simulation_hours*9)  # usually below 9 min/hour
         cfg_update = {"array": "1-"+str(self.cluster.size_WRF_jobarray), "ntasks": "10", "nodes": "1",
                       "time": str(runtime_wallclock_mins_expected), "mem": "40G", }
-        #if runtime_wallclock_mins_expected > 10:
-        #    cfg_update.update({"nodelist": "jet08"})
+        # if runtime_wallclock_mins_expected > 10:
+        #     cfg_update.update({"nodelist": "jet05"})
         id = self.cluster.run_job(wrf_cmd, "WRF-"+self.exp.expname, cfg_update=cfg_update, depends_on=[id])
         return id
 
@@ -375,13 +383,17 @@ class WorkFlows(object):
                 depends_on=[depends_on])
         return id
     
-    def evaluate_obs_posterior_after_analysis(self, init_valid_tuples, depends_on=None):
-        arg = ' '.join([init.strftime('%Y-%m-%d_%H:%M,')+valid.strftime('%Y-%m-%d_%H:%M:%S') for (init, valid) in init_valid_tuples])
-
-        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+arg
+    def evaluate_obs_posterior_after_analysis(self, init, valid, depends_on=None):
+ 
+        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/evaluate_obs_space.py '+init.strftime('%Y-%m-%d_%H:%M,') + valid.strftime('%Y-%m-%d_%H:%M:%S')
         id = self.cluster.run_job(cmd, 'eval+1'+self.exp.expname, cfg_update={"ntasks": "12", "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2", 
                                                                               "time": "15", "mail-type": "FAIL"}, 
                 depends_on=[depends_on])
+        
+        cmd = self.cluster.python+' '+self.cluster.scripts_rundir+'/calc_linear_posterior.py '+init.strftime('%Y-%m-%d_%H:%M')
+        id = self.cluster.run_job(cmd, 'linpost'+self.exp.expname, cfg_update={"ntasks": "12", "mem": "50G", "ntasks-per-node": "12", "ntasks-per-core": "2", 
+                                                                              "time": "15", "mail-type": "FAIL"}, 
+                depends_on=[id])
         return id
 
     def verify_sat(self, depends_on=None):
