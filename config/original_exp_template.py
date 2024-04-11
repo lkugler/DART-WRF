@@ -5,9 +5,9 @@ Copy and customize it as you wish.
 from dartwrf.utils import Experiment
 
 exp = Experiment()
-exp.expname = "exp_2"
+exp.expname = "exp_test11"
 exp.model_dx = 2000
-exp.n_ens = 40
+exp.n_ens = 10
 exp.do_quality_control = False
 
 # Path to the nature run. From there, observations are generated. Wildcards "*" are allowed in this path.
@@ -31,7 +31,7 @@ exp.dart_nml = {'&assim_tools_nml':
                             output_members='.true.',
                             output_mean='.true.',
                             output_sd='.true.',
-                            stages_to_write=['output', 'preassim', 'postassim'],
+                            stages_to_write='output',
                         ),
                 '&quality_control_nml':
                     dict(outlier_threshold='-1',
