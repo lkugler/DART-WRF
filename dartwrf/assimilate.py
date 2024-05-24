@@ -19,10 +19,11 @@ pattern_init_time = "/%Y-%m-%d_%H:%M/"  # pattern for the init_time folder in si
 pattern_obs_seq_out = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out"  # how an obs_seq.out file is archived
 pattern_obs_seq_final = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.final"  # how an obs_seq.final file is archived
 
-def _prepare_DART_grid_template():
+def ():
     # DART needs a wrfinput file as a template for the grid
     # No data will be read from this file, but the grid information must match exactly.
-    symlink(cluster.dart_rundir + "/wrfout_d01", 
+    # ./perfect_model_obs might fail in case there is no ensemble data in the folder prior_ens1
+    symlink(cluster.dart_rundir + "/prior_ens1/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
 
 def _find_nature(time):
