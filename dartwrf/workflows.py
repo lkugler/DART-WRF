@@ -89,7 +89,10 @@ class WorkFlows(object):
                 txt += '}'
                 f.write(txt)
 
-        print('------ start exp from ', exp_config, ' and ', server_config, ' ------')
+        print('------------------------------------------------------')
+        print('>>> Starting experiment ... ')
+        print('>>> Experiment configuration: "./config/'+exp_config+'" ')
+        print('>>> Server configuration:     "./config/'+server_config+'"')
 
         #### 1
         # copy the selected config files (arguments to Workflows(...)) to the scripts directory
@@ -133,13 +136,13 @@ class WorkFlows(object):
         #### 6
         # Set paths and backup scripts
         self.cluster.log_dir = self.cluster.archivedir+'/logs/'
-        print('logging to', self.cluster.log_dir)
+        print('>>> Logging to:  "'+self.cluster.log_dir+'"')
         if self.cluster.use_slurm:
             self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
-            print('SLURM scripts will be in', self.cluster.slurm_scripts_dir)
+            print('>>> SLURM scripts stored in: "', self.cluster.slurm_scripts_dir+'"')
 
-        print('------ dartwrf experiment initialized ------')
-        print('--------------------------------------------')
+        print('>>> DART-WRF experiment initialized. ')
+        print('------------------------------------------------------')
         
     def prepare_WRFrundir(self, init_time):
         """Prepare WRF run directories for all ensemble members
