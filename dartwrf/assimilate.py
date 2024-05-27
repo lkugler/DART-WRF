@@ -21,9 +21,9 @@ pattern_obs_seq_final = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_se
 
 def _prepare_DART_grid_template():
     # DART needs a wrfinput file as a template for the grid
-    # No data will be read from this file, but the grid information must match exactly.
-    # ./perfect_model_obs might fail in case there is no ensemble data in the folder prior_ens1
-    symlink(cluster.dart_rundir + "/prior_ens1/wrfout_d01", 
+    # No data except grid info will be read from this file 
+    # The grid information must match exactly with the nature file "wrfout_d01"
+    symlink(cluster.dart_rundir + "/wrfout_d01", 
             cluster.dart_rundir + "/wrfinput_d01")
 
 def _find_nature(time):
@@ -369,9 +369,6 @@ def evaluate(assim_time,
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.final")  
 
-    # TODO: Maybe only necessary if there is no obs_seq.out file yet?
-    prepare_nature_dart(assim_time)  # link WRF files to DART directory
-
     if prior_is_filter_output:
         print('using filter_restart files in run_DART as prior')
         use_filter_output_as_prior()
@@ -383,6 +380,9 @@ def evaluate(assim_time,
     if obs_seq_out:  
         copy(obs_seq_out, cluster.dart_rundir+'/obs_seq.out')  # user defined file
     else:
+        # probably not necessary
+        # prepare_nature_dart(assim_time)  # link WRF nature file to run_DART directory
+    
         # use existing obs_seq.out file currently present in the run_DART directory
         if not os.path.isfile(cluster.dart_rundir+'/obs_seq.out'):
             raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
@@ -557,22 +557,18 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     Returns:
         None
     """
-
+    obscfg = exp.observations
     do_QC = getattr(exp, "do_quality_control", False)  # True: triggers additional evaluations of prior & posterior
     prepare_run_DART_folder()
-    prepare_nature_dart(time)
-
-    # from previous forecast
     prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)  
-
-    obscfg = exp.observations
     nml = dart_nml.write_namelist()
-            
+    
     print(" get observations with specified obs-error")
+    prepare_nature_dart(time)
     oso = get_obsseq_out(time)
 
-    if do_QC:  # additional evaluation of prior
-        print(" (optional) evaluate prior for all observations (incl rejected) ")
+    if do_QC:  # additional evaluation of prior (in case some observations are rejected)
+        print(" evaluate prior for all observations (incl rejected) ")
         evaluate(time, f_out_pattern=pattern_obs_seq_final+"-evaluate_prior")
 
     print(" assign observation-errors for assimilation ")
