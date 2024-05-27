@@ -36,7 +36,9 @@ def _find_nature(time):
     # check user input
     if not 'wrfout' in f_nat.split('/')[-1]:
         warnings.warn(f_nat+" does not contain 'wrfout' in filename, are you sure this is a valid nature file?")
-    assert os.path.exists(f_nat), f_nat+" does not exist"
+    
+    if not os.path.exists(f_nat):
+        raise IOError(f_nat+" does not exist -> no nature found")
     return f_nat
 
 def prepare_nature_dart(time):
@@ -46,12 +48,7 @@ def prepare_nature_dart(time):
         time (dt.datetime): Time at which observations will be made
     """
     print("prepare nature")
-    try:
-        f_nat = _find_nature(time)
-    except:
-        print('-> no nature available')  # this is OK if it is a real data case or observations already exist
-        return
-    
+    f_nat = _find_nature(time)
     shutil.copy(f_nat, cluster.dart_rundir + "/wrfout_d01")  # copy nature wrfout to DART directory
 
     # add coordinates if necessary
@@ -419,7 +416,7 @@ def get_obsseq_out(time):
     Returns:
         obsseq.ObsSeq
     """
-    if exp.use_existing_obsseq != False: 
+    if exp.use_existing_obsseq != False and os.path.isfile(exp.use_existing_obsseq): 
         # use an existing obs_seq.out file
         f_obsseq = time.strftime(exp.use_existing_obsseq)
         copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')  # copy to run_DART folder
@@ -429,6 +426,7 @@ def get_obsseq_out(time):
     else: 
         # do NOT use an existing obs_seq.out file
         # but generate observations with new observation noise
+        prepare_nature_dart(time)
         oso = osq_out.generate_obsseq_out(time)
 
     # copy to sim_archive
@@ -564,7 +562,6 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     nml = dart_nml.write_namelist()
     
     print(" get observations with specified obs-error")
-    prepare_nature_dart(time)
     oso = get_obsseq_out(time)
 
     if do_QC:  # additional evaluation of prior (in case some observations are rejected)
