@@ -31,7 +31,10 @@ def _find_nature(time):
     """
     glob_pattern = time.strftime(exp.nature_wrfout_pattern)  # replace time in pattern
     print('searching for nature in pattern:', glob_pattern)
-    f_nat = glob.glob(glob_pattern)[0]  # find the nature wrfout-file
+    try:
+        f_nat = glob.glob(glob_pattern)[0]  # find the nature wrfout-file
+    except IndexError:
+        raise IOError("no nature found with pattern "+glob_pattern)
 
     # check user input
     if not 'wrfout' in f_nat.split('/')[-1]:
