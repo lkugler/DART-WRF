@@ -101,7 +101,7 @@ class ClusterConfig(object):
 
     """
     def __init__(self, exp):
-        self.exp = exp  # makes derived properties available
+        self.exp = exp  # to access the experiment config in here
 
         # defaults
         self.dart_modules = ''
