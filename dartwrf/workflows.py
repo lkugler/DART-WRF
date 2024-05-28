@@ -35,7 +35,7 @@ class WorkFlows(object):
             try:
                 shutil.copytree(self.cluster.dartwrf_dir, self.cluster.archivedir+'/DART-WRF/', 
                         ignore=shutil.ignore_patterns('*.git',))  # don't copy the git repo
-                print('DART-WRF has been copied to', self.cluster.archivedir)
+                print('>>> DART-WRF scripts:          "'+self.cluster.archivedir+'/DART-WRF/"')
             except FileExistsError as e:
                 warnings.warn(str(e))
                 if input('The experiment name already exists! Scripts will not be overwritten. Continue? (Y/n) ') in ['Y', 'y']:
@@ -91,8 +91,8 @@ class WorkFlows(object):
 
         print('------------------------------------------------------')
         print('>>> Starting experiment ... ')
-        print('>>> Experiment configuration: "./config/'+exp_config+'" ')
-        print('>>> Server configuration:     "./config/'+server_config+'"')
+        print('>>> Experiment configuration:  "./config/'+exp_config+'" ')
+        print('>>> Server configuration:      "./config/'+server_config+'"')
 
         #### 1
         # copy the selected config files (arguments to Workflows(...)) to the scripts directory
@@ -116,7 +116,19 @@ class WorkFlows(object):
         from exp_config import exp
         self.exp = exp
 
+        print('>>> Main data folder:          "'+self.cluster.archivedir+'"')
+        print('>>> Temporary DART run folder: "'+self.cluster.dart_rundir+'"')
+        print('>>> Temporary WRF run folder:  "'+self.cluster.wrf_rundir_base+'"')
+
         #### 3
+        # Set paths and backup scripts
+        self.cluster.log_dir = self.cluster.archivedir+'/logs/'
+        print('>>> In case of error, check logs at:"'+self.cluster.log_dir+'"')
+        if self.cluster.use_slurm:
+            self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
+            print('>>> SLURM scripts stored in:    "', self.cluster.slurm_scripts_dir+'"')
+
+        #### 4
         # to be able to generate obs_seq.in files, we need a dictionary to convert obs kinds to numbers
         # a) we read the obs kind definitions (obs_kind_mod.f90 from DART code) 
         # b) we generate a python file with this dictionary
@@ -124,23 +136,14 @@ class WorkFlows(object):
         # (so the documentation generator SPHINX can read it)
         _dict_to_py(_obskind_read(), original_scripts_dir+'/obs/obskind.py')
 
-        #### 4
+        #### 5
         # Copy scripts and config files to `self.cluster.archivedir` folder
         _copy_dartwrf_to_archive() 
 
-        #### 5
+        #### 6
         # we set the path from where python should import dartwrf modules
         # every python command then imports DART-WRF from self.cluster.archivedir+'/DART-WRF/dartwrf/'
         self.cluster.python = 'export PYTHONPATH='+self.cluster.scripts_rundir+'/../; '+self.cluster.python
-
-        #### 6
-        # Set paths and backup scripts
-        self.cluster.log_dir = self.cluster.archivedir+'/logs/'
-        print('>>> Logging to:  "'+self.cluster.log_dir+'"')
-        if self.cluster.use_slurm:
-            self.cluster.slurm_scripts_dir = self.cluster.archivedir+'/slurm-scripts/'
-            print('>>> SLURM scripts stored in: "', self.cluster.slurm_scripts_dir+'"')
-
         print('>>> DART-WRF experiment initialized. ')
         print('------------------------------------------------------')
         

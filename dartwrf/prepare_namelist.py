@@ -57,8 +57,8 @@ def run(iens, begin, end, hist_interval_s=5*60, radt=5, archive=True,
                  '<HH2>': '%H', '<MM2>': '%M', '<SS2>': '%S'}.items():
         sed_inplace(rundir+'/namelist.input', k, end.strftime(v))
 
-    print(rundir+'/namelist.input created')
-    print('WRF namelist begin:', begin, 'end:', end, 'output to', archdir)
+    # print(rundir+'/namelist.input created')
+    # print('WRF namelist begin:', begin, 'end:', end, 'output to', archdir)
     #########################
     if archive:
         

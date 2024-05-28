@@ -24,12 +24,12 @@ if __name__ == '__main__':
     init_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
 
     for iens in range(1, exp.n_ens+1):
-        print('preparing ens', iens)
+        # print('preparing ens', iens)
 
         rundir = cluster.wrf_rundir(iens)
         os.makedirs(rundir, exist_ok=True)
         link_contents(cluster.srcdir, rundir)
-        print('linking ideal and wrf.exe:')
+        # print('linking ideal and wrf.exe:')
         symlink(cluster.ideal, rundir+'/ideal.exe')
         symlink(cluster.wrfexe, rundir+'/wrf.exe')
 
@@ -41,4 +41,4 @@ if __name__ == '__main__':
             input_prof = (exp.input_profile).replace('<iens>', str(iens).zfill(3))
             symlink(input_prof, rundir+'/input_sounding')
 
-    print('finished.')
+    print('All run_WRF directories have been set up.')
