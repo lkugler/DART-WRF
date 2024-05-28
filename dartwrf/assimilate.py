@@ -19,12 +19,28 @@ pattern_init_time = "/%Y-%m-%d_%H:%M/"  # pattern for the init_time folder in si
 pattern_obs_seq_out = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out"  # how an obs_seq.out file is archived
 pattern_obs_seq_final = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.final"  # how an obs_seq.final file is archived
 
-def _prepare_DART_grid_template():
+def _prepare_DART_grid_template(prior_path_exp=False):
     # DART needs a wrfinput file as a template for the grid
     # No data except grid info will be read from this file 
     # The grid information must match exactly with the nature file "wrfout_d01"
-    symlink(cluster.dart_rundir + "/wrfout_d01", 
-            cluster.dart_rundir + "/wrfinput_d01")
+
+    # find any model forecast and link it
+    if os.path.isfile(cluster.dart_rundir + "/wrfinput_d01"):
+        pass # file exists
+    else:
+        if prior_path_exp == False:
+            raise ValueError('If run_DART/wrfinput_d01 does not exist, prior_path_exp may not be empty')
+        else:
+            try:
+                f = glob.glob(prior_path_exp+'/*/1/wrfout_d01*')[0]
+            except IndexError:
+                raise IOError('Could not find any model forecast file to get the grid information using the pattern '+prior_path_exp+'/*/wrfout_d01*')
+            print('link', f)
+            copy(f, cluster.dart_rundir + "/wrfinput_d01")
+
+    # add coordinates if not already present
+    if cluster.geo_em_for_WRF_ideal:
+        wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfinput_d01")
 
 def _find_nature(time):
     """Find the path to the nature file for the given time
@@ -150,7 +166,6 @@ def filter(nproc=12):
         None    (writes to file)
     """
     nproc = min(nproc, cluster.max_nproc)
-    _prepare_DART_grid_template()
 
     print("time now", dt.datetime.now())
     print("running filter")
@@ -167,8 +182,8 @@ def filter(nproc=12):
     
     if not os.path.isfile(cluster.dart_rundir + "/obs_seq.final"):
         raise RuntimeError(
-            "obs_seq.final does not exist in " + cluster.dart_rundir,
-            "\n look for " + cluster.dart_rundir + "/log.filter")
+            "obs_seq.final does not exist in run_DART directory. ",
+            "Check log file at " + cluster.dart_rundir + "/log.filter")
 
 
 ############### archiving
@@ -364,7 +379,7 @@ def evaluate(assim_time,
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dart_rundir)
 
-    link_DART_binaries_and_RTTOV_files() 
+    _link_DART_binaries_and_RTTOV_files() 
 
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.final")  
@@ -486,7 +501,7 @@ def archive_inflation_2(time):
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
-def link_DART_binaries_and_RTTOV_files():
+def _link_DART_binaries_and_RTTOV_files():
     joinp = os.path.join
 
     # link DART binaries
@@ -526,11 +541,12 @@ def link_DART_binaries_and_RTTOV_files():
                 raise RuntimeError('cluster.rttov_srcdir not set, but satellite channel will be assimilated')
 
 
-def prepare_run_DART_folder():
+def prepare_run_DART_folder(prior_path_exp=False):
     os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
     os.chdir(cluster.dart_rundir)
 
-    link_DART_binaries_and_RTTOV_files()
+    _link_DART_binaries_and_RTTOV_files()
+    _prepare_DART_grid_template(prior_path_exp=prior_path_exp)
 
     # remove any existing observation files
     os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
@@ -560,8 +576,8 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     """
     obscfg = exp.observations
     do_QC = getattr(exp, "do_quality_control", False)  # True: triggers additional evaluations of prior & posterior
-    prepare_run_DART_folder()
-    prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)  
+    prepare_run_DART_folder(prior_path_exp)
+    prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp) 
     nml = dart_nml.write_namelist()
     
     print(" get observations with specified obs-error")
