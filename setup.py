@@ -37,5 +37,6 @@ setuptools.setup(
     python_requires=">=3.8.3",
     install_requires=["xarray", 
                       "netCDF4",
+                      "slurmpy",
                       "pysolar>=0.10"],
 )
