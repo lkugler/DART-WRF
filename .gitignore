@@ -1,7 +1,8 @@
-*.py*
+.pytest_cache
 *.ipy*
 dartwrf.egg*
 __*
 .vscode
 docs/build
 not-public*
+config/*
