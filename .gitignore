@@ -1,11 +1,7 @@
-*.pyc
-*.ipynb_checkpoints
-slurm-scripts/
-logs/
-dask-worker-space/
+*.py*
+*.ipy*
 dartwrf.egg*
-._*
+__*
 .vscode
 docs/build
-cfg.py
-cluster.py
+one-time-use*
