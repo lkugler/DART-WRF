@@ -34,7 +34,7 @@ cluster.dartwrf_dir = '/jetfs/home/lkugler/DART-WRF/'
 cluster.geo_em_nature = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.250m_1600x1600' 
 cluster.geo_em_forecast = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200'
 cluster.obs_impact_filename = cluster.dartwrf_dir+'/templates/impactfactor_T.txt'
-cluster.namelist = cluster.dartwrf_dir+'/templates/namelist.input' #_eta_nat'
+cluster.namelist = cluster.dartwrf_dir+'/config/templates/namelist.input'
 cluster.run_WRF = '/jetfs/home/lkugler/DART-WRF/dartwrf/run_ens.jet.sh'
 
 cluster.slurm_cfg = {"account": "lkugler", "partition": "all",  
