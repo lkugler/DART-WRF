@@ -21,33 +21,38 @@ def evaluate_one_time(assim_time, valid_time, use_other_obsseq=False):
      aso.prepare_prior_ensemble(valid_time, prior_init_time=assim_time, prior_valid_time=valid_time, prior_path_exp=cluster.archivedir)
      dart_nml.write_namelist()
 
-     # does an observation exist at this time?
-     f_oso = valid_time.strftime(aso.pattern_obs_seq_out)
-     f_oso = cluster.archivedir+valid_time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
-
-     if os.path.exists(f_oso):
-          # use the existing file
-          shutil.copy(f_oso, cluster.dart_rundir+'/obs_seq.out')
+     if os.path.isfile(exp.use_existing_obsseq):
+          # use the existing obs_seq.out file
+          shutil.copy(exp.use_existing_obsseq, cluster.dart_rundir+'/obs_seq.out')
      else:
-          try:
-               # generate the observations for the specified valid_time
-               aso.prepare_nature_dart(valid_time)
-               osq_out.generate_obsseq_out(valid_time)
-          except:
-               print("failed to generate observations from a nature file")
-               print("-> trying to evaluate posterior with dummy observations")
-               # use an old obsseq file and overwrite obs/truth values with "missing value"
-               f_oso = cluster.archivedir+valid_time.strftime("/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out")
-               if not os.path.isfile(f_oso):
-                    raise RuntimeError(f_oso+' not found. Cannot create dummy observation.')
-          
-               from dartwrf.obs import obsseq
-               oso = obsseq.ObsSeq(f_oso)
+          # is there a pre-existing obs file from assimilation before?
+          f_oso = valid_time.strftime(cluster.pattern_obs_seq_out)
+          f_oso = cluster.archivedir+valid_time.strftime("/%Y-%m-%d_%H:%M_obs_seq.out")
 
-               # overwrite obs/truth values with "missing value"
-               oso.df['observations'] = -888888.0
-               oso.df['truth'] = -888888.0
-               oso.to_dart(cluster.dart_rundir+'/obs_seq.out')
+          if os.path.isfile(f_oso):
+               # use the existing file
+               shutil.copy(f_oso, cluster.dart_rundir+'/obs_seq.out')
+          else:
+               print("Obs file does not exist:", f_oso)
+               try:
+                    # generate the observations for the specified valid_time
+                    print("Trying to generate observations from a nature file")
+                    aso.prepare_nature_dart(valid_time)
+                    osq_out.generate_obsseq_out(valid_time)
+               except:
+                    print("Failed. Trying to evaluate posterior with dummy observations")
+                    # use an old obsseq file and overwrite obs/truth values with "missing value"
+                    f_oso = cluster.archivedir+valid_time.strftime("/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out")
+                    if not os.path.isfile(f_oso):
+                         raise RuntimeError(f_oso+' not found. Cannot create dummy observation.')
+               
+                    from dartwrf.obs import obsseq
+                    oso = obsseq.ObsSeq(f_oso)
+
+                    # overwrite obs/truth values with "missing value"
+                    oso.df['observations'] = -888888.0
+                    oso.df['truth'] = -888888.0
+                    oso.to_dart(cluster.dart_rundir+'/obs_seq.out')
      
      aso.evaluate(valid_time, f_out_pattern=cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M:%S_obs_seq.final-evaluate")
 

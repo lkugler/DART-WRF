@@ -1,78 +1,65 @@
-import os, sys, shutil, warnings, glob
+import os
+import sys
+import shutil
+import warnings
+import glob
 import time as time_module
 import datetime as dt
 import numpy as np
 
-from dartwrf.utils import symlink, copy, mkdir, try_remove, print, shell, write_txt
+from dartwrf.utils import symlink, copy, mkdir, try_remove, print, shell, write_txt, load_dict
 from dartwrf import wrfout_add_geo
 from dartwrf.obs import error_models as err
 from dartwrf.obs import obsseq
-from dartwrf.obs import create_obsseq_out as osq_out
 from dartwrf import dart_nml
 
 from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 
-
-wrfout_format = '/wrfout_d01_%Y-%m-%d_%H:%M:%S'  # WRF file format, will only change if WRF changes
-pattern_init_time = "/%Y-%m-%d_%H:%M/"  # pattern for the init_time folder in sim_archive
-pattern_obs_seq_out = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out"  # how an obs_seq.out file is archived
-pattern_obs_seq_final = cluster.archivedir + "/diagnostics/%Y-%m-%d_%H:%M_obs_seq.final"  # how an obs_seq.final file is archived
-
-def _prepare_DART_grid_template(prior_path_exp=False):
-    # DART needs a wrfinput file as a template for the grid
-    # No data except grid info will be read from this file 
-    # The grid information must match exactly with the nature file "wrfout_d01"
-
-    # find any model forecast and link it
-    if os.path.isfile(cluster.dart_rundir + "/wrfinput_d01"):
-        pass # file exists
-    else:
-        if prior_path_exp == False:
-            raise ValueError('If run_DART/wrfinput_d01 does not exist, prior_path_exp may not be empty')
-        else:
-            try:
-                f = glob.glob(prior_path_exp+'/*/1/wrfout_d01*')[0]
-            except IndexError:
-                raise IOError('Could not find any model forecast file to get the grid information using the pattern '+prior_path_exp+'/*/wrfout_d01*')
-            print('link', f)
-            copy(f, cluster.dart_rundir + "/wrfinput_d01")
-
-    # add coordinates if not already present
-    if cluster.geo_em_for_WRF_ideal:
-        wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfinput_d01")
-
-def _find_nature(time):
-    """Find the path to the nature file for the given time
+def link_DART_exe():
+    """Link the DART executables to the run_DART directory
     """
-    glob_pattern = time.strftime(exp.nature_wrfout_pattern)  # replace time in pattern
-    print('searching for nature in pattern:', glob_pattern)
-    try:
-        f_nat = glob.glob(glob_pattern)[0]  # find the nature wrfout-file
-    except IndexError:
-        raise IOError("no nature found with pattern "+glob_pattern)
+    bins = ['perfect_model_obs', 'filter', 'obs_diag', 'obs_seq_to_netcdf']
+    for b in bins:
+        symlink(os.path.join(cluster.dart_srcdir, b),
+                os.path.join(cluster.dart_rundir, b))
 
-    # check user input
-    if not 'wrfout' in f_nat.split('/')[-1]:
-        warnings.warn(f_nat+" does not contain 'wrfout' in filename, are you sure this is a valid nature file?")
-    
-    if not os.path.exists(f_nat):
-        raise IOError(f_nat+" does not exist -> no nature found")
-    return f_nat
+    symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
+            + 'work/sampling_error_correction_table.nc',
+            cluster.dart_rundir+'/sampling_error_correction_table.nc')
 
-def prepare_nature_dart(time):
-    """Prepares DART nature (wrfout_d01) if available
-    
-    Args:
-        time (dt.datetime): Time at which observations will be made
+def link_RTTOV_files():
+    """Link required files for running RTTOV to run_DART
     """
-    print("prepare nature")
-    f_nat = _find_nature(time)
-    shutil.copy(f_nat, cluster.dart_rundir + "/wrfout_d01")  # copy nature wrfout to DART directory
+    if cluster.rttov_srcdir != False:
+        rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat',
+                       'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.H5',
+                       'cldaer_visir/sccldcoef_msg_4_seviri.dat']
 
-    # add coordinates if necessary
-    if cluster.geo_em_for_WRF_ideal:
-        wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, cluster.dart_rundir + "/wrfout_d01")
+        for f_src in rttov_files:
+            destname = os.path.basename(f_src)
+            if 'rtcoef' in f_src:
+                destname = 'rtcoef_msg_4_seviri.dat'
+
+            symlink(cluster.rttov_srcdir + f_src,
+                    cluster.dart_rundir+'/'+destname)
+
+        symlink(cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri_deff.H5',
+                cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri.H5')  # use deff, not OPAC
+
+        symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sensor_db.csv',
+                cluster.dart_rundir+'/rttov_sensor_db.csv')
+
+def prepare_DART_grid_template():
+    """Prepare DART grid template wrfinput_d01 file from a prior file
+    
+    DART needs a wrfinput file as a template for the grid information.
+    No data except grid info will be read from this file.
+    The grid information must match exactly with the prior file "wrfout_d01"
+    """
+    copy(cluster.dart_rundir+'/prior_ens1/wrfout_d01', cluster.dart_rundir + "/wrfinput_d01")
+    if cluster.geo_em_forecast:
+        wrfout_add_geo.run(cluster.geo_em_forecast, cluster.dart_rundir + "/wrfinput_d01")
 
 def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_path_exp):
     """Prepares DART files for running filter
@@ -89,31 +76,28 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
         print("link wrfout file to DART background file")
         wrfout_run = (
             prior_path_exp
-            + prior_init_time.strftime(pattern_init_time)
+            + prior_init_time.strftime(cluster.pattern_init_time)
             + str(iens)
-            + prior_valid_time.strftime(wrfout_format)
+            + prior_valid_time.strftime(cluster.wrfout_format)
         )
         dart_ensdir = cluster.dart_rundir + "/prior_ens" + str(iens)
         wrfout_dart = dart_ensdir + "/wrfout_d01"
 
         # copy prior ens file from archived wrfout files (prior_path_exp)
-        os.makedirs(dart_ensdir, exist_ok=True)
-        print("copy", wrfout_run, "to", wrfout_dart)
-        copy(wrfout_run, wrfout_dart)
-
-        # DART needs a grid file for each ensemble member (this is no real wrfinput file)
-        symlink(wrfout_dart, dart_ensdir + "/wrfinput_d01")
+        print("link", wrfout_run, "to", wrfout_dart)
+        symlink(wrfout_run, wrfout_dart)
 
         # ensure prior time matches assim time
         # can be intentionally different, e.g. by using a prior for a different time
         if assim_time != prior_valid_time:
+            copy(wrfout_run, wrfout_dart)
             print("overwriting time in prior from nature wrfout")
-            shell(cluster.ncks+ " -A -v XTIME,Times "+ 
-                    cluster.dart_rundir+"/wrfout_d01 "+ wrfout_dart)
+            shell(cluster.ncks + " -A -v XTIME,Times " +
+                  cluster.dart_rundir+"/wrfout_d01 " + wrfout_dart)
 
         # this seems to be necessary (else wrong level selection)
-        if cluster.geo_em_for_WRF_ideal:
-            wrfout_add_geo.run(cluster.geo_em_for_WRF_ideal, wrfout_dart)
+        #if cluster.geo_em_forecast:
+        #    wrfout_add_geo.run(cluster.geo_em_forecast, wrfout_dart)
 
     use_linked_files_as_prior()
     write_list_of_outputfiles()
@@ -126,6 +110,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     os.system("rm -rf " + cluster.dart_rundir + "/perfect_output_*")
     os.system("rm -rf " + cluster.dart_rundir + "/obs_seq.fina*")
 
+
 def use_linked_files_as_prior():
     """Instruct DART to use the prior ensemble as input
     """
@@ -133,6 +118,7 @@ def use_linked_files_as_prior():
     for iens in range(1, exp.n_ens+1):
         files.append("./prior_ens" + str(iens) + "/wrfout_d01")
     write_txt(files, cluster.dart_rundir+'/input_list.txt')
+
 
 def use_filter_output_as_prior():
     """Use the last posterior as input for DART, e.g. to evaluate the analysis in observation space
@@ -144,10 +130,12 @@ def use_filter_output_as_prior():
             os.remove(f_new)
         except:
             pass
-        os.rename(cluster.dart_rundir+'/filter_restart_d01.'+str(iens).zfill(4), f_new)
+        os.rename(cluster.dart_rundir+'/filter_restart_d01.' +
+                  str(iens).zfill(4), f_new)
         files.append(f_new)
 
     write_txt(files, cluster.dart_rundir+'/input_list.txt')
+
 
 def write_list_of_outputfiles():
     files = []
@@ -158,15 +146,16 @@ def write_list_of_outputfiles():
 
 def filter(nproc=12):
     """Calls DART ./filter program
-    
+
     Args:
         nproc (int): number of cores for use in ./filter call
-        
+
     Returns:
         None    (writes to file)
     """
-    nproc = min(nproc, cluster.max_nproc)
-
+    if hasattr(cluster, 'max_nproc'):
+        nproc = cluster.max_nproc
+        
     print("time now", dt.datetime.now())
     print("running filter")
     os.chdir(cluster.dart_rundir)
@@ -175,24 +164,23 @@ def filter(nproc=12):
     t = time_module.time()
     if nproc > 1:
         # -genv I_MPI_PIN_PROCESSOR_LIST=0-"+str(int(nproc) - 1)
-        shell(cluster.dart_modules+" mpirun -np "+str(int(nproc))+" ./filter > log.filter") 
+        shell(cluster.dart_modules+"; mpirun -np " +
+              str(int(nproc))+" ./filter > log.filter")
     else:
-        shell(cluster.dart_modules+" ./filter > log.filter")
+        shell(cluster.dart_modules+"; ./filter > log.filter")
     print("./filter took", int(time_module.time() - t), "seconds")
-    
+
     if not os.path.isfile(cluster.dart_rundir + "/obs_seq.final"):
         raise RuntimeError(
             "obs_seq.final does not exist in run_DART directory. ",
             "Check log file at " + cluster.dart_rundir + "/log.filter")
 
 
-############### archiving
-
 def archive_filteroutput(time):
     """Archive filter output files (filter_restart, preassim, postassim, output_mean, output_sd)
     """
     # archive diagnostics
-    dir_out = cluster.archivedir +  time.strftime(pattern_init_time)
+    dir_out = cluster.archivedir + time.strftime(cluster.pattern_init_time)
     os.makedirs(dir_out, exist_ok=True)
 
     # copy input.nml to archive
@@ -206,18 +194,24 @@ def archive_filteroutput(time):
         )
 
     # copy preassim/postassim files to archive (not necessary for next forecast run)
-    try:  
-        for f in ["output_mean.nc", "output_sd.nc"]:  # copy mean and sd to archive
+    for f in ["preassim_mean.nc", "preassim_sd.nc",
+              "postassim_mean.nc", "postassim_sd.nc",
+              "output_mean.nc", "output_sd.nc"]:
+        try:
             copy(cluster.dart_rundir + "/" + f, dir_out + "/" + f)
+        except:
+            warnings.warn(f+" not found")
 
-        ftypes = ['preassim', 'postassim']
-        for ftype in ftypes:
-            for iens in range(1, exp.n_ens + 1):
-                fname = "/"+ftype+"_member_" + str(iens).zfill(4) + ".nc"
-                copy(cluster.dart_rundir + fname, dir_out + fname)
-                
-    except Exception as e:
-        warnings.warn(str(e))
+    if False:  # save disk space, dont do this by default
+        try:
+            ftypes = ['preassim', 'postassim']
+            for ftype in ftypes:
+                for iens in range(1, exp.n_ens + 1):
+                    fname = "/"+ftype+"_member_" + str(iens).zfill(4) + ".nc"
+                    copy(cluster.dart_rundir + fname, dir_out + fname)
+        except Exception as e:
+            warnings.warn(str(e))
+
 
 def get_parametrized_error(obscfg, osf_prior):
     """Calculate the parametrized error for an ObsConfig (one obs type)
@@ -242,12 +236,13 @@ def get_parametrized_error(obscfg, osf_prior):
     if channel == 6:
         return err.calc_obserr_WV('WV73', Hx_truth, Hx_prior)
     else:
-        NotImplementedError('sat_channel not implemented', obscfg.get("sat_channel"))
-
+        NotImplementedError('sat_channel not implemented',
+                            obscfg.get("sat_channel"))
+    
 
 def set_obserr_assimilate_in_obsseqout(oso, outfile="./obs_seq.out"):
     """"Overwrite existing variance values in obs_seq.out files
-    
+
     Args:
         oso (ObsSeq): python representation of obs_seq.out file, will be modified and written to file
 
@@ -266,33 +261,40 @@ def set_obserr_assimilate_in_obsseqout(oso, outfile="./obs_seq.out"):
 
         # modify observation error of each kind sequentially
         where_oso_iskind = oso.df.kind == kind
-        
-        if obscfg["error_assimilate"] == False:
-            f_osf = cluster.dart_rundir + "/obs_seq.final"
-            if not os.path.isfile(f_osf):
-                evaluate(time, f_out_pattern=f_osf)
-            
-            osf_prior = obsseq.ObsSeq(f_osf)  # this file was generated by `evaluate()`
-            
-            where_osf_iskind = osf_prior.df.kind == kind
 
-            assim_err = get_parametrized_error(obscfg, osf_prior.df[where_osf_iskind])
-            oso.df.loc[where_oso_iskind, 'variance'] = assim_err**2
-            #assert np.allclose(assim_err, oso.df['variance']**2)  # check
-        else:
-            # overwrite with user-defined values
-            oso.df.loc[where_oso_iskind, 'variance'] = obscfg["error_assimilate"]**2
+        if hasattr(obscfg, "error_assimilate"):
+            if obscfg["error_assimilate"] == False:
+                # get a parametrized error for this observation type
+
+                f_osf = cluster.dart_rundir + "/obs_seq.final"
+                if not os.path.isfile(f_osf):
+                    evaluate(time, f_out_pattern=f_osf)
+
+                # this file was generated by `evaluate()`
+                osf_prior = obsseq.ObsSeq(f_osf)
+
+                where_osf_iskind = osf_prior.df.kind == kind
+
+                assim_err = get_parametrized_error(
+                    obscfg, osf_prior.df[where_osf_iskind])
+                oso.df.loc[where_oso_iskind, 'variance'] = assim_err**2
+                # assert np.allclose(assim_err, oso.df['variance']**2)  # check
+            else:
+                # overwrite with user-defined values
+                oso.df.loc[where_oso_iskind,
+                           'variance'] = obscfg["error_assimilate"]**2
 
     oso.to_dart(outfile)
 
-def qc_obs(time, oso):
+
+def reject_small_FGD(time, oso):
     """Quality control of observations
     We assume that the prior values have been evaluated and are in `run_DART/obs_seq.final`
-    
+
     Args:
         time (datetime): time of the assimilation
         oso (ObsSeq): python representation of obs_seq.out file, will be modified and written to file
-    
+
     Returns:
         None    (writes to file)
         The pre-existing obs_seq.out will be archived.
@@ -301,9 +303,10 @@ def qc_obs(time, oso):
     osf_prior = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.final")
 
     # obs should be superobbed already!
-    for i, obscfg in enumerate(exp.observations): 
+    for i, obscfg in enumerate(exp.observations):
         if i > 0:
-            raise NotImplementedError('Multiple observation types -> might not work')
+            raise NotImplementedError(
+                'Multiple observation types -> might not work')
 
         obs = oso.df.observations.values
         Hx_prior_mean = osf_prior.df['prior ensemble mean']
@@ -315,8 +318,8 @@ def qc_obs(time, oso):
                 print('removing obs with abs(FGD) < 0.03')
                 Hx_prior = osf_prior.df.get_prior_Hx().T
                 Hx_prior_mean = np.mean(Hx_prior, axis=0)
-                #Hx_prior_spread = osf_prior.df['prior ensemble spread'].values
-                #Hx_prior_spread[Hx_prior_spread < 1e-9] = 1e-9
+                # Hx_prior_spread = osf_prior.df['prior ensemble spread'].values
+                # Hx_prior_spread[Hx_prior_spread < 1e-9] = 1e-9
 
                 abs_FGD = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
                 oso.df = oso.df[abs_FGD > 0.03]  # Hx_prior_spread]
@@ -328,8 +331,10 @@ def qc_obs(time, oso):
             else:
                 # set obs to prior mean => no change in mean but spread is adjusted.
                 abs_FGD = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
-                Hx_prior_median = np.median(osf_prior.df.get_prior_Hx(), axis=1)
-                oso.df.loc[abs_FGD <= 0.05, 'observations'] = Hx_prior_median[abs_FGD <= 0.05]
+                Hx_prior_median = np.median(
+                    osf_prior.df.get_prior_Hx(), axis=1)
+                oso.df.loc[abs_FGD <= 0.05,
+                           'observations'] = Hx_prior_median[abs_FGD <= 0.05]
 
         elif obscfg.get("sat_channel") == 6:  # WV73
 
@@ -340,12 +345,13 @@ def qc_obs(time, oso):
             abs_FGD = abs(obs - Hx_prior_mean)  # /Hx_prior_spread
             oso.df = oso.df[abs_FGD > 5]
         else:
-            raise NotImplementedError('no obs QC implemented for this obs type')
-        
-        print('QC removed', n_obs_orig-len(oso.df), 'observations') 
+            raise NotImplementedError(
+                'no obs QC implemented for this obs type')
+
+        print('QC removed', n_obs_orig-len(oso.df), 'observations')
 
         # archive obs_seq.out before QC (contains all observations, including later removed ones)
-        f_out_archive = time.strftime(pattern_obs_seq_out)+"-beforeQC"
+        f_out_archive = time.strftime(cluster.pattern_obs_seq_out)+"-beforeQC"
         os.makedirs(os.path.dirname(f_out_archive), exist_ok=True)
         copy(cluster.dart_rundir + "/obs_seq.out", f_out_archive)
 
@@ -358,8 +364,7 @@ def qc_obs(time, oso):
 def evaluate(assim_time,
              obs_seq_out=False,
              prior_is_filter_output=False,
-             f_out_pattern=pattern_obs_seq_final+"-evaluate",
-             nproc=12):
+             f_out_pattern=cluster.pattern_obs_seq_final+"-evaluate"):
     """Calculates either prior or posterior obs space values.
 
     Note: Depends on a prepared input_list.txt, which defines the ensemble (prior or posterior).
@@ -376,13 +381,7 @@ def evaluate(assim_time,
     Returns
         None (writes file)
     """
-    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
-    os.chdir(cluster.dart_rundir)
-
-    _link_DART_binaries_and_RTTOV_files() 
-
-    # remove any existing observation files
-    os.system("rm -f input.nml obs_seq.final")  
+    prepare_run_DART_folder()
 
     if prior_is_filter_output:
         print('using filter_restart files in run_DART as prior')
@@ -392,81 +391,57 @@ def evaluate(assim_time,
         use_linked_files_as_prior()
 
     # the observations at which to evaluate the prior at
-    if obs_seq_out:  
-        copy(obs_seq_out, cluster.dart_rundir+'/obs_seq.out')  # user defined file
+    if obs_seq_out:
+        copy(obs_seq_out, cluster.dart_rundir +
+             '/obs_seq.out')  # user defined file
     else:
-        # probably not necessary
-        # prepare_nature_dart(assim_time)  # link WRF nature file to run_DART directory
-    
         # use existing obs_seq.out file currently present in the run_DART directory
         if not os.path.isfile(cluster.dart_rundir+'/obs_seq.out'):
-            raise RuntimeError(cluster.dart_rundir+'/obs_seq.out does not exist')
+            raise RuntimeError(cluster.dart_rundir +
+                               '/obs_seq.out does not exist')
 
     dart_nml.write_namelist(just_prior_values=True)
-    filter(nproc=nproc)
+    filter(nproc=cluster.max_nproc)
     archive_filter_diagnostics(assim_time, f_out_pattern)
 
 
 def archive_filter_diagnostics(time, f_out_pattern):
-    f_archive = time.strftime(f_out_pattern) 
+    """Copy the filter output txt to the archive
+    """
+    f_archive = time.strftime(f_out_pattern)
 
     dir_out = os.path.dirname(f_archive)
     os.makedirs(dir_out, exist_ok=True)
     copy(cluster.dart_rundir + "/obs_seq.final", f_archive)
     print(f_archive, "saved.")
 
+
 def txtlink_to_prior(time, prior_init_time, prior_path_exp):
-    """For documentation: Which prior was used? -> write into txt file"""
-    os.makedirs(cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/'), exist_ok=True)
-    os.system('echo "'+prior_path_exp+'\n'+prior_init_time.strftime('/%Y-%m-%d_%H:%M/')
-                +'\n'+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')+'" > '
-                +cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/')+'link_to_prior.txt')
-
-def get_obsseq_out(time):
-    """Prepares an obs_seq.out file in the run_DART folder
-    If `exp.use_existing_obsseq` points to an existing file, then this is used.
-    Otherwise, the observations are generated and an `obs_seq.out` file is created.
-    An `obs_seq.out` file is always archived.
-
-    Args:
-        time (datetime): time of assimilation
-
-    Returns:
-        obsseq.ObsSeq
+    """For reproducibility, write the path of the prior to a txt file
     """
-    if exp.use_existing_obsseq != False and os.path.isfile(exp.use_existing_obsseq): 
-        # use an existing obs_seq.out file
-        f_obsseq = time.strftime(exp.use_existing_obsseq)
-        copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')  # copy to run_DART folder
-        print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
+    os.makedirs(cluster.archivedir +
+                time.strftime('/%Y-%m-%d_%H:%M/'), exist_ok=True)
+    os.system('echo "'+prior_path_exp+'\n'+prior_init_time.strftime('/%Y-%m-%d_%H:%M/')
+              + '\n'+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')+'" > '
+                + cluster.archivedir + time.strftime('/%Y-%m-%d_%H:%M/')+'link_to_prior.txt')
 
-        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")  # read the obs_seq.out file
-    else: 
-        # do NOT use an existing obs_seq.out file
-        # but generate observations with new observation noise
-        prepare_nature_dart(time)
-        oso = osq_out.generate_obsseq_out(time)
-
-    # copy to sim_archive
-    f_obsseq_archive = time.strftime(pattern_obs_seq_out)
-    os.makedirs(os.path.dirname(f_obsseq_archive), exist_ok=True)
-    copy(cluster.dart_rundir+'/obs_seq.out', f_obsseq_archive)
-    return oso
 
 def prepare_inflation_2(time, prior_init_time):
     """Prepare inflation files (spatially varying)
-    
+
     Recycles inflation files from previous assimilations
     or takes default files from archive.
-    
+
     Args:
         time (datetime): time of assimilation
         prior_init_time (datetime): time of prior assimilation
     """
-    dir_priorinf = cluster.archivedir + prior_init_time.strftime(pattern_init_time) 
+    dir_priorinf = cluster.archivedir + \
+        prior_init_time.strftime(cluster.pattern_init_time)
 
     f_default = cluster.archive_base + "/input_priorinf_mean.nc"
-    f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
+    f_prior = dir_priorinf + \
+        time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     f_new = cluster.dart_rundir + '/input_priorinf_mean.nc'
 
     if os.path.isfile(f_prior):
@@ -477,7 +452,8 @@ def prepare_inflation_2(time, prior_init_time):
         copy(f_default, f_new)
 
     f_default = cluster.archive_base + "/input_priorinf_sd.nc"
-    f_prior = dir_priorinf + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
+    f_prior = dir_priorinf + \
+        time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     f_new = cluster.dart_rundir + '/input_priorinf_sd.nc'
 
     if os.path.isfile(f_prior):
@@ -487,69 +463,112 @@ def prepare_inflation_2(time, prior_init_time):
         warnings.warn(f_prior + ' does not exist. Using default file instead.')
         copy(f_default, f_new)
 
+
 def archive_inflation_2(time):
-    dir_output = cluster.archivedir + time.strftime(pattern_init_time)
+    dir_output = cluster.archivedir + time.strftime(cluster.pattern_init_time)
     os.makedirs(dir_output, exist_ok=True)
 
     f_output = cluster.dart_rundir + '/output_priorinf_sd.nc'
-    f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
+    f_archive = dir_output + \
+        time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_sd.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
     f_output = cluster.dart_rundir + '/output_priorinf_mean.nc'
-    f_archive = dir_output + time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
+    f_archive = dir_output + \
+        time.strftime("/%Y-%m-%d_%H:%M_output_priorinf_mean.nc")
     copy(f_output, f_archive)
     print(f_archive, 'saved')
 
-def _link_DART_binaries_and_RTTOV_files():
-    joinp = os.path.join
-
-    # link DART binaries
-    bins = ['perfect_model_obs', 'filter', 'obs_diag', 'obs_seq_to_netcdf']
-    for b in bins:
-            symlink(joinp(cluster.dart_srcdir, b),
-                    joinp(cluster.dart_rundir, b))
-
-    symlink(cluster.dart_srcdir+'/../../../assimilation_code/programs/gen_sampling_err_table/'
-            +'work/sampling_error_correction_table.nc',
-            cluster.dart_rundir+'/sampling_error_correction_table.nc')
-
-    # link RTTOV files
-    if cluster.rttov_srcdir != False:
-        rttov_files = ['rttov13pred54L/rtcoef_msg_4_seviri_o3.dat', 
-                        'mfasis_lut/rttov_mfasis_cld_msg_4_seviri_deff.H5',
-                        'cldaer_visir/sccldcoef_msg_4_seviri.dat']
-
-        for f_src in rttov_files:
-                destname = os.path.basename(f_src)
-                if 'rtcoef' in f_src:
-                        destname = 'rtcoef_msg_4_seviri.dat'
-
-                symlink(cluster.rttov_srcdir + f_src, 
-                        cluster.dart_rundir+'/'+destname)
-
-        symlink(cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri_deff.H5', 
-                cluster.dart_rundir+'/rttov_mfasis_cld_msg_4_seviri.H5')  # use deff, not OPAC
-
-        symlink(cluster.dart_srcdir+'/../../../observations/forward_operators/rttov_sensor_db.csv',
-                cluster.dart_rundir+'/rttov_sensor_db.csv')
-
-    else:
-        # check if we need RTTOV, but rttov_srcdir is not set
-        for obscfg in exp.observations:
-            if 'sat_channel' in obscfg:
-                raise RuntimeError('cluster.rttov_srcdir not set, but satellite channel will be assimilated')
-
 
 def prepare_run_DART_folder(prior_path_exp=False):
-    os.makedirs(cluster.dart_rundir, exist_ok=True)  # create directory to run DART in
+    # create directory to run DART in
+    os.makedirs(cluster.dart_rundir, exist_ok=True)
+    
+    link_DART_exe()
+    
+    for obscfg in exp.observations:
+        if 'sat_channel' in obscfg:
+            link_RTTOV_files()
+            continue
+        
+    # remove any remains of a previous run
     os.chdir(cluster.dart_rundir)
+    os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")
 
-    _link_DART_binaries_and_RTTOV_files()
-    _prepare_DART_grid_template(prior_path_exp=prior_path_exp)
 
-    # remove any existing observation files
-    os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.out-orig obs_seq.final")  
+def get_obsseq_out(time, prior_path_exp, prior_init_time, prior_valid_time, lag=None):
+    """Prepares an obs_seq.out file in the run_DART folder
+
+    3 Options:
+    1) Use existing obs_seq.out file
+    2) Use precomputed FO (for cloud fraction)
+    3) Generate new observations with new observation noise
+
+    Args:
+        time (datetime): time of assimilation
+        prior_path_exp (str): path to the experiment folder
+        prior_init_time (datetime): time of the prior forecast init
+        prior_valid_time (datetime): time of the prior
+
+    Returns:
+        obsseq.ObsSeq
+    """
+    # access time-dependent configuration
+    try:
+        ACF_config = load_dict(
+            time.strftime(cluster.scripts_rundir+'/ACF_config_%H%M.pkl'))
+        print('using ACF_config:', ACF_config)
+        exp.ACF = True
+    except:
+        pass
+
+    oso = None
+    if isinstance(exp.use_existing_obsseq, str):
+        # assume that the user wants to use an existing obs_seq.out file
+
+        f_obsseq = time.strftime(exp.use_existing_obsseq)
+        if os.path.isfile(f_obsseq):
+            # copy to run_DART folder
+            copy(f_obsseq, cluster.dart_rundir+'/obs_seq.out')
+            print(f_obsseq, 'copied to', cluster.dart_rundir+'/obs_seq.out')
+
+        else:
+            # explain the error if the file does not exist
+            raise IOError('exp.use_existing_obsseq is not False. \n'
+                          + 'In this case, use_existing_obsseq should be a file path (wildcards %H, %M allowed)!\n'
+                          + 'But there is no file with this pattern: '+str(exp.use_existing_obsseq))
+
+    elif hasattr(exp, 'ACF'):
+        # prepare observations with precomputed FO
+        if lag != None:
+            prior_valid_time += lag
+            time += lag
+        pattern_prior = prior_path_exp + prior_init_time.strftime(
+            '/%Y-%m-%d_%H:%M/<iens>/') + prior_valid_time.strftime(ACF_config.pop('first_guess_pattern'))
+
+        from CloudFractionDA import obsseqout as cfoso
+        cfoso.write_obsseq(time, pattern_prior, 
+                           time.strftime(ACF_config.pop('observed_data')), 
+                           ACF_config.pop('var'),
+                           path_output=cluster.dart_rundir + "/obs_seq.out",
+                           **ACF_config)
+
+    else:
+        # do NOT use an existing obs_seq.out file
+        # but generate observations with new observation noise
+        from dartwrf.obs import create_obsseq_out as osq_out
+        oso = osq_out.generate_new_obsseq_out(time)
+
+    # copy to sim_archive
+    f_obsseq_archive = time.strftime(cluster.pattern_obs_seq_out)
+    os.makedirs(os.path.dirname(f_obsseq_archive), exist_ok=True)
+    copy(cluster.dart_rundir+'/obs_seq.out', f_obsseq_archive)
+
+    # read so that we can return it
+    if oso is None:
+        oso = obsseq.ObsSeq(cluster.dart_rundir + "/obs_seq.out")
+    return oso
 
 
 def main(time, prior_init_time, prior_valid_time, prior_path_exp):
@@ -564,35 +583,40 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     optional: quality-control
     4) Assimilate with assigned errors
     5) Evaluate posterior (after DART clamping, e.g. setting negative cloud water to zero)
-    
+
     Args:
         assim_time (dt.datetime):           time of output
         prior_init_time (dt.datetime):      forecast start of prior
         prior_valid_time (dt.datetime):     valid time of prior (may be different to assim_time)
         prior_path_exp (str):               path to prior experiment
-        
+
     Returns:
         None
     """
-    obscfg = exp.observations
-    do_QC = getattr(exp, "do_quality_control", False)  # True: triggers additional evaluations of prior & posterior
+    # do_reject_smallFGD: triggers additional evaluations of prior & posterior
+    do_reject_smallFGD = getattr(exp, "do_reject_smallFGD", False)
     prepare_run_DART_folder(prior_path_exp)
-    prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp) 
     nml = dart_nml.write_namelist()
-    
-    print(" get observations with specified obs-error")
-    oso = get_obsseq_out(time)
 
-    if do_QC:  # additional evaluation of prior (in case some observations are rejected)
+    print(" get observations with specified obs-error")
+    #lag = dt.timedelta(minutes=15)
+    oso = get_obsseq_out(time, prior_path_exp, prior_init_time, prior_valid_time)
+    
+    # prepare for assimilation
+    prepare_prior_ensemble(time, prior_init_time, prior_valid_time, prior_path_exp)
+    prepare_DART_grid_template()
+
+    # additional evaluation of prior (in case some observations are rejected)
+    if do_reject_smallFGD:
         print(" evaluate prior for all observations (incl rejected) ")
-        evaluate(time, f_out_pattern=pattern_obs_seq_final+"-evaluate_prior")
+        evaluate(time, f_out_pattern=cluster.pattern_obs_seq_final+"-evaluate_prior")
 
     print(" assign observation-errors for assimilation ")
     set_obserr_assimilate_in_obsseqout(oso, outfile=cluster.dart_rundir + "/obs_seq.out")
 
-    if do_QC:
+    if do_reject_smallFGD:
         print(" reject observations? ")
-        qc_obs(time, oso)
+        reject_small_FGD(time, oso)
 
     prior_inflation_type = nml['&filter_nml']['inf_flavor'][0][0]
     if prior_inflation_type == '2':
@@ -602,28 +626,30 @@ def main(time, prior_init_time, prior_valid_time, prior_path_exp):
     dart_nml.write_namelist()
     filter()
     archive_filteroutput(time)
-    archive_filter_diagnostics(time, pattern_obs_seq_final)
+    archive_filter_diagnostics(time, cluster.pattern_obs_seq_final)
     txtlink_to_prior(time, prior_init_time, prior_path_exp)
 
     if prior_inflation_type == '2':
         archive_inflation_2(time)
 
-    print(" evaluate posterior in observation-space")
-    f_oso = time.strftime(pattern_obs_seq_out)
-    if do_QC:
-        f_oso += '-beforeQC'  # includes all observations (including rejected ones in qc_obs())
+    if exp.evaluate_posterior_in_obs_space:
+        print(" evaluate posterior in observation-space")
+        f_oso = time.strftime(cluster.pattern_obs_seq_out)
+        if do_reject_smallFGD:
+            # includes all observations (including rejected ones in reject_small_FGD())
+            f_oso += '-beforeQC'
 
-    # evaluate() separately after ./filter is crucial when assimilating cloud variables
-    # as the obs_seq.final returned by ./filter was produced using un-clamped cloud variables
-    evaluate(time, 
-            obs_seq_out=f_oso,
-            prior_is_filter_output=True,
-            f_out_pattern=pattern_obs_seq_final+"-evaluate")
+        # evaluate() separately after ./filter is crucial when assimilating cloud variables
+        # as the obs_seq.final returned by ./filter was produced using un-clamped cloud variables
+        evaluate(time,
+                 obs_seq_out=f_oso,
+                 prior_is_filter_output=True,
+                 f_out_pattern=cluster.pattern_obs_seq_final+"-evaluate")
 
 
 if __name__ == "__main__":
     """Assimilate observations
-    
+
     Example:
         python assimilate.py 2008-08-07_13:00 2008-08_12:00 2008-08-07_13:00 /path/to/experiment/
     """

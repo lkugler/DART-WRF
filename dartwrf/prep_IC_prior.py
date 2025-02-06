@@ -19,10 +19,10 @@ Ad 2: copies wrfrst to run_WRF directory
 
 """
 
-def create_wrfrst_in_WRF_rundir(time, prior_init_time, prior_path_exp):
-    """copies wrfrst to run_WRF directory (for next WRF run)
+def create_wrfrst_in_WRF_rundir(time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str) -> None:
+    """Copy WRF restart files to run_WRF directory 
+    These files will be used as initial conditions for the next WRF run
     """
-
     for iens in range(1, exp.n_ens+1):
         clean_wrfdir(cluster.wrf_rundir(iens))
     
@@ -32,16 +32,21 @@ def create_wrfrst_in_WRF_rundir(time, prior_init_time, prior_path_exp):
         print('copy prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
         copy(prior_wrfrst, wrfrst)
         
-        # remove all wrfrst (but not the one used) - WHY? NO!
-        # files_rst = glob.glob(prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/'+str(iens)+'/wrfrst_*'))
-        # files_rst.remove(prior_wrfrst)
-        # for f in files_rst:
-        #     print('removing', f)
-        #     try_remove(f)
 
-def create_updated_wrfinput_from_wrfout(time, prior_init_time, prior_path_exp, new_start_time):
-    """Same as create_wrfout_in_archivedir, but output is `wrfinput` in WRF run directory"""
-
+def create_updated_wrfinput_from_wrfout(time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str, new_start_time: dt.datetime) -> None:
+    """Create a new wrfinput file from wrfout file
+    Output is created inside the WRF run directory
+    
+    Args:
+        time: time of the wrfout file
+        prior_init_time: initial time of the prior run
+        prior_path_exp: path to the prior run
+        new_start_time: time of the new wrfinput file
+                        If provided, overwrites the valid time of the initial conditions; 
+                        This hack allows you to use a prior of a different time than your forecast start time.
+                        Usually, you don't want to do this.
+    
+    """
     print('writing updated wrfout to WRF run directory as wrfinput')
     for iens in range(1, exp.n_ens+1):
         prior_wrfout = prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
@@ -61,12 +66,14 @@ if __name__ == '__main__':
     prior_init_time = dt.datetime.strptime(sys.argv[2], '%Y-%m-%d_%H:%M')
     prior_valid_time = dt.datetime.strptime(sys.argv[3], '%Y-%m-%d_%H:%M')
 
-    if len(sys.argv) == 5:
+    if len(sys.argv) == 4:
+        create_wrfrst_in_WRF_rundir(prior_valid_time, prior_init_time, prior_path_exp)
+    elif len(sys.argv) == 5:
         # to start new simulation at different time than prior_valid_time
         new_start_time = dt.datetime.strptime(sys.argv[4], '%Y-%m-%d_%H:%M')
 
         # use_wrfout_as_wrfinput
+        # Caution: Even without assimilation increments, this will change the model forecast
         create_updated_wrfinput_from_wrfout(prior_valid_time, prior_init_time, prior_path_exp, new_start_time)
     else:
-        # restart 
-        create_wrfrst_in_WRF_rundir(prior_valid_time, prior_init_time, prior_path_exp)
+        raise ValueError('Usage: python prep_IC_prior.py prior_path_exp prior_init_time prior_valid_time [new_start_time]')

@@ -5,21 +5,8 @@ Examples:
     >>> from dartwrf.obs.obsseq import ObsSeq
     >>> osf = ObsSeq('path/to/obs_seq.final')
     
-    The content is a pandas.DataFrame with all observations (rows) 
-    >>> osf.df
-    observations     truth  prior ensemble mean  posterior ensemble mean  ...  kind                                           metadata             time  variance
-    0        0.292800  0.289466             0.360284                 0.330799  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    1        0.292800  0.289466             0.398444                 0.380152  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    2        0.310016  0.289466             0.355061                 0.369988  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    3        0.297182  0.289466             0.305424                 0.302489  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    4        0.292800  0.293797             0.306238                 0.303252  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    ..            ...       ...                  ...                      ...  ...   ...                                                ...              ...       ...
-    956      0.762274  0.796486             0.664451                 0.833559  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    957      0.525743  0.500751             0.534391                 0.653267  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    958      0.341627  0.348115             0.405534                 0.447314  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    959      0.826649  0.835491             0.374459                 0.785951  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    960      0.320477  0.343154             0.303468                 0.325203  ...   262  [ visir\n,    180.000000000000        45.00000...  (50400, 148864)    0.0009
-    [961 rows x 93 columns]
+    osf.df is a pandas.DataFrame with all observations as rows.
+    Its keys are: e.g. 'observations', 'truth', 'prior ensemble mean', 'prior ensemble spread', 'Quality Control', 'obdef', 'loc3d', 'kind', 'metadata', 'time', 'variance'
 
     To get arrays of prior and posterior use
     >>> osf.df.get_prior_Hx()
@@ -32,11 +19,13 @@ Note:
     Can not create obs_seq from scratch, since it does not know which metadata is necessary for each observation type
 """
 
-import os, warnings
+import os
+import warnings
 import numpy as np
 import pandas as pd
 
 missing_value = -888888.0
+
 
 def _plot_box(m, lat, lon, label="", **kwargs):
     """"Draw bounding box
@@ -66,11 +55,13 @@ def _plot_box(m, lat, lon, label="", **kwargs):
         **kwargs
     )
 
+
 def _degrees_to_rad(degr):
     """Convert to DART convention = radians"""
     if degr < 0:
         degr += 360
     return degr / 360 * 2 * np.pi
+
 
 def _rad_to_degrees(rad):
     """Convert to degrees from DART convention (radians)"""
@@ -94,7 +85,7 @@ class ObsRecord(pd.DataFrame):
 
     def get_prior_Hx(self):
         """Retrieve H(x_prior) for all ensemble members
-        
+
         Returns:
             np.array (n_obs, n_ens)
         """
@@ -102,7 +93,7 @@ class ObsRecord(pd.DataFrame):
 
     def get_posterior_Hx(self):
         """Retrieve H(x_posterior) for all ensemble members
-        
+
         Returns:
             np.array (n_obs, n_ens)
         """
@@ -129,7 +120,7 @@ class ObsRecord(pd.DataFrame):
         Works with all observations (self = self.self) 
         or a subset of observations (self = self.self[343:348])
         """
-        if what not in  ['prior', 'posterior']:
+        if what not in ['prior', 'posterior']:
             raise ValueError(what, 'must be prior or posterior')
 
         # which columns do we need?
@@ -142,8 +133,6 @@ class ObsRecord(pd.DataFrame):
         # consistency check: compute mean over ens - compare with value from file
         # assert np.allclose(Hx.mean(axis=1).values, self[what+' ensemble mean'].values, rtol=1e-6)
         return Hx.values
-
-
 
     def get_model_grid_indices(self, wrf_file_with_grid):
         """Retrieve the grid indices closest to the observations
@@ -192,11 +181,11 @@ class ObsRecord(pd.DataFrame):
 
         # find indices of observations in wrf grid
         for i, row in lon_lat.iterrows():
-            ilat_ilon[i,:] = find_index_from_coords_tree(tree, xlat.shape[0], row.lat, row.lon)
-            
-        return pd.DataFrame(index=self.index, 
-            data=dict(wrf_i=ilat_ilon[:,0], wrf_j=ilat_ilon[:,1]))
+            ilat_ilon[i, :] = find_index_from_coords_tree(
+                tree, xlat.shape[0], row.lat, row.lon)
 
+        return pd.DataFrame(index=self.index,
+                            data=dict(wrf_i=ilat_ilon[:, 0], wrf_j=ilat_ilon[:, 1]))
 
     def get_lon_lat(self):
         """Retrieve longitude and latitude of observations
@@ -243,7 +232,8 @@ class ObsRecord(pd.DataFrame):
 
             nlayers = int(len(self)/obs_per_layer)
         else:
-            warnings.warn('I can only guess the number of layers from this file.')
+            warnings.warn(
+                'I can only guess the number of layers from this file.')
         return nlayers
 
     def superob(self, window_km):
@@ -280,9 +270,9 @@ class ObsRecord(pd.DataFrame):
 
         def calc_km_from_deg(deg_lat, deg_lon, center_lat):
             dist_km_lat = deg_lat * km_per_degrees
-            dist_km_lon = deg_lon * km_per_degrees * np.cos(center_lat * np.pi / 180)
+            dist_km_lon = deg_lon * km_per_degrees * \
+                np.cos(center_lat * np.pi / 180)
             return dist_km_lat, dist_km_lon
-
 
         debug = False
         radius_earth_meters = 6.371 * 1e6
@@ -307,9 +297,9 @@ class ObsRecord(pd.DataFrame):
 
         # superob in case of multiple layers, only implemented for single obstype
         nlayers = self._determine_nlayers()
-        
+
         # indices of observations (starting from 0)
-        i_obs_grid = self.index.values  
+        i_obs_grid = self.index.values
 
         # get the observation indices from obs_seq (list)
         # onto a cartesian grid (ix, iy, iz)
@@ -326,7 +316,7 @@ class ObsRecord(pd.DataFrame):
         out = self.drop(self.index)  # this df will be filled
         boxes = []
 
-        for i in range(0, nx+1 - win_obs, win_obs):  
+        for i in range(0, nx+1 - win_obs, win_obs):
             # i is the number of observations in x direction
             # but in steps of "number of observations in superob window"
             # i.e. i = 0, win_obs, 2*win_obs, 3*win_obs, ...
@@ -337,7 +327,8 @@ class ObsRecord(pd.DataFrame):
                 for k in range(0, nlayers):
                     # k is the index of the vertical layer
 
-                    if debug: print(i,j,k)
+                    if debug:
+                        print(i, j, k)
 
                     # find indices of observations within superob window
                     # i_obs_box = i_obs_grid[i : i + win_obs, j : j + win_obs, k].ravel()
@@ -345,24 +336,29 @@ class ObsRecord(pd.DataFrame):
                     if debug:
                         print("index x from", i, 'to', i + win_obs)
                         print("index y from", j, 'to', j + win_obs)
-                        print("obs indices box=", i_obs_grid[i : i + win_obs, j : j + win_obs, k])
+                        print("obs indices box=",
+                              i_obs_grid[i: i + win_obs, j: j + win_obs, k])
 
                     # find observations within superob window
                     obs_box = self._get_from_cartesian_grid(slice(i, i + win_obs),
-                                                           slice(j, j + win_obs),
-                                                           k)
+                                                            slice(
+                                                                j, j + win_obs),
+                                                            k)
 
-                    
                     # save boundary of box to list, for plotting later
                     eps = dx_obs_lat_deg/2  # for plotting
                     eps2 = eps*0.8  # for plotting
-                    lat1, lon1 = self._get_from_cartesian_grid(i, j, k).get_lon_lat().values[0]
-                    lat2, lon2 = self._get_from_cartesian_grid(i+win_obs-1, j, k).get_lon_lat().values[0]
-                    lat3, lon3 = self._get_from_cartesian_grid(i, j+win_obs-1, k).get_lon_lat().values[0]
-                    lat4, lon4 = self._get_from_cartesian_grid(i+win_obs-1, j+win_obs-1, k).get_lon_lat().values[0]
+                    lat1, lon1 = self._get_from_cartesian_grid(
+                        i, j, k).get_lon_lat().values[0]
+                    lat2, lon2 = self._get_from_cartesian_grid(
+                        i+win_obs-1, j, k).get_lon_lat().values[0]
+                    lat3, lon3 = self._get_from_cartesian_grid(
+                        i, j+win_obs-1, k).get_lon_lat().values[0]
+                    lat4, lon4 = self._get_from_cartesian_grid(
+                        i+win_obs-1, j+win_obs-1, k).get_lon_lat().values[0]
 
                     boxes.append(([lat1-eps2, lat2+eps2, lat3-eps2, lat4+eps2],
-                                [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
+                                  [lon1-eps, lon2-eps, lon3+eps, lon4+eps]))
 
                     # average the subset
                     # metadata are assumed to be equal
@@ -374,10 +370,12 @@ class ObsRecord(pd.DataFrame):
                             pass  # these parameters are not averaged
                         elif 'spread' in key:
                             # stdev of mean of values = sqrt(mean of variances)
-                            obs_mean.at[key] = np.sqrt((obs_box[key]**2).mean())
+                            obs_mean.at[key] = np.sqrt(
+                                (obs_box[key]**2).mean())
                         elif key == 'variance':
                             # variance of mean = sum(variances)/n^2
-                            obs_mean.at[key] = obs_box[key].sum()/obs_box[key].size**2
+                            obs_mean.at[key] = obs_box[key].sum() / \
+                                obs_box[key].size**2
                         else:
                             obs_mean.at[key] = obs_box[key].mean()
 
@@ -391,7 +389,8 @@ class ObsRecord(pd.DataFrame):
                         # -> there is an observation in the middle
                         # take the location of that obs
                         # int(win_obs/2) is the index of the center element when indices start at 0
-                        i_obs_center = i_obs_grid[i + int(win_obs/2), j + int(win_obs/2), k]
+                        i_obs_center = i_obs_grid[i +
+                                                  int(win_obs/2), j + int(win_obs/2), k]
                         obs_mean.at['loc3d'] = self.iloc[i_obs_center]['loc3d']
 
                     # check if all obs share the same vertical position
@@ -409,12 +408,13 @@ class ObsRecord(pd.DataFrame):
         out.attrs['boxes'] = boxes
 
         # quick after check - does the output obs number match with the expected number?
-        n_windows_x = int((n_pre_superob/nlayers)**.5/win_obs)  # assume square of obs
+        n_windows_x = int((n_pre_superob/nlayers)**.5 /
+                          win_obs)  # assume square of obs
         n_target_post = n_windows_x**2 * nlayers  # number of windows
         print('superob from', n_pre_superob, 'obs to', n_post_superob, 'obs')
         if n_post_superob != n_target_post:
-            raise RuntimeError('expected', n_target_post, 'superobservations, but created', 
-                                n_post_superob)
+            raise RuntimeError('expected', n_target_post, 'superobservations, but created',
+                               n_post_superob)
 
         out.attrs['df_pre_superob'] = self  # original data
         self = out  # overwrite dataframe
@@ -463,10 +463,12 @@ class ObsSeq(object):
 
         # check if we found definitions before end of file
         if i == len(self.preamble)-1:  # end of file
-            raise RuntimeError('did not find `obs_type_definitions` or `obs_kind_definitions` in file')
+            raise RuntimeError(
+                'did not find `obs_type_definitions` or `obs_kind_definitions` in file')
 
         line_n_obstypes = i + 1
-        n_obstypes = int(self.preamble[line_n_obstypes])  # read integer from file
+        # read integer from file
+        n_obstypes = int(self.preamble[line_n_obstypes])
 
         # read obs type kind (number and description)
         obstypes = []
@@ -476,16 +478,20 @@ class ObsSeq(object):
             obstypes.append((kind_nr, kind_type))
         self.obstypes = obstypes
 
-        # read num_copies (2 for obs_seq.out, 44 for obs_seq.final with 40 ens members)
+        # read num_copies
+        # num_copies=1 ... obs_seq.out without truth value
+        # num_copies=2 ... obs_seq.out with truth value
+        # num_copies=86 ... obs_seq.final with 40 ens members (prior+post) + obs + truth + 2x mean + 2x spread
         num_copies = False
         for line in self.preamble:
             if 'num_copies:' in line:
                 _, num_copies, _, num_qc = line.split()
                 break
         if not num_copies:
-            raise RuntimeError('did not find `num_copies:` in '+str(self.preamble))
-        num_copies = int(num_copies)
-        num_qc = int(num_qc)
+            raise RuntimeError(
+                'did not find `num_copies:` in '+str(self.preamble))
+        self.num_copies = int(num_copies)
+        self.num_qc = int(num_qc)
 
         # read num_obs
         num_obs = False
@@ -494,14 +500,15 @@ class ObsSeq(object):
                 _, num_obs, _, max_num_obs = line.split()
                 break
         if not num_obs:
-            raise RuntimeError('did not find `num_obs:` in '+str(self.preamble))
+            raise RuntimeError(
+                'did not find `num_obs:` in '+str(self.preamble))
         assert num_obs == max_num_obs, NotImplementedError()
         self.num_obs = int(num_obs)
 
         # read keys for values (e.g. 'observations', 'truth', 'prior ensemble mean',)
         keys = []
         line_start_keys = i+1
-        for j in range(line_start_keys, line_start_keys+num_copies+num_qc):
+        for j in range(line_start_keys, line_start_keys+self.num_copies+self.num_qc):
             line = self.preamble[j]
             keys.append(line.strip())
 
@@ -520,7 +527,7 @@ class ObsSeq(object):
 
             Args:
                 content (list of str) : contains lines of file
-            
+
             Returns 
                 list of list of str
             """
@@ -539,12 +546,12 @@ class ObsSeq(object):
 
                 if obs_begin_str in line:  # then this line is beginning of obs
                     obs_end = i - 1  # previous line
-                    obs_list.append(content[obs_begin : obs_end + 1])
+                    obs_list.append(content[obs_begin: obs_end + 1])
                     obs_begin = i  # next obs starts here
 
                 if i == len(content) - 1:  # last line
                     obs_end = i
-                    obs_list.append(content[obs_begin : obs_end + 1])
+                    obs_list.append(content[obs_begin: obs_end + 1])
 
             if not len(obs_list) > 1:
                 warnings.warn('len(obs_list)='+str(len(obs_list)))
@@ -552,7 +559,7 @@ class ObsSeq(object):
             # consistency check to ensure that all observations have been detected
             if len(obs_list) != self.num_obs:
                 raise RuntimeError('num_obs read in does not match preamble num_obs '
-                                   +str(len(obs_list))+' != '+str(self.num_obs))
+                                   + str(len(obs_list))+' != '+str(self.num_obs))
             return obs_list
 
         def one_obs_to_dict(obs_list_entry):
@@ -583,11 +590,10 @@ class ObsSeq(object):
                 else:
                     out[key] = v
 
-
             x, y, z, z_coord = lines[line_loc].split()
             out["loc3d"] = float(x), float(y), float(z), int(z_coord)
             out["kind"] = int(lines[line_kind].strip())
-            out["metadata"] = lines[line_kind + 1 : -2]
+            out["metadata"] = lines[line_kind + 1: -2]
             out["time"] = tuple(lines[-2].split())
             out["variance"] = float(lines[-1].strip())
             return out
@@ -615,10 +621,10 @@ class ObsSeq(object):
 
     def append_obsseq(self, list_of_obsseq):
         """Append a list of ObsSeq objects
-        
+
         Args:
             list_of_obsseq (list of ObsSeq())
-            
+
         Example:
             Combine two ObsSeq() objects
             >>> oso1 = ObsSeq('path/to/obs_seq.out1')
@@ -628,7 +634,7 @@ class ObsSeq(object):
         Returns:
             ObsSeq() with combined data
         """
-        from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
+        from dartwrf.obs.obskind import obs_kind_nrs  # dictionary string => DART internal indices
         inverted_obs_kind_nrs = {v: k for k, v in obs_kind_nrs.items()}
 
         for a in list_of_obsseq:
@@ -640,8 +646,8 @@ class ObsSeq(object):
         list_of_obsseq_df.extend([a.df for a in list_of_obsseq])
 
         combi_df = pd.concat(list_of_obsseq_df,
-                            ignore_index=True  # we use a new observation index now
-                            )
+                             ignore_index=True  # we use a new observation index now
+                             )
 
         n_obstypes = combi_df.kind.nunique()
         list_kinds = combi_df.kind.unique()
@@ -651,10 +657,39 @@ class ObsSeq(object):
             obstypes.append((kind, inverted_obs_kind_nrs[kind]))
 
         oso3 = self
-        oso3.df = combi_df 
-        oso3.obstypes = obstypes 
+        oso3.df = combi_df
+        oso3.obstypes = obstypes
         return oso3
 
+    def remove_obs_of_type(self, kind_str=False, kind=False):
+        """Remove all observations of a certain type
+
+        Args:
+            kind_str (str):     observation type as string
+            kind (int):         observation type as integer
+
+        Returns:
+            self
+        """
+
+        if kind_str != False:
+            # dictionary string => DART internal indices
+            from dartwrf.obs.obskind import obs_kind_nrs
+            kind_remove = obs_kind_nrs[kind_str]
+        if kind != False:
+            kind_remove = kind
+
+        # remove data from table
+        self.df = self.df[self.df.kind != kind_remove]
+
+        # remove obstypes from obstypes-list
+        obstypes = self.obstypes
+        obstypes_new = []
+        for kind, kindstr in obstypes:
+            if kind != kind_remove:
+                obstypes_new.append((kind, kindstr))
+        self.obstypes = obstypes_new
+        return self
 
     def to_pandas(self):
         """Create pd.DataFrame with rows=observations
@@ -701,11 +736,13 @@ class ObsSeq(object):
             for (nr, obstype) in self.obstypes:
                 txt += "\n         " + str(nr) + " " + obstype
             nobs = str(n_obs)
-            txt += "\n num_copies:            2  num_qc:            1"
-            txt += "\n num_obs:           " + nobs
-            txt += "   max_num_obs:            " + nobs
-            txt += "\n observations \n truth \n Quality Control \n"
-            txt += " first:            1  last:            " + nobs
+            txt += "\n".join(["\n num_copies:         "+str(self.num_copies)
+                              + "     num_qc:       "+str(self.num_qc),
+                              " num_obs:           " + nobs+"   max_num_obs:            " + nobs,
+                              " observations"])
+            if self.num_copies > 1:
+                txt += "\n truth "
+            txt += "\n Quality Control \n first:            1  last:            " + nobs
             return txt
 
         def write_obs(i, obs, next_i_obs=None, prev_i_obs=None):
@@ -724,37 +761,42 @@ class ObsSeq(object):
             """
 
             if next_i_obs:
-                line_link = "        -1           " + str(next_i_obs) + "          -1"
+                line_link = "        -1           " + \
+                    str(next_i_obs) + "          -1"
             else:  # last observation in file
-                line_link = "          " + str(prev_i_obs) + "           -1          -1"
+                line_link = "          " + \
+                    str(prev_i_obs) + "           -1          -1"
 
             lon_rad = str(obs["loc3d"][0])
             lat_rad = str(obs["loc3d"][1])
 
-            out = (
-                " \n".join(
+            content = ["OBS         " + str(i),
+                       str(obs["observations"]),]
+            if "truth" in obs:
+                content.append(str(obs["truth"]))
+
+            content.extend([
+                str(obs["Quality Control"]),
+                line_link, "obdef", "loc3d",
+                "    ".join(
                     [
-                        "\nOBS         " + str(i),
-                        str(obs["observations"]),
-                        str(obs["truth"]),
-                        str(obs["Quality Control"]),
-                        line_link,
-                        "obdef",
-                        "loc3d", "    ".join(
-                            [
-                                lon_rad, lat_rad,
-                                str(obs["loc3d"][2]), 
-                                str(obs["loc3d"][3]),
-                            ]
-                        ),
-                        "kind", "         " + str(int(obs["kind"])),
-                        "".join(obs["metadata"]),
+                        lon_rad, lat_rad,
+                        str(obs["loc3d"][2]),
+                        str(obs["loc3d"][3]),
                     ]
-                )
-                + " \n " + obs["time"][0] + "     " + obs["time"][1]
-                + " \n " + str(obs["variance"])
-            )
-            return out
+                ),
+                "kind",
+                "         " + str(int(obs["kind"])),
+            ])
+            if "metadata" in obs:
+                content.append("".join(obs["metadata"]))
+
+            content.extend([
+                obs["time"][0] + "     " + obs["time"][1],
+                str(obs["variance"]),
+            ])
+            # print(content)
+            return "\n" + " \n".join(content)
 
         n_obs = len(self.df)
         outstr = write_preamble(n_obs)
@@ -775,7 +817,6 @@ class ObsSeq(object):
 
         write_file(outstr, output_path=f)
 
-
     def plot(self, f_out="./map_obs_superobs.png"):
         print('plotting obs...')
         import matplotlib as mpl
@@ -784,7 +825,7 @@ class ObsSeq(object):
         import matplotlib.pyplot as plt
         import xarray as xr
 
-        georef = xr.open_dataset(cluster.geo_em_for_WRF_ideal)
+        georef = xr.open_dataset(cluster.geo_em_nature)
         lon = georef.XLONG_M.values.squeeze()
         lat = georef.XLAT_M.values.squeeze()
 
@@ -813,7 +854,7 @@ class ObsSeq(object):
         m.drawcoastlines(color="white")
         m.drawcountries(color="white")
 
-        _plot_box(m, lat, lon, label="domain", color="green", lw=1) #4)
+        _plot_box(m, lat, lon, label="domain", color="green", lw=1)  # 4)
 
         # OBSERVATIONS
         original_df = self.df.attrs['df_pre_superob']
@@ -822,16 +863,16 @@ class ObsSeq(object):
         longs = coords.lon.values
         coords = zip(lats, longs)
 
-        label="observed pixel"
+        label = "observed pixel"
         for lati, long in coords:
             m.plot(long, lati, ".",
-                markersize=0.4, #4,
-                latlon=True,
-                color="grey",
-                label=label,
-                zorder=4,
-            )
-            label=''
+                   markersize=0.4,  # 4,
+                   latlon=True,
+                   color="grey",
+                   label=label,
+                   zorder=4,
+                   )
+            label = ''
 
         # after superob
         coords = self.df.get_lon_lat()
@@ -842,22 +883,22 @@ class ObsSeq(object):
         label = 'superobservation'
         for lati, long in coords:
             m.plot(long, lati, ".",
-                markersize=0.5, #5,
-                latlon=True,
-                color="red",
-                label=label,
-                zorder=4,
-            )
+                   markersize=0.5,  # 5,
+                   latlon=True,
+                   color="red",
+                   label=label,
+                   zorder=4,
+                   )
             label = ''
 
-
-        #from IPython import embed; embed()
+        # from IPython import embed; embed()
         if self.df.attrs['boxes']:
             label = 'superob'
             for lats, lons in self.df.attrs['boxes']:
                 lats, lons = np.meshgrid(lats, lons)
 
-                _plot_box(m, lats, lons, label=label, color="white", lw=0.1) #1)
+                _plot_box(m, lats, lons, label=label,
+                          color="white", lw=0.1)  # 1)
                 label = ''
 
         plt.legend()

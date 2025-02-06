@@ -29,15 +29,14 @@ def calc_lin_posterior(assim_time):
      
      aso.prepare_prior_ensemble(assim_time, prior_init_time=prior_init_time, prior_valid_time=assim_time, prior_path_exp=prior_exp)
      #aso.prepare_nature_dart(assim_time) 
-     
-     dart_nml.write_namelist()
 
      # does an observation exist at this time?
-     #f_oso = assim_time.strftime(aso.pattern_obs_seq_out)
-     f_oso = cluster.archivedir+assim_time.strftime("/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out")
+     f_oso = assim_time.strftime(cluster.pattern_obs_seq_out)
 
-     if os.path.exists(f_oso):
+     if os.path.exists(f_oso):  
           # use the existing file
+          os.chdir(cluster.dart_rundir)
+          os.system("rm -f input.nml obs_seq.in obs_seq.out obs_seq.final")  # remove any existing observation files
           shutil.copy(f_oso, cluster.dart_rundir+'/obs_seq.out')
      else:
           raise NotImplementedError(f_oso+' does not exist!')
@@ -48,6 +47,7 @@ def calc_lin_posterior(assim_time):
      symlink(path_linear_filter,
              os.path.join(cluster.dart_rundir, 'filter'))
 
+     dart_nml.write_namelist()
      aso.filter(nproc=12)
      aso.archive_filter_diagnostics(assim_time, pattern_osf_linear)
 
@@ -60,10 +60,9 @@ if __name__ == "__main__":
      Usage: python3 evaluate_obs_space.py init1,valid1 init2,valid2 ...
      """
      args = sys.argv[1:]
-     #arg_tuples = [a.split(',') for a in args]
 
      # we need an existing run_DART folder
-     aso.prepare_run_DART_folder()
+     os.makedirs(cluster.dart_rundir, exist_ok=True)
 
      for assim_time in args:
           #prior_init_time = dt.datetime.strptime(prior_init_time, "%Y-%m-%d_%H:%M")

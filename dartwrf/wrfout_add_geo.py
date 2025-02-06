@@ -1,11 +1,16 @@
-import os, sys
+import os
+import sys
 import netCDF4 as nc
 from dartwrf.server_config import cluster
 
-fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
-                "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
-fields_new = ["XLAT",     "XLONG",      "CLAT",
-                "XLONG_U",  "XLONG_V",     "XLAT_U",    "XLAT_V"]
+fields_old = ["XLAT_M",   "XLONG_M",]
+             # "XLONG_U",  "XLONG_V",     
+             # "XLAT_U",    "XLAT_V"]
+# DART expects XLAT, XLAT_U, XLAT_V, XLONG_U, XLONG_V
+fields_new = ["XLAT",     "XLONG",]
+             # "XLONG_U",  "XLONG_V",
+             # "XLAT_U",    "XLAT_V"]
+
 
 def run(geo_data_file, wrfout_file):
     """Add geogrid data to a wrfout file
@@ -13,11 +18,11 @@ def run(geo_data_file, wrfout_file):
 
     Takes LAT,LON, mapfac from geogrid, so that they are consistent.
     Does not change E, F, HGT_M as they would alter the dynamics and have no impact on assimilation
-    
+
     Args:
         geo_data_file (str): Path to WRF's geo_em file
         wrfout_file (str): Path to WRF history (wrfout) file
-        
+
     Returns:
         None
     """
@@ -27,12 +32,27 @@ def run(geo_data_file, wrfout_file):
     print('updating geodata in', wrfout_file, 'from', geo_data_file)
     geo_ds = nc.Dataset(geo_data_file, 'r')
     wrfinp_ds = nc.Dataset(wrfout_file, 'r+')
+    print('wrfinput.variables', list(wrfinp_ds.variables))
+    print('geo_em.variables',  list(geo_ds.variables))
 
     for old, new in zip(fields_old, fields_new):
-        if debug:
-            print('moving old field', old, 'into new field', new)
-            print(geo_ds.variables[old][:].shape, wrfinp_ds.variables[new][:].shape)
-        wrfinp_ds.variables[new][:] = geo_ds.variables[old][:]
+
+        # check
+        if old not in list(geo_ds.variables):
+            if old.endswith('_M'):
+                old = old[:-2]  # without _M
+            
+            if old not in list(geo_ds.variables):
+                raise KeyError(old, 'not in', geo_data_file, 'variables')
+
+        geo_em_coord = geo_ds.variables[old][:]
+
+        # check
+        if new not in list(wrfinp_ds.variables):
+            raise KeyError(new, 'not in', wrfout_file, 'variables',
+                    'however, DART expects this variable to localize impact etc!')
+
+        wrfinp_ds.variables[new][:] = geo_em_coord
 
     wrfinp_ds.close()
     geo_ds.close()

@@ -24,7 +24,6 @@ class Experiment(object):
         expname (str): Name of the experiment
         model_dx (int): WRF grid spacing in meters
         n_ens (int): Ensemble size
-        do_quality_control (bool): If True, activate "quality control" function in assim_synth_obs.py
 
         nature_wrfout_pattern (str): Path to the nature run, where we take observations from; 
             the path can contain wildcards (*,?), e.g. '/jetfs/exp1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'

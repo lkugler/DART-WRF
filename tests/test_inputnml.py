@@ -6,6 +6,10 @@ from dartwrf import dart_nml
 
 
 def test_input_nml():
+    """A simple test, to read an existing input.nml, modify one parameter and save it again.
+    
+    The test is successful if the saved input.nml is identical to the desired output.
+    """
     test_input = './input.nml.original'
     test_output = './input.nml.output'
     desired_output = './input.nml.desired_output'
@@ -49,9 +53,9 @@ def test_input_nml():
                             pass
                             # print(this, expected)
                         else:
-                            raise ValueError('expected', expected, 'got', have[i][j])
+                            raise ValueError('expected: '+(expected)+' got: '+have[i][j]+' this: '+this)
     
-    os.remove(test_output)
+    # os.remove(test_output)
 
 def test_get_list_of_localizations():
 
@@ -62,4 +66,4 @@ def test_get_list_of_localizations():
 if __name__ == '__main__':
     test_input_nml()
 
-    test_get_list_of_localizations()
+    #test_get_list_of_localizations()

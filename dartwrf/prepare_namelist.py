@@ -57,23 +57,20 @@ def run(iens, begin, end, hist_interval_s=5*60, radt=5, archive=True,
                  '<HH2>': '%H', '<MM2>': '%M', '<SS2>': '%S'}.items():
         sed_inplace(rundir+'/namelist.input', k, end.strftime(v))
 
-    # print(rundir+'/namelist.input created')
-    # print('WRF namelist begin:', begin, 'end:', end, 'output to', archdir)
-    #########################
+    print('saved', rundir+'/namelist.input')
+    
+
     if archive:
-        
         init_dir = cluster.archivedir+begin.strftime('/%Y-%m-%d_%H:%M/')+str(iens)
         os.makedirs(init_dir, exist_ok=True)
-        print('copy namelist to archive')
         copy(rundir+'/namelist.input', init_dir+'/namelist.input')
-        try:
-            if not restart:
-                print('copy wrfinput of this run to archive')
-                wrfin_old = rundir+'/wrfinput_d01'
-                wrfin_arch = init_dir+'/wrfinput_d01'
-                copy(wrfin_old, wrfin_arch)
-        except Exception as e:
-            warnings.warn(str(e))
+        print('archived', init_dir+'/namelist.input')
+        
+        if not restart:
+            wrfin_old = rundir+'/wrfinput_d01'
+            wrfin_arch = init_dir+'/wrfinput_d01'
+            copy(wrfin_old, wrfin_arch)
+            print('archived', wrfin_arch)
 
 
 if __name__ == '__main__':

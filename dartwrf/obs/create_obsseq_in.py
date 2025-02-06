@@ -2,7 +2,9 @@
 These are the template files defining obs locations and metadata
 according to which observations are generated and subsequently assimilated.
 """
-import os, sys, warnings
+import os
+import sys
+import warnings
 import numpy as np
 import datetime as dt
 from pysolar.solar import get_altitude, get_azimuth
@@ -10,7 +12,8 @@ from pysolar.solar import get_altitude, get_azimuth
 from dartwrf.server_config import cluster
 from dartwrf import utils
 from dartwrf.obs import calculate_obs_locations as col
-from dartwrf.obs.obskind import obs_kind_nrs # dictionary string => DART internal indices
+# dictionary string => DART internal indices
+from dartwrf.obs.obskind import obs_kind_nrs
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
@@ -22,10 +25,10 @@ sat_zen = "45.0"
 def degr_to_rad(degr):
     """Convert to DART convention (radians)
     2*pi = 360 degrees
-    
+
     Args:
         degr (float) : degrees east of Greenwich
-        
+
     Returns 
         float
     """
@@ -48,9 +51,9 @@ def _add_timezone_UTC(t):
 
 def get_dart_date(time_dt):
     """Convert datetime.datetime into DART time format
-    
+
     Assumes that input is UTC!
-    
+
     Returns
         str, str
     """
@@ -74,14 +77,14 @@ def _write_file(msg, output_path='./'):
 
 def _append_hgt_to_coords(coords, heights):
     """Adds vertical position to list of coordinates
-    
+
     if heights is a scalar, then all obs have the same height
     if heights is a list, then you get multiple levels
 
     Args:
         coords (list of 2-tuples): (lat, lon) in degrees north/east
         heights (float or list of float): height in meters
-    
+
     Returns:
         list of 3-tuples
     """
@@ -90,7 +93,7 @@ def _append_hgt_to_coords(coords, heights):
         len(heights)  # fails with scalar
     except TypeError:
         heights = [heights, ]
-        
+
     for i in range(len(coords)):
         for hgt_m in heights:
             coords2.append(coords[i] + (hgt_m,))
@@ -129,7 +132,7 @@ def _determine_vert_coords(sat_channel, kind, obscfg):
     else:
         vert_coord_sys = "-2"  # undefined height
         vert_coords = ["-888888.0000000000", ]
-        
+
         if 'height' in obscfg:
             # hypothetical height, only used for localization
             vert_coord_sys = "3"  # meters AMSL
@@ -181,7 +184,7 @@ def write_section(obs, last=False):
         line_link = "          "+str(obs['i']-1)+"           -1          -1"
     else:
         line_link = "        -1           "+str(obs['i']+1)+"          -1"
-    
+
     return """
  OBS            """+str(obs['i'])+"""
 """+line_link+"""
@@ -195,7 +198,7 @@ kind
 """+str(obs['obserr_var'])
 
 
-def create_obs_seq_in(time_dt, list_obscfg, 
+def create_obs_seq_in(time_dt, list_obscfg,
                       output_path=cluster.dart_rundir+'/obs_seq.in'):
     """Create obs_seq.in with multiple obs types in one file
 
@@ -221,29 +224,36 @@ def create_obs_seq_in(time_dt, list_obscfg,
     txt = ''
     i_obs_total = 0
     for i_cfg, obscfg in enumerate(list_obscfg):
-        n_obs = obscfg['n_obs']
 
-        if obscfg['obs_locations'] == 'square_array_from_domaincenter':
-            coords = col.square_array_from_domaincenter(n_obs, 
-                                                        obscfg['distance_between_obs_km'])  # <---- must have variable
+        # obstypes with precomputed FO do not need obs_seq.in
+        if hasattr(obscfg, 'precomputed_FO'):
+            if obscfg.precomputed_FO:
+                print('this obstype uses precomputed FOs, skipping...')
+                continue
 
-        elif obscfg['obs_locations'] == 'square_array_evenly_on_grid':
-            coords = col.evenly_on_grid(n_obs)
+        # how to compute locations?
+        obs_locations = obscfg.get('obs_locations', 'DEFAULT_GRID')
 
-        else:  # obs_locations given by iterable
+        if obs_locations == 'DEFAULT_GRID':
+            # compute as a square_array_evenly_on_grid
+            coords = col.evenly_on_grid(obscfg['km_between_obs'],
+                                        obscfg['skip_border_km'])
+        else:
+            # obs_locations given by iterable
             coords = obscfg['obs_locations']
 
-        assert len(coords) == n_obs, (len(coords), n_obs)  # check if functions did what they supposed to
+        # check if lon/lat within bounds
         for lat, lon in coords:
-            assert (lat < 90) & (lat > -90)
-            assert (lon < 180) & (lon > -180)
+            assert (lat < 90) & (lat > -90), 'latitude out of bounds'
+            assert (lon < 180) & (lon > -180), 'longitude out of bounds'
 
         kind = obscfg['kind']
         print('obstype', kind)
         sat_channel = obscfg.get('sat_channel', False)
 
         # add observation locations in the vertical at different levels
-        vert_coord_sys, vert_coords = _determine_vert_coords(sat_channel, kind, obscfg)
+        vert_coord_sys, vert_coords = _determine_vert_coords(
+            sat_channel, kind, obscfg)
         coords = _append_hgt_to_coords(coords, vert_coords)
         n_obs_3d_thistype = len(coords)
 
@@ -263,17 +273,17 @@ def create_obs_seq_in(time_dt, list_obscfg,
                 last = True
 
             txt += write_section(dict(i=i_obs_total,
-                                    kind_nr=obs_kind_nrs[kind],
-                                    dart_date_day=dart_date_day,
-                                    secs_thatday=secs_thatday,
-                                    lon=coords[i_obs][1],
-                                    lat=coords[i_obs][0],
-                                    vert_coord=coords[i_obs][2],
-                                    vert_coord_sys=vert_coord_sys,
-                                    obserr_var=obserr_std[i_obs]**2,
-                                    appendix=sat_info),
-                                last=last)
-            
+                                      kind_nr=obs_kind_nrs[kind],
+                                      dart_date_day=dart_date_day,
+                                      secs_thatday=secs_thatday,
+                                      lon=coords[i_obs][1],
+                                      lat=coords[i_obs][0],
+                                      vert_coord=coords[i_obs][2],
+                                      vert_coord_sys=vert_coord_sys,
+                                      obserr_var=obserr_std[i_obs]**2,
+                                      appendix=sat_info),
+                                 last=last)
+
     n_obs_total = i_obs_total
     list_kinds = [a['kind'] for a in list_obscfg]
     pretxt = preamble(n_obs_total, list_kinds)
@@ -287,11 +297,11 @@ if __name__ == '__main__':
     time_dt = dt.datetime(2008, 7, 30, 13, 0)
 
     radar = dict(var_name='Radar reflectivity', unit='[dBz]',
-                kind='RADAR_REFLECTIVITY', 
-                n_obs=5776, obs_locations='square_array_evenly_on_grid',
-                error_generate=2.5, error_assimilate=2.5,
-                heights=range(2000, 14001, 2000),
-                loc_horiz_km=20, loc_vert_km=2.5)
+                 kind='RADAR_REFLECTIVITY',
+                 n_obs=5776, obs_locations='square_array_evenly_on_grid',
+                 error_generate=2.5, error_assimilate=2.5,
+                 heights=range(2000, 14001, 2000),
+                 loc_horiz_km=20, loc_vert_km=2.5)
 
     create_obs_seq_in(time_dt, [radar],
                       output_path=utils.userhome+'/run_DART/obs_seq.in')
@@ -299,6 +309,5 @@ if __name__ == '__main__':
     if False:
         error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
         import assim_synth_obs as aso
-        aso.replace_errors_obsseqout(cluster.dart_rundir+'/obs_seq.out', error_assimilate)
-
-
+        aso.replace_errors_obsseqout(
+            cluster.dart_rundir+'/obs_seq.out', error_assimilate)

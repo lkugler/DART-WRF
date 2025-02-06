@@ -3,15 +3,12 @@
 Generate observation files from an experiment
 """
 import datetime as dt
+import pandas as pd
 from dartwrf.workflows import WorkFlows
 
-w = WorkFlows(exp_config='nature.py', server_config='jet.py')
+w = WorkFlows(exp_config='exp_hires.py', server_config='jet.py')
 
-obs_times = [dt.datetime(2008,7,30,12,15),]
-#             dt.datetime(2008,7,30,12), dt.datetime(2008,7,30,12,1),
-#             dt.datetime(2008,7,30,12,30),  dt.datetime(2008,7,30,12,31),
-#             dt.datetime(2008,7,30,13), dt.datetime(2008,7,30,13,1),
-#             dt.datetime(2008,7,30,13,30),  dt.datetime(2008,7,30,13,31),
-#             dt.datetime(2008,7,30,14), dt.datetime(2008,7,30,14,1),]
+#obs_times = [dt.datetime(2008,7,30,14,),]
+obs_times = pd.date_range(start='2008-07-30 13:00:00', end='2008-07-30 14:00:00', freq='15min')
 
 w.generate_obsseq_out(obs_times)
