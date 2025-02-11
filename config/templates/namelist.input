@@ -101,8 +101,9 @@
  tke_adv_opt                         = 1,      1,      1,
  non_hydrostatic                     = .true., .true., .true.,
  mix_full_fields                     = .true., .true., .true.,
- use_theta_m			     = 1,
+ use_theta_m			             = 1,
  top_lid                             = .true.,
+ pert_coriolis                       = .true.,
  /
 
  &bdy_control
@@ -127,5 +128,5 @@
  /
 
  &ideal
- ideal_case = 2
+ ideal_case = 9  ! les
  /

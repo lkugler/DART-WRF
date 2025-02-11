@@ -9,7 +9,7 @@ if __name__ == "__main__":
     """
     Run a cycled OSSE with WRF and DART.
     """
-    w = WorkFlows(exp_config='exp_hires.py', server_config='jet.py')
+    w = WorkFlows(exp_config='exp_hires.py', server_config='jet_ACF.py')
 
     timedelta_integrate = dt.timedelta(minutes=15)
     timedelta_btw_assim = dt.timedelta(minutes=15)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         init_time = dt.datetime(2008, 7, 30, 11,45)
         time = dt.datetime(2008, 7, 30, 12)
         last_assim_time = dt.datetime(2008, 7, 30, 13)
-        forecast_until = dt.datetime(2008, 7, 30, 13,15)
+        forecast_until = dt.datetime(2008, 7, 30, 18)
 
         w.prepare_WRFrundir(init_time)
         # id = w.run_ideal(depends_on=id)
@@ -61,17 +61,16 @@ if __name__ == "__main__":
         # i.e. 13z as a prior to assimilate 12z observations
         prior_valid_time = time
 
-        if False:
+        if True:
             ACF_config = dict(
                 var='WV73',
-                # 192, 96, 48, 24, 12), #(256, 128, 64, 32, 16), #  #
-                scales_km=(12,), #192, 96, 48, 24, 12),
+                scales_km=(192, 96, 48, 24, 12),
                 observed_width_km=384,
                 dx_km_obs=1.0,
                 dx_km_forecast=2.0,
                 # ('value', 0.6), #('percentile', 30), #('value', 230), #('value', 0.6), #('value', 230), #('percentile', 90),  # ('value', 0.6),  #
                 threshold=('value', 230),
-                difference=False,
+                difference=True,
                 first_guess_pattern='/RT_wrfout_d01_%Y-%m-%d_%H:%M:%S.nc',
 
                 # observed_data='/jetfs/scratch/a11716773/master_thesis_2023/data2/sim_archive/nature_dx=2000m/RT_wrfout_d01_%Y-%m-%d_%H:%M:%S.nc',
@@ -82,8 +81,8 @@ if __name__ == "__main__":
                 # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_VIS/OE_VIS_CF_0.6.csv',
                 # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_VIS/OE_VIS_CF_0.6_difference.csv',
                 # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_VIS/OE_VIS_SO_difference.csv',
-                obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_CF_230.csv',
-                # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_CF_230_difference.csv',
+                #obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_CF_230.csv',
+                obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_CF_230_difference.csv',
                 # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_superobs.csv',
                 # obs_err_csv='/jetfs/home/lkugler/CloudfractionDA/data/hrNat_IR/OE-WV73_SO_difference.csv',
 

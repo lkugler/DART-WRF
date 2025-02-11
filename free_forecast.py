@@ -95,14 +95,13 @@ if True:   # do a free run (all inits)
 
     inits = [dt.datetime(2008, 7, 30, 8)]
     inits += list(pd.date_range(start=dt.datetime(2008, 7, 30, 11),
-                                end=dt.datetime(2008, 7, 30, 14),
+                                end=dt.datetime(2008, 7, 30, 15),
                                 freq=dt.timedelta(minutes=15)))
     
     input_is_restart = False
     
-    # w.prepare_WRFrundir(inits[0])  # create initial conditions
-    #id = w.run_ideal(depends_on=id)
-    #sys.exit()
+    w.prepare_WRFrundir(inits[0])  # create initial conditions
+    id = w.run_ideal(depends_on=id)
 
     # id = wrfinput_insert_wbubble(perturb=True, depends_on=id)
     time = inits[0]
@@ -147,28 +146,28 @@ if True:   # do a free run (all inits)
     w.verify_sat(depends_on=id_sat)
 
 if False:  # to continue a free run
-    start = dt.datetime(2008, 7, 30, 13, 30)
+    start = dt.datetime(2008, 7, 30, 14)
     end = dt.datetime(2008, 7, 30, 18)
 
     w.prepare_WRFrundir(start)  
-    id = w.run_ideal(depends_on=id)
+    # id = w.run_ideal(depends_on=id)
 
-    # prior_path_exp = w.cluster.archivedir
-    # # prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.23_P2_noDA+1'
-    # prior_init_time = dt.datetime(2008, 7, 30, 13, 15)
-    # prior_valid_time = start
+    prior_path_exp = w.cluster.archivedir
+    # prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.23_P2_noDA+1'
+    prior_init_time = dt.datetime(2008, 7, 30,  8)
+    prior_valid_time = start
 
-    # id = w.prepare_IC_from_prior(
-    #     prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+    id = w.prepare_IC_from_prior(
+        prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
 
-    # id = w.run_ENS(begin=start, end=end, 
-    #                input_is_restart=True,
-    #                #output_restart_interval=(end-start).total_seconds()/60,
-    #                output_restart_interval=9999,
-    #                depends_on=id)
-    # id = w.create_satimages(start, depends_on=id)
-    # w.verify_sat(id)
-    # w.verify_wrf(id)
+    id = w.run_ENS(begin=start, end=end, 
+                   input_is_restart=True,
+                   #output_restart_interval=(end-start).total_seconds()/60,
+                   output_restart_interval=9999,
+                   depends_on=id)
+    id = w.create_satimages(start, depends_on=id)
+    w.verify_sat(id)
+    w.verify_wrf(id)
 
 if False:  # to continue a free run after spinup
     start = dt.datetime(2008, 7, 30, 12)
