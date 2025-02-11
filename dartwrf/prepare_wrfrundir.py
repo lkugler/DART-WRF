@@ -12,16 +12,18 @@ Returns:
 """
 import os, sys, shutil
 import datetime as dt
-
-from dartwrf.exp_config import exp
 from dartwrf.server_config import cluster
 
-from dartwrf.utils import symlink, link_contents, try_remove
+from dartwrf.utils import symlink, link_contents, try_remove, read_dict_from_pyfile
 from dartwrf import prepare_namelist
 
 if __name__ == '__main__':
+    
+    time = sys.argv[1]
+    exp = read_dict_from_pyfile(sys.argv[2])
+    
 
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         rundir = cluster.wrf_rundir(iens)
         os.makedirs(rundir, exist_ok=True)
         link_contents(cluster.srcdir, rundir)
@@ -32,8 +34,9 @@ if __name__ == '__main__':
 
         # prepare input profiles
         try_remove(rundir+'/input_sounding')   # remove existing file
+        
         if hasattr(exp, 'input_profile'):
-            init_time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
+            init_time = dt.datetime.strptime(time, '%Y-%m-%d_%H:%M')
             # prep namelist for ./ideal.exe
             prepare_namelist.run(iens, begin=init_time, end=init_time, archive=False) # time not important
             

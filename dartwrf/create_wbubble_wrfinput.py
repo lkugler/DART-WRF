@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print('perturb wbubble = ', perturbations)
 
 
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         print('iens', iens)
         wrfin = cluster.wrf_rundir(iens)+'/wrfinput_d01'
 

@@ -87,7 +87,7 @@ class ObsRecord(pd.DataFrame):
         """Retrieve H(x_prior) for all ensemble members
 
         Returns:
-            np.array (n_obs, n_ens)
+            np.array (n_obs, ensemble_size)
         """
         return self._get_model_Hx('prior')
 
@@ -95,7 +95,7 @@ class ObsRecord(pd.DataFrame):
         """Retrieve H(x_posterior) for all ensemble members
 
         Returns:
-            np.array (n_obs, n_ens)
+            np.array (n_obs, ensemble_size)
         """
         return self._get_model_Hx('posterior')
 

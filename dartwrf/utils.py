@@ -15,55 +15,19 @@ import datetime as dt
 import re
 import tempfile
 import pickle
+import importlib.util
 
+userhome = os.path.expanduser('~')
 
-class Experiment(object):
-    """Collection of variables which define the experiment
-
-    Attributes:
-        expname (str): Name of the experiment
-        model_dx (int): WRF grid spacing in meters
-        n_ens (int): Ensemble size
-
-        nature_wrfout_pattern (str): Path to the nature run, where we take observations from; 
-            the path can contain wildcards (*,?), e.g. '/jetfs/exp1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
-        input_profile (str): Path to WRF idealized input profiles; 
-            e.g. '/data/initial_profiles/wrf/ens/raso.fc.<iens>.wrfprof';
-            <iens> is replaced by 001-040 for a 40-member ensemble
-
-        update_vars (list of str): Variables which will be updated after assimilation (update_IC.py)
-            e.g. ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR',]
-
-        observations (list of dict): Dictionaries which define an observation;
-            keys: 
-            `error_generate`: measurement error standard-deviation;
-            `error_assimilate`: assigned observation error std-dev;
-            `heights`: list of integers at which observations are taken;
-            `loc_horiz_km`: float of horizontal localization half-width in km;
-            `loc_vert_km`: float of vertical localization half-width in km;
-
-        use_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
-            time string is replaced by actual time: /path/%Y-%m-%d_%H:%M_obs_seq.out
-
-        dart_nml (dict): updates to the default input.nml of DART (in dart_srcdir)
-            keys are namelist section headers (e.g. &filter_nml)
-            values are dictionaries of parameters and values (e.g. dict(ens_size=exp.n_ens,))
-
-    """
-
-    def __init__(self):
-        pass
-
+def import_from_path(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec) # type: ignore
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module) # type: ignore
+    return module
 
 class ClusterConfig(object):
     """Collection of variables regarding the cluster configuration
-
-    Configuration name docs
-
-    When coding, use configuration settings like this:
-    $ from exp_config import exp
-    $ from cluster_config import cluster
-    $ path = cluster.archivedir
 
     Attributes:
         name (str): Name of the cluster
@@ -80,10 +44,6 @@ class ClusterConfig(object):
 
         dart_modules (str): Command to load modules before running DART 
         wrf_modules (str): Command to load modules before running WRF
-
-        wrf_rundir_base (str): Path to temporary files for WRF
-        dart_rundir_base (str): Path to temporary files for DART
-        archive_base (str): Path to long-time output storage
 
         srcdir (str): Path to where WRF has been compiled, including the 'run' folder of WRF, e.g. /home/WRF-4.3/run
         dart_srcdir (str): Path to DART compile directory, e.g. /home/DART-9.11.9/models/wrf/work
@@ -103,48 +63,46 @@ class ClusterConfig(object):
 
     """
 
-    def __init__(self, exp):
-        self.exp = exp  # to access the experiment config in here
-
+    def __init__(self, 
+                 max_nproc: int, 
+                 max_nproc_for_each_ensemble_member: int,
+                 WRF_ideal_template: str, 
+                 WRF_exe_template: str, 
+                 archive_base: str,
+                 wrf_rundir_base: str,
+                 dart_rundir_base: str,
+                 dartwrf_dir_dev: str,
+                 WRF_namelist_template: str,
+                 **kwargs):
         # defaults
+        # these are overwritten with choices in **kwargs
         self.dart_modules = ''
         self.wrf_modules = ''
         self.size_jobarray = '1'
+        self.use_slurm = False
+        self.slurm_cfg = {}
+        self.log_dir = './'
+        self.slurm_scripts_dir = './'
+        self.archive_base = archive_base
+        self.wrf_rundir_base = wrf_rundir_base        
+        self.dart_rundir_base = dart_rundir_base
+        self.dartwrf_dir_dev = dartwrf_dir_dev
+        self.WRF_namelist_template = WRF_namelist_template
+        self.python = 'python'
+        self.pattern_obs_seq_out = '<archivedir>/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out'
+        self.pattern_obs_seq_final = '<archivedir>/diagnostics/%Y-%m-%d_%H:%M_obs_seq.final'
+        
+        self.max_nproc = max_nproc
+        self.max_nproc_for_each_ensemble_member = max_nproc_for_each_ensemble_member
+        self.WRF_ideal_template = WRF_ideal_template
+        self.WRF_exe_template = WRF_exe_template
+        
+        # user defined
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    @property
-    def archivedir(self):
-        """Path to the directory where data for the experiment is stored
-
-        Example:
-            `/users/abcd/data/sim_archive/experiment1/`
-        """
-        return self.archive_base+'/'+self.exp.expname+'/'
-
-    @property
-    def scripts_rundir(self):
-        """Path to the directory where the DART-WRF scripts are executed
-
-        Note:
-            If you want to execute scripts from the folder where you develop code, use `self.dartwrf_dir` (not sure if this works)
-            If you want to execute the code from a different place ('research'), then use `self.archivedir+'/DART-WRF/'`
-
-        Example:
-            `/user/data/sim_archive/DART-WRF/dartwrf/`
-        """
-        return self.archivedir+'/DART-WRF/dartwrf/'
-
-    @property
-    def dart_rundir(self):
-        """Path to the directory where DART programs will run
-        Includes the experiment name
-        """
-        return self.dart_rundir_base+'/'+self.exp.expname+'/'
-
-    def wrf_rundir(self, iens):
-        """Path to the directory where an ensemble member will run WRF
-        Includes the experiment name and the ensemble member index
-        """
-        return self.wrf_rundir_base+'/'+self.exp.expname+'/'+str(iens)+'/'
+    def __str__(self):
+        return f'ClusterConfig: {self.__dict__}'
 
     def run_job(self, cmd, jobname='', cfg_update=dict(), depends_on=None):
         """Run scripts in a shell
@@ -174,7 +132,100 @@ class ClusterConfig(object):
                 raise Exception('Error running command >>> '+cmd)
 
 
-userhome = os.path.expanduser('~')
+class Config(object):
+    """Collection of variables which define the experiment
+
+    Attributes:
+        expname (str): Name of the experiment
+        model_dx (int): WRF grid spacing in meters
+        ensemble_size (int): Ensemble size
+
+        nature_wrfout_pattern (str): Path to the nature run WRF files, where can be generated from; 
+            the path can contain wildcards (*,?), e.g. '/jetfs/exp1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S'
+        
+        input_profile (str): Path to sounding profiles as initial condition (see WRF ideal guide)
+            e.g. '/data/initial_profiles/wrf/ens/raso.fc.<iens>.wrfprof';
+            <iens> is replaced by 001-040 for a 40-member ensemble
+
+        update_vars (list of str): Variables which will be updated after assimilation (update_IC.py)
+            e.g. ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR',]
+
+        observations (list of dict): Dictionaries which define an observation;
+            keys: 
+            `error_generate`: measurement error standard-deviation;
+            `error_assimilate`: assigned observation error std-dev;
+            `heights`: list of integers at which observations are taken;
+            `loc_horiz_km`: float of horizontal localization half-width in km;
+            `loc_vert_km`: float of vertical localization half-width in km;
+
+        use_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
+            time string is replaced by actual time: /path/%Y-%m-%d_%H:%M_obs_seq.out
+
+        dart_nml (dict): updates to the default input.nml of DART (in dart_srcdir)
+            keys are namelist section headers (e.g. &filter_nml)
+            values are dictionaries of parameters and values (e.g. dict(ens_size=exp.ensemble_size,))
+
+        wrf_rundir_base (str): Path to temporary files for WRF
+        dart_rundir_base (str): Path to temporary files for DART
+        archive_base (str): Path to long-time output storage
+
+    """
+
+    def __init__(self, name: str, model_dx: int, ensemble_size: int, 
+                 update_vars: list=[], dart_nml: dict={}, 
+                 use_existing_obsseq: bool | str = False,
+                 input_profile: bool | str = False,
+                 nature_wrfout_pattern: bool | str = False,
+                 **kwargs):
+        
+        # defining the compulsory variables
+        self.name = name
+        self.model_dx = model_dx
+        self.ensemble_size = ensemble_size
+        self.update_vars = update_vars
+        self.dart_nml = dart_nml
+        
+        # optional
+        self.use_existing_obsseq = use_existing_obsseq
+        self.input_profile = input_profile
+        self.nature_wrfout_pattern = nature_wrfout_pattern
+        
+        if not update_vars:
+            warnings.warn('No `update_vars` defined, not updating any variables after assimilation!')
+            
+        if not dart_nml:
+            warnings.warn('No `dart_nml` defined, using default DART namelist!')
+            
+        if not isinstance(use_existing_obsseq, str):
+            if use_existing_obsseq != False:
+                raise ValueError('`use_existing_obsseq` must be a string or False, but is', use_existing_obsseq)
+        
+        if isinstance(use_existing_obsseq, str):
+            print('Using existing observation sequence', use_existing_obsseq)
+
+        # user defined
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+
+def write_dict_to_pyfile(d: dict, filename: str):
+    """Write a dictionary to a python file"""
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, 'w') as f:
+        for key, value in d.items():
+            f.write(key+' = '+str(value)+'\n')
+
+def read_dict_from_pyfile(filename: str) -> Config:
+    """Read a dictionary from a python file,
+    return as Config object
+    """
+    with open(filename, 'r') as f:
+        d = {}
+        for line in f:
+            key, value = line.split('=')
+            d[key.strip()] = value.strip()
+    return Config(**d)
 
 
 def shell(args, pythonpath=None):

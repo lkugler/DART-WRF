@@ -39,14 +39,14 @@ Then set ``exp_config='exp1.py`` in the call to :class:`dartwrf.workflows.WorkFl
 
 Customize the settings in ``config/exp1.py``:
 * `expname` should be a unique experiment name and will be used as folder name
-* `n_ens` is the ensemble size
+* `ensemble_size` is the ensemble size
 * `update_vars` are the WRF variables which shall be updated by the assimilation
 
 .. code-block:: python
 
     exp = Experiment()
     exp.expname = "exp1"
-    exp.n_ens = 40
+    exp.ensemble_size = 40
     exp.update_vars = ['THM', 'PH', 'MU', 'QVAPOR',]
 
 
@@ -95,9 +95,9 @@ If you want to modify any parameters, specify your changes in a python dictionar
                              sampling_error_correction='.true.',
                             ),
                     '&filter_nml':
-                        dict(ens_size=exp.n_ens,
-                             num_output_state_members=exp.n_ens,
-                             num_output_obs_members=exp.n_ens,
+                        dict(ens_size=exp.ensemble_size,
+                             num_output_state_members=exp.ensemble_size,
+                             num_output_obs_members=exp.ensemble_size,
                              inf_flavor=['0', '4'],
                              output_members='.true.',
                              output_mean='.true.',

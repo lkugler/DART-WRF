@@ -71,7 +71,7 @@ def prepare_prior_ensemble(assim_time, prior_init_time, prior_valid_time, prior_
     - removes probably pre-existing files which could lead to problems
     """
     print("prepare prior ensemble")
-    for iens in range(1, exp.n_ens + 1):
+    for iens in range(1, exp.ensemble_size + 1):
 
         print("link wrfout file to DART background file")
         wrfout_run = (
@@ -115,7 +115,7 @@ def use_linked_files_as_prior():
     """Instruct DART to use the prior ensemble as input
     """
     files = []
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         files.append("./prior_ens" + str(iens) + "/wrfout_d01")
     write_txt(files, cluster.dart_rundir+'/input_list.txt')
 
@@ -124,7 +124,7 @@ def use_filter_output_as_prior():
     """Use the last posterior as input for DART, e.g. to evaluate the analysis in observation space
     """
     files = []
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         f_new = cluster.dart_rundir+'/prior_ens'+str(iens)+'/wrfout_d01'
         try:
             os.remove(f_new)
@@ -139,7 +139,7 @@ def use_filter_output_as_prior():
 
 def write_list_of_outputfiles():
     files = []
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         files.append("./filter_restart_d01." + str(iens).zfill(4))
     write_txt(files, cluster.dart_rundir+'/output_list.txt')
 
@@ -187,7 +187,7 @@ def archive_filteroutput(time):
     copy(cluster.dart_rundir + "/input.nml", dir_out + "/input.nml")
 
     # copy filter_restart files to archive (initial condition for next run)
-    for iens in range(1, exp.n_ens + 1):  # single members
+    for iens in range(1, exp.ensemble_size + 1):  # single members
         copy(
             cluster.dart_rundir + "/filter_restart_d01." + str(iens).zfill(4),
             dir_out + "/filter_restart_d01." + str(iens).zfill(4),
@@ -206,7 +206,7 @@ def archive_filteroutput(time):
         try:
             ftypes = ['preassim', 'postassim']
             for ftype in ftypes:
-                for iens in range(1, exp.n_ens + 1):
+                for iens in range(1, exp.ensemble_size + 1):
                     fname = "/"+ftype+"_member_" + str(iens).zfill(4) + ".nc"
                     copy(cluster.dart_rundir + fname, dir_out + fname)
         except Exception as e:

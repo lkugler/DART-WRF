@@ -24,7 +24,7 @@ def update_initials_in_WRF_rundir(time):
     update_vars = ['Times',]
     update_vars.extend(exp.update_vars)
 
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         ic_file = cluster.wrf_rundir(iens) + time.strftime(initials_fmt)
         if not os.path.isfile(ic_file):
             raise IOError(ic_file+' does not exist, updating impossible!')

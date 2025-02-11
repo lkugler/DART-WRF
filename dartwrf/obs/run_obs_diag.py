@@ -9,7 +9,7 @@ rundir_program = '/home/fs71386/lkugler/data/run_DART/'
 def prepare(obserr_iszero='.true.'):
     copy(cluster.scriptsdir+'/../templates/input.eval.nml',
             rundir_program+'/input.nml')
-    sed_inplace(rundir_program+'/input.nml', '<n_ens>', str(int(exp.n_ens)))
+    sed_inplace(rundir_program+'/input.nml', '<n_ens>', str(int(exp.ensemble_size)))
     sed_inplace(rundir_program+'/input.nml', '<zero_error_obs>', obserr_iszero)
     sed_inplace(rundir_program+'/input.nml', '<horiz_dist_only>', '.false.')  # dummy
     sed_inplace(rundir_program+'/input.nml', '<vert_norm_hgt>', '5000.0')  # dummy

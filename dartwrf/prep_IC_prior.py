@@ -23,7 +23,7 @@ def create_wrfrst_in_WRF_rundir(time: dt.datetime, prior_init_time: dt.datetime,
     """Copy WRF restart files to run_WRF directory 
     These files will be used as initial conditions for the next WRF run
     """
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         clean_wrfdir(cluster.wrf_rundir(iens))
     
         prior_wrfrst = prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
@@ -48,7 +48,7 @@ def create_updated_wrfinput_from_wrfout(time: dt.datetime, prior_init_time: dt.d
     
     """
     print('writing updated wrfout to WRF run directory as wrfinput')
-    for iens in range(1, exp.n_ens+1):
+    for iens in range(1, exp.ensemble_size+1):
         prior_wrfout = prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
                        +str(iens)+time.strftime('/wrfout_d01_%Y-%m-%d_%H:%M:%S')
         new_start_wrfinput = cluster.wrf_rundir(iens) + '/wrfinput_d01' 
