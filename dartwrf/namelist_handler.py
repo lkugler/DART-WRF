@@ -41,10 +41,12 @@ class WRF_namelist():
                 value = value.strip().rstrip(",")
 
                 if "," in value:
-                    try:
-                        values = eval(value)
-                    except:
-                        raise ValueError(f"{variable} is not a tuple!")
+                    values = value.split(",")
+                    values = tuple(v.strip() for v in values)
+                    # try:
+                    #     values = eval(value)
+                    # except:
+                    #     raise ValueError(f"{variable} is not a tuple!")
                     subdomains = True
                     value = values
                 # check if we have single numbers
@@ -67,22 +69,20 @@ class WRF_namelist():
 
     def write(self, fname: str) -> None:
         """Write a WRF namelist file
-        """
-        if os.path.exists(fname):
-            warnings.warn(f"{fname} already exists!")
-            if input('Continue? (Y/n) ') in ['Y', 'y']:
-                pass      
-            else:
-                raise FileExistsError  
-        
+        may overwrite existing files, not guaranteed to overwrite
+        """        
         with open(fname, 'w') as file:
             for block, variables in self.namelist.items():
                 file.write(f" &{block}\n")
                 for variable, value in variables.items():
-                    if isinstance(value, str) and not value.startswith('.'):
+                    
+                    if isinstance(value, tuple) or isinstance(value, list):
+                        # print each element of the tuple without '
+                        value = ', '.join([str(v) for v in value])
+                    else:
+                        # all other types are just transformed to str
                         value = f'{value}'
-                    if isinstance(value, tuple):
-                        value = str(value)[1:-1]
+                            
                     file.write(f" {variable:<35} = {value},\n")
                 file.write(" /\n\n")
         pass    

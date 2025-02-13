@@ -10,11 +10,12 @@ example call:
 """
 import os, sys
 import netCDF4 as nc
-from dartwrf.server_config import cluster
+from dartwrf.utils import Config
 
-def run(geo_data_file, wrfinput_file):
-    geo_ds = nc.Dataset(geo_data_file, 'r')
-    wrfinp_ds = nc.Dataset(wrfinput_file, 'r+')
+def run(cfg: Config) -> None:
+    
+    geo_ds = nc.Dataset(cfg.geo_data_file, 'r')
+    wrfinp_ds = nc.Dataset(cfg.wrfinput_file, 'r+')
 
     fields_old = ["XLAT_M",   "XLONG_M",      "CLAT",
                   "MAPFAC_M",   "MAPFAC_U",  "MAPFAC_V",
@@ -37,10 +38,9 @@ def run(geo_data_file, wrfinput_file):
     geo_ds.close()
 
     # overwrite attributes
-    os.system(cluster.ncks+' -A -x '+geo_data_file+' '+wrfinput_file)
+    os.system(cfg.ncks+' -A -x '+cfg.geo_data_file+' '+cfg.wrfinput_file)
 
 
 if __name__ == '__main__':
-    geo_data_file = sys.argv[1]  # '/home/fs71386/lkugler/compile_WRF/WPS-release-v4.2/geo_em.d01.nc'
-    wrfinput_file = sys.argv[2]  # '/home/fs71386/lkugler/DART/wrfinput_d01'
-    run(geo_data_file, wrfinput_file)
+    cfg = Config.from_file(sys.argv[1])
+    run(cfg)

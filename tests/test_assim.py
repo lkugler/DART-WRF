@@ -1,93 +1,103 @@
 import os, shutil
+import datetime as dt
+import sys
+import pandas as pd
+from dartwrf.workflows import WorkFlows
+from dartwrf.utils import Config
 
 def test_dartwrf_cycled_da():
-    import datetime as dt
+    shutil.rmtree('/jetfs/home/lkugler/data/sim_archive/test_exp', ignore_errors=True)
     
-    from dartwrf.workflows import WorkFlows
-    w = WorkFlows(exp_config='exp_template.py', server_config='jet.py')
-
-    timedelta_integrate = dt.timedelta(minutes=15)
-    timedelta_btw_assim = dt.timedelta(minutes=15)
+    # import default config for jet
+    from config.jet import cluster_defaults
+    from config.defaults import dart_nml
 
     id = None
-
-    if True:  # random
-        # need some ensemble data to test
-        prior_path_exp = '/jetfs/scratch/lkugler/data/sim_archive/exp_v1.19_P2_noDA+1'
-
-        init_time = dt.datetime(2008, 7, 30, 12, 30)
-        time = dt.datetime(2008, 7, 30, 13)
-        last_assim_time = dt.datetime(2008, 7, 30, 13)
-        forecast_until = dt.datetime(2008, 7, 30, 13,10)
-
-        w.prepare_WRFrundir(init_time)
-        # id = w.run_ideal(depends_on=id)
-
-    prior_init_time = init_time
-
-    while time <= last_assim_time:
-
-        # usually we take the prior from the current time
-        # but one could use a prior from a different time from another run
-        # i.e. 13z as a prior to assimilate 12z observations
-        prior_valid_time = time
-
-        id = w.assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
+    ensemble_size = 3
+    
+    dart_nml['&filter_nml'].update(num_output_state_members=ensemble_size,
+                                   ens_size=ensemble_size)
+            
+    t_raso = dict(var_name='Temperature', unit='[K]',
+            kind='RADIOSONDE_TEMPERATURE',
+            obs_locations=[(45., 0.)],
+            error_generate=0.2, error_assimilate=0.6,
+            heights=range(1000, 15001, 500),
+            loc_horiz_km=100, loc_vert_km=3)
+            
+    cfg = Config(name='test_exp', 
+        model_dx = 2000,
+        ensemble_size = ensemble_size,
+        dart_nml = dart_nml,
+        geo_em_forecast = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200',
+        time = dt.datetime(2008, 7, 30, 11),
         
+        use_existing_obsseq = False,
+        nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/nat_250m_1600x1600x100/*/1/wrfout_d01_%Y-%m-%d_%H_%M_%S',
+        #geo_em_nature = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200',
+        geo_em_nature = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.250m_1600x1600',
+        
+        update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QSNOW', 'PSFC'],
+        input_profile = '/jetfs/home/lkugler/data/sim_archive/nat_250m_1600x1600x100/2008-07-30_08:00/1/input_sounding',
+        nature_exp_verif = 'nat_250m_blockavg2km',
+        assimilate_these_observations = [t_raso,],
+        **cluster_defaults, # type: ignore
+    )
+
+    # test multiple assimilation windows (11-12, 12-13, 13-14, )
+    timedelta_btw_assim = dt.timedelta(minutes=15)
+    #pd.date_range('2008-07-30 11:00', '2008-07-30 13:00', freq='h')
+
+    
+    w = WorkFlows(cfg)
+    w.prepare_WRFrundir(cfg)
+    #id = w.run_ideal(cfg, depends_on=id)
+    
+    # assimilate at these times
+    time0 = cfg.time
+    assim_times = pd.date_range(time0, time0 + timedelta_btw_assim, freq=timedelta_btw_assim)
+    last_assim_time = assim_times[-1]
+
+    # loop over assimilations
+    for i, t in enumerate(assim_times):
+        
+        if i == 0:
+            cfg.update(time = t,
+                prior_init_time = dt.datetime(2008, 7, 30, 8),
+                prior_valid_time = t,
+                prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_nat250m_noDA/',)
+        else:
+            cfg.update(time = t,
+                prior_init_time = assim_times[i-1],
+                prior_valid_time = t,
+                prior_path_exp = cfg.dir_archive,)
+                    
+                    
+        id = w.assimilate(cfg, depends_on=id)
+
         # 1) Set posterior = prior
-        id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+        id = w.prepare_IC_from_prior(cfg, depends_on=id)
 
         # 2) Update posterior += updates from assimilation
-        id = w.update_IC_from_DA(time, depends_on=id)
+        id = w.update_IC_from_DA(cfg, depends_on=id)
 
         # How long shall we integrate?
-        timedelta_integrate = timedelta_btw_assim
-        output_restart_interval = timedelta_btw_assim.total_seconds()/60
-        if time == last_assim_time:  # this_forecast_init.minute in [0,]:  # longer forecast every full hour
-            timedelta_integrate = forecast_until - last_assim_time  # dt.timedelta(hours=4)
-            output_restart_interval = 9999  # no restart file after last assim
+        timedelta_integrate = dt.timedelta(minutes=5)
+
+        cfg.update( WRF_start=t, 
+                    WRF_end=t+timedelta_integrate, 
+                    restart=True, 
+                    restart_interval=9999,
+                    hist_interval_s=300,
+        )
 
         # 3) Run WRF ensemble
-        id = w.run_ENS(begin=time,  # start integration from here
-                    end=time + timedelta_integrate,  # integrate until here
-                    output_restart_interval=output_restart_interval,
-                    first_minutes=False,
-                    depends_on=id)
-        
-        # as we have WRF output, we can use own exp path as prior
-        prior_path_exp = w.cluster.archivedir
-
-        time += timedelta_btw_assim
-        prior_init_time = time - timedelta_btw_assim
+        id = w.run_WRF(cfg, depends_on=id)
+        sys.exit()
     
 
-def test_overwrite_OE_assim():
-    import datetime as dt
-    from dartwrf import assimilate as aso
-    from dartwrf.obs import obsseq
-    from dartwrf.server_config import cluster
-
-    # checks if modified entries are correctly written to DART files
-    input_template = "./obs_seq.orig.out"
-    input_temporary = "./obs_seq.out"
-    # TODO: MISSING FILE
-    # input_osf = "./obs_seq.final"
-    output = "./obs_seq.test.out"
-    shutil.copy(input_template, input_temporary)
-
-    oso = obsseq.ObsSeq(input_temporary)
-    #osf = obsseq.ObsSeq(input_osf)
-
-    aso.set_obserr_assimilate_in_obsseqout(oso, outfile=output)
-
-    var_orig = oso.df['variance']
-
-    oso_test = obsseq.ObsSeq(output)  # read in again
-    assert oso_test.df['variance'].iloc[0] == var_orig
-    os.remove(output)
-    os.remove(input_temporary)
 
 if __name__ == '__main__':
-    # test_dartwrf_cycled_da()
-    # test_overwrite_OE_assim()
+    test_dartwrf_cycled_da()
+
     pass

@@ -9,11 +9,10 @@ import numpy as np
 import datetime as dt
 from pysolar.solar import get_altitude, get_azimuth
 
-from dartwrf.server_config import cluster
 from dartwrf import utils
+from dartwrf.utils import Config
 from dartwrf.obs import calculate_obs_locations as col
-# dictionary string => DART internal indices
-from dartwrf.obs.obskind import obs_kind_nrs
+from dartwrf.obs import obskind_read
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
@@ -104,7 +103,7 @@ def _append_hgt_to_coords(coords, heights):
     return coords2
 
 
-def preamble(n_obs_3d_total, list_kinds):
+def preamble(n_obs_3d_total, list_kinds, obs_kind_nrs):
     """Writes the header of an obs_seq.out file
     """
     lines_obstypedef = ''
@@ -198,8 +197,7 @@ kind
 """+str(obs['obserr_var'])
 
 
-def create_obs_seq_in(time_dt, list_obscfg,
-                      output_path=cluster.dart_rundir+'/obs_seq.in'):
+def create_obs_seq_in(cfg: Config, output_path='./obs_seq.in'):
     """Create obs_seq.in with multiple obs types in one file
 
     Args:
@@ -215,7 +213,12 @@ def create_obs_seq_in(time_dt, list_obscfg,
             - error_assimilate (np.array or False) : False -> parameterized
             - cov_loc_radius_km (float)
     """
+    time_dt = cfg.time
+    list_obscfg = cfg.assimilate_these_observations
+    
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    obs_kind_nrs = obskind_read(cfg.dir_dart_src)
 
     print('creating obs_seq.in:')
     time_dt = _add_timezone_UTC(time_dt)
@@ -236,7 +239,8 @@ def create_obs_seq_in(time_dt, list_obscfg,
 
         if obs_locations == 'DEFAULT_GRID':
             # compute as a square_array_evenly_on_grid
-            coords = col.evenly_on_grid(obscfg['km_between_obs'],
+            coords = col.evenly_on_grid(cfg.geo_em_nature,
+                                        obscfg['km_between_obs'],
                                         obscfg['skip_border_km'])
         else:
             # obs_locations given by iterable
@@ -286,28 +290,14 @@ def create_obs_seq_in(time_dt, list_obscfg,
 
     n_obs_total = i_obs_total
     list_kinds = [a['kind'] for a in list_obscfg]
-    pretxt = preamble(n_obs_total, list_kinds)
+    pretxt = preamble(n_obs_total, list_kinds, obs_kind_nrs)
 
     alltxt = pretxt + txt
     _write_file(alltxt, output_path=output_path)
 
 
 if __name__ == '__main__':
-    # for testing
-    time_dt = dt.datetime(2008, 7, 30, 13, 0)
-
-    radar = dict(var_name='Radar reflectivity', unit='[dBz]',
-                 kind='RADAR_REFLECTIVITY',
-                 n_obs=5776, obs_locations='square_array_evenly_on_grid',
-                 error_generate=2.5, error_assimilate=2.5,
-                 heights=range(2000, 14001, 2000),
-                 loc_horiz_km=20, loc_vert_km=2.5)
-
-    create_obs_seq_in(time_dt, [radar],
-                      output_path=utils.userhome+'/run_DART/obs_seq.in')
-
-    if False:
-        error_assimilate = 5.*np.ones(n_obs*len(radar['heights']))
-        import assim_synth_obs as aso
-        aso.replace_errors_obsseqout(
-            cluster.dart_rundir+'/obs_seq.out', error_assimilate)
+    
+    cfg = Config.from_file(sys.argv[1])
+    
+    create_obs_seq_in(cfg, output_path=utils.userhome+'/run_DART/obs_seq.in')

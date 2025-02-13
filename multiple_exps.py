@@ -1,79 +1,98 @@
 import datetime as dt
-import sys
 import pandas as pd
 from dartwrf.workflows import WorkFlows
-from config import defaults
+from dartwrf.utils import Config
 
+
+# import default config for jet
+from config.jet import cluster_defaults
+from config.defaults import dart_nml
 
 # test multiple assimilation windows (11-12, 12-13, 13-14, )
 timedelta_btw_assim = dt.timedelta(minutes=15)
-assim_times_start = pd.date_range('2000-01-01 11:00', '2000-01-01 13:00', freq='h')
-    
+assim_times_start = pd.date_range('2008-07-30 11:00', '2008-07-30 13:00', freq='h')
+
 for t0 in assim_times_start:
 
-    # set constants
-    w = WorkFlows(server_config='/jetfs/home/lkugler/DART-WRF/config/jet.py', 
-                   expname=t0.strftime('test_%H%M'))
-   
-    # set potentially varying parameters
-    ens_size = 3
-    dart_nml = defaults.dart_nml
-    dart_nml.update(ens_size=ens_size)
+
+    id = None
+    ensemble_size = 3
     
-    w.configure(model_dx=2000, 
-                ensemble_size=3,
-                dart_nml = dart_nml,
-                use_existing_obsseq=False,
-                update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QSNOW', 'PSFC'],
-                input_profile = '/mnt/jetfs/home/lkugler/data/initial_profiles/wrf/ens/2022-03-31/raso.fc.<iens>.wrfprof',
-                nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/exp_v1.18_P1_nature+1/*/1/wrfout_d01_%Y-%m-%d_%H:%M:%S',
-                nature_exp = 'nat_250m_blockavg2km',)
+    dart_nml['&filter_nml'].update(num_output_state_members=ensemble_size,
+                                   ens_size=ensemble_size)
+            
+    t_raso = dict(var_name='Temperature', unit='[K]',
+            kind='RADIOSONDE_TEMPERATURE',
+            obs_locations=[(45., 0.)],
+            error_generate=0.2, error_assimilate=0.6,
+            heights=range(1000, 15001, 500),
+            loc_horiz_km=100, loc_vert_km=3)
+            
+    cfg = Config(name='test_exp', 
+        model_dx = 2000,
+        ensemble_size = ensemble_size,
+        dart_nml = dart_nml,
+        geo_em_forecast = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200',
+        time = dt.datetime(2008, 7, 30, 11),
+        
+        use_existing_obsseq = False,
+        nature_wrfout_pattern = '/jetfs/home/lkugler/data/sim_archive/nat_250m_1600x1600x100/*/1/wrfout_d01_%Y-%m-%d_%H_%M_%S',
+        #geo_em_nature = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200',
+        geo_em_nature = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.250m_1600x1600',
+        
+        update_vars = ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR', 'QCLOUD', 'QICE', 'QSNOW', 'PSFC'],
+        input_profile = '/jetfs/home/lkugler/data/sim_archive/nat_250m_1600x1600x100/2008-07-30_08:00/1/input_sounding',
+        nature_exp_verif = 'nat_250m_blockavg2km',
+        assimilate_these_observations = [t_raso,],
+        **cluster_defaults, # type: ignore
+    )
+
+    # test multiple assimilation windows (11-12, 12-13, 13-14, )
+    timedelta_btw_assim = dt.timedelta(minutes=15)
+    #pd.date_range('2008-07-30 11:00', '2008-07-30 13:00', freq='h')
 
     
-    time = t0
-    id = None
-    w.prepare_WRFrundir(time)
-    id = w.run_ideal(depends_on=id)
-    sys.exit()
-    
-    prior_init_time = time - dt.timedelta(hours=1)
-    prior_valid_time = time
-    prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_v1.19_P2_noDA+1/'
+    w = WorkFlows(cfg)
+    w.prepare_WRFrundir(cfg)
+    #id = w.run_ideal(cfg, depends_on=id)
     
     # assimilate at these times
-    assim_times = pd.date_range(time, time + dt.timedelta(hours=1), freq=timedelta_btw_assim)
+    time0 = cfg.time
+    assim_times = pd.date_range(time0, time0 + timedelta_btw_assim, freq=timedelta_btw_assim)
     last_assim_time = assim_times[-1]
-    
+
     # loop over assimilations
     for i, t in enumerate(assim_times):
         
-        id = w.assimilate(time, prior_init_time, prior_valid_time, prior_path_exp, depends_on=id)
+        if i == 0:
+            cfg.update(time = t,
+                prior_init_time = dt.datetime(2008, 7, 30, 8),
+                prior_valid_time = t,
+                prior_path_exp = '/jetfs/home/lkugler/data/sim_archive/exp_nat250m_noDA/',)
+        else:
+            cfg.update(time = t,
+                prior_init_time = assim_times[i-1],
+                prior_valid_time = t,
+                prior_path_exp = cfg.dir_archive,)
+                    
+                    
+        id = w.assimilate(cfg, depends_on=id)
 
         # 1) Set posterior = prior
-        id = w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time, depends_on=id)
+        id = w.prepare_IC_from_prior(cfg, depends_on=id)
 
         # 2) Update posterior += updates from assimilation
-        id = w.update_IC_from_DA(time, depends_on=id)
+        id = w.update_IC_from_DA(cfg, depends_on=id)
 
         # How long shall we integrate?
-        timedelta_integrate = timedelta_btw_assim
-        output_restart_interval = timedelta_btw_assim.total_seconds()/60
-        if time == last_assim_time:
-            timedelta_integrate = dt.timedelta(hours=4)
-            output_restart_interval = 9999  # no restart file after last assim
+        timedelta_integrate = dt.timedelta(minutes=5)
+
+        cfg.update( WRF_start=t, 
+                    WRF_end=t+timedelta_integrate, 
+                    restart=True, 
+                    restart_interval=9999,
+                    hist_interval_s=300,
+        )
 
         # 3) Run WRF ensemble
-        id = w.run_ENS(begin=time,  # start integration from here
-                       end=time + timedelta_integrate,  # integrate until here
-                       output_restart_interval=output_restart_interval,
-                       depends_on=id)
-        
-        if t < last_assim_time:
-            # continue the next cycle
-            prior_init_time = assim_times[i]
-            prior_valid_time = assim_times[i+1]
-            prior_path_exp = w.archivedir  # use own exp path as prior
-        else:
-            # exit the cycles
-            break
-        
+        id = w.run_WRF(cfg, depends_on=id)

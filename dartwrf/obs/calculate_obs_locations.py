@@ -6,11 +6,7 @@ import os
 import sys
 import warnings
 import numpy as np
-import datetime as dt
 import xarray as xr
-
-from dartwrf.exp_config import exp
-from dartwrf.server_config import cluster
 
 #####################
 # Global variables
@@ -51,7 +47,8 @@ def square_array_from_domaincenter(n_obs, distance_between_obs_km):
     return coords
 
 
-def evenly_on_grid(km_between_obs, skip_border_km=0):
+def evenly_on_grid(f_geo_em_nature: str, 
+                   km_between_obs, skip_border_km=0):
     """Observations spread evenly over domain
 
     skip_border_km : no observations within this distance to the border
@@ -59,7 +56,7 @@ def evenly_on_grid(km_between_obs, skip_border_km=0):
     Returns
         tuple of (lat, lon) coordinates of observed gridpoints in degrees
     """
-    fcoords = cluster.geo_em_nature
+    fcoords = f_geo_em_nature
     ds = xr.open_dataset(fcoords)
 
     lons = ds.XLONG_M.isel(Time=0).values
@@ -101,7 +98,3 @@ def evenly_on_grid(km_between_obs, skip_border_km=0):
     print('first observation at gridpoint', skip_gridpoints,', last observation at gridpoint', i_grid)
     return coords
 
-
-if __name__ == '__main__':
-    
-    evenly_on_grid(12, skip_border_km=16)

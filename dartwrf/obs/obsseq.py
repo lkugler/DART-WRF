@@ -908,7 +908,6 @@ class ObsSeq(object):
 
 
 if __name__ == "__main__":
-    from dartwrf.server_config import cluster
     # for testing purposes
 
     # f = cluster.scriptsdir + "/../tests/obs_seq.orig.out"

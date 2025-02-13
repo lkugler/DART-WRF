@@ -1,19 +1,18 @@
-print('load imports')
+
 import os, sys, warnings
 import datetime as dt
 import netCDF4 as nc
+from dartwrf.utils import Config
 
-from dartwrf.exp_config import exp
-from dartwrf.server_config import cluster
-print('loaded imports')
-
-def update_initials_in_WRF_rundir(time):
+def update_initials_in_WRF_rundir(cfg: Config) -> None:
     """Updates wrfrst-files in `/run_WRF/` directory 
     with posterior state from ./filter output, e.g. filter_restart_d01.0001
 
     Args:
         time (dt.datetime):     time of assimilation (directory preceeding ./assim_stage0/...)
     """
+    time = cfg.time
+    
     use_wrfrst = True  # if wrfrst is used to restart (recommended)
     if use_wrfrst:
         initials_fmt = '/wrfrst_d01_%Y-%m-%d_%H:%M:%S'
@@ -22,22 +21,21 @@ def update_initials_in_WRF_rundir(time):
 
     # which WRF variables will be updated?
     update_vars = ['Times',]
-    update_vars.extend(exp.update_vars)
+    update_vars.extend(cfg.update_vars)
 
-    for iens in range(1, exp.ensemble_size+1):
-        ic_file = cluster.wrf_rundir(iens) + time.strftime(initials_fmt)
+    for iens in range(1, cfg.ensemble_size+1):
+        ic_file = cfg.dir_wrf_run.replace('<exp>', cfg.name
+                                          ).replace('<ens>', str(iens)
+                                                    )+time.strftime(initials_fmt)
         if not os.path.isfile(ic_file):
             raise IOError(ic_file+' does not exist, updating impossible!')
         else:
             # overwrite DA updated variables
-            
-            filter_out = cluster.archivedir+time.strftime('/%Y-%m-%d_%H:%M/filter_restart_d01.'+str(iens).zfill(4))
+            filter_out = cfg.dir_archive.replace('<exp>', cfg.name) \
+                + time.strftime('/%Y-%m-%d_%H:%M/filter_restart_d01.'+str(iens).zfill(4))
 
             with nc.Dataset(filter_out, 'r') as ds_filter:
                 with nc.Dataset(ic_file, 'r+') as ds_new:
-
-                    if 'T' in update_vars or 'THM' in update_vars:
-                        ds_new.variables['T'][:] = ds_filter.variables['THM'][:]
 
                     # update all other variables
                     for var in update_vars:
@@ -53,5 +51,6 @@ def update_initials_in_WRF_rundir(time):
 
 
 if __name__ == '__main__':
-    time = dt.datetime.strptime(sys.argv[1], '%Y-%m-%d_%H:%M')
-    update_initials_in_WRF_rundir(time)
+    cfg = Config.from_file(sys.argv[1])
+    
+    update_initials_in_WRF_rundir(cfg)

@@ -1,14 +1,13 @@
+import sys
 import warnings
 import numpy as np
-from dartwrf.utils import append_file
-from dartwrf.exp_config import exp
-from dartwrf.server_config import cluster
+from dartwrf.utils import append_file, Config
 
 # 6370 for earth radius in km
 radius_periodic_km = 6370
 
 
-def read_namelist(filepath):
+def read_namelist(filepath: str) -> dict:
     """Read the DART namelist file into a dictionary.
 
     Args:
@@ -118,7 +117,7 @@ def write_namelist_from_dict(d, filepath):
                 max_width_of_parameter_name = max([len(p) for p in parameters])
                 width = max_width_of_parameter_name + 1
             except:
-                width = None
+                width = 12
 
             for parameter in parameters:
                 lines = d[section][parameter]
@@ -188,7 +187,7 @@ def write_namelist_from_dict(d, filepath):
             f.write('   /\n\n')
 
 
-def _get_horiz_localization():
+def _get_horiz_localization(cfg: Config):
     """Compile the list of localizations for the DART namelist variables
 
     Args:
@@ -205,7 +204,7 @@ def _get_horiz_localization():
     l_obstypes_all = []  # list of all observation types
     l_loc_horiz_rad = []  # list of respective horizontal localization values
 
-    for obscfg in exp.observations:
+    for obscfg in cfg.assimilate_these_observations:
         l_obstypes_all.append(obscfg["kind"])
 
         # compute horizontal localization value
@@ -219,7 +218,7 @@ def _get_horiz_localization():
     return l_obstypes_all, l_loc_horiz_rad
 
 
-def _get_vertical_localization():
+def _get_vertical_localization(cfg: Config):
     """Compile the list of vertical localizations for the DART namelist variables
 
     Vertical localization can be defined in section &location_nml of 'input.nml'
@@ -254,7 +253,7 @@ def _get_vertical_localization():
     vert_norm_levels = []
     vert_norm_pressures = []
 
-    for obscfg in exp.observations:
+    for obscfg in cfg.assimilate_these_observations:
 
         # if both loc_vert_km and loc_vert_scaleheight are False or not defined, then continue without localization
         if obscfg.get("loc_vert_km", False) == False and obscfg.get("loc_vert_scaleheight", False) == False:
@@ -291,7 +290,7 @@ def _get_vertical_localization():
 
                 # do we have vertical localization at all?
                 # check parameter horiz_dist_only == true
-                if exp.dart_nml['&location_nml']['horiz_dist_only'] == '.true.':
+                if cfg.dart_nml['&location_nml']['horiz_dist_only'] == '.true.':
                     # no vertical localization => set all to dummy values
                     vert_norm_heights.append(-1)
                     vert_norm_scale_heights.append(-1)
@@ -304,7 +303,7 @@ def _get_vertical_localization():
     return l_obstypes_vert, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures
 
 
-def write_namelist(just_prior_values=False):
+def write_namelist(cfg: Config, just_prior_values=False) -> dict:
     """Write a DART namelist file ('input.nml')
 
     1. Uses the default namelist (from the DART source code)
@@ -324,16 +323,15 @@ def write_namelist(just_prior_values=False):
     Returns:
         None
    """
-    list_obstypes_all, list_loc_horiz_rad = _get_horiz_localization()
+    list_obstypes_all, list_loc_horiz_rad = _get_horiz_localization(cfg)
 
-    vert_norm_obs_types, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures = _get_vertical_localization()
+    vert_norm_obs_types, vert_norm_heights, vert_norm_scale_heights, vert_norm_levels, vert_norm_pressures = _get_vertical_localization(cfg)
 
     # default compilation namelist
-    nml = read_namelist(cluster.dart_srcdir + "/input.nml")
+    nml = read_namelist(cfg.dir_dart_src + "/input.nml")
 
     n_obstypes = len(list_obstypes_all)
     if n_obstypes > 0:
-        # make sure that observations defined in `exp.observations` are assimilated
         nml['&obs_kind_nml']['assimilate_these_obs_types'] = [list_obstypes_all]
         nml['&obs_kind_nml']['use_precomputed_FOs_these_obs_types'] = [
             [a for a in list_obstypes_all if a.startswith('CF')]]  # only for cloud fraction
@@ -361,7 +359,7 @@ def write_namelist(just_prior_values=False):
     # then we read the configuration file of the experiment
     # and overwrite the default values where necessary
     # (to merge default and user-defined namelist settings)
-    for section, sdata in exp.dart_nml.items():
+    for section, sdata in cfg.dart_nml.items():
 
         # if section is not in namelist, add it
         if section not in nml:
@@ -414,23 +412,25 @@ def write_namelist(just_prior_values=False):
 
     # fail if horiz_dist_only == false but observations contain a satellite channel
     if nml['&location_nml']['horiz_dist_only'][0] == '.false.':
-        for obscfg in exp.observations:
+        for obscfg in cfg.assimilate_these_observations:
             if 'sat_channel' in obscfg:
                 warnings.warn(
                     "Selected vertical localization, but observations contain satellite obs -> Bug in DART.")
 
     # write to file
-    write_namelist_from_dict(nml, cluster.dart_rundir + "/input.nml")
+    dir_dart_run = cfg.dir_dart_run.replace('<exp>', cfg.name)
+    write_namelist_from_dict(nml, dir_dart_run + "/input.nml")
 
     # append section for RTTOV
-    if hasattr(cluster, 'rttov_nml'):
-        append_file(cluster.dart_rundir + "/input.nml", cluster.rttov_nml)
+    if hasattr(cfg, 'rttov_nml'):
+        append_file(dir_dart_run + "/input.nml", cfg.rttov_nml)
 
     return nml  # in case we want to access namelist settings in python
 
 
 if __name__ == "__main__":
     # for testing
+    cfg = Config.from_file(sys.argv[1])
 
-    nml = write_namelist()
+    nml = write_namelist(cfg)
     print(nml)

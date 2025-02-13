@@ -11,11 +11,15 @@ import glob
 import warnings
 import builtins as __builtin__
 import subprocess
+from pprint import pprint
 import datetime as dt
 import re
 import tempfile
 import pickle
 import importlib.util
+import random
+import string
+import pickle
 
 userhome = os.path.expanduser('~')
 
@@ -25,112 +29,6 @@ def import_from_path(module_name, file_path):
     sys.modules[module_name] = module
     spec.loader.exec_module(module) # type: ignore
     return module
-
-class ClusterConfig(object):
-    """Collection of variables regarding the cluster configuration
-
-    Attributes:
-        name (str): Name of the cluster
-        max_nproc (int): Maximum number of processors that can be used
-        np_WRF (int): Number of cores for WRF (mpirun -np xx ./wrf.exe)
-        use_slurm (bool): If True, use SLURM to submit jobs
-        size_WRF_jobarray (int): Size of SLURM job array for running the WRF ensemble
-
-        python (str): Path to python executable
-        python_verif (str): Path to python executable for verification
-        ncks (str): Path to ncks executable
-        ideal (str): Path to ideal.exe
-        wrfexe (str): Path to wrf.exe
-
-        dart_modules (str): Command to load modules before running DART 
-        wrf_modules (str): Command to load modules before running WRF
-
-        srcdir (str): Path to where WRF has been compiled, including the 'run' folder of WRF, e.g. /home/WRF-4.3/run
-        dart_srcdir (str): Path to DART compile directory, e.g. /home/DART-9.11.9/models/wrf/work
-        rttov_srcdir (str): Path to RTTOV compile directory, e.g. /home/RTTOV13/rtcoef_rttov13/
-        dartwrf_dir (str): Path where DART-WRF scripts reside, e.g. /home/DART-WRF/
-
-        geo_em_nature (str, False): Path to the geo_em.d01.nc file for idealized nature runs
-        geo_em_forecast (str, False): Path to the geo_em.d01.nc file for the forecast domain
-        obs_impact_filename
-        namelist (str): Path to a WRF namelist template; 
-                        strings like <hist_interval>, will be overwritten in scripts/prepare_namelist.py
-        run_WRF (str): Path to script which runs WRF on a node of the cluster
-
-        slurm_cfg (dict):   Dictionary containing the default configuration of SLURM
-                            as defined in SLURM docs (https://slurm.schedmd.com/sbatch.html).
-                            This configuration can be customized for any job (e.g. in workflows.py)
-
-    """
-
-    def __init__(self, 
-                 max_nproc: int, 
-                 max_nproc_for_each_ensemble_member: int,
-                 WRF_ideal_template: str, 
-                 WRF_exe_template: str, 
-                 archive_base: str,
-                 wrf_rundir_base: str,
-                 dart_rundir_base: str,
-                 dartwrf_dir_dev: str,
-                 WRF_namelist_template: str,
-                 **kwargs):
-        # defaults
-        # these are overwritten with choices in **kwargs
-        self.dart_modules = ''
-        self.wrf_modules = ''
-        self.size_jobarray = '1'
-        self.use_slurm = False
-        self.slurm_cfg = {}
-        self.log_dir = './'
-        self.slurm_scripts_dir = './'
-        self.archive_base = archive_base
-        self.wrf_rundir_base = wrf_rundir_base        
-        self.dart_rundir_base = dart_rundir_base
-        self.dartwrf_dir_dev = dartwrf_dir_dev
-        self.WRF_namelist_template = WRF_namelist_template
-        self.python = 'python'
-        self.pattern_obs_seq_out = '<archivedir>/diagnostics/%Y-%m-%d_%H:%M_obs_seq.out'
-        self.pattern_obs_seq_final = '<archivedir>/diagnostics/%Y-%m-%d_%H:%M_obs_seq.final'
-        
-        self.max_nproc = max_nproc
-        self.max_nproc_for_each_ensemble_member = max_nproc_for_each_ensemble_member
-        self.WRF_ideal_template = WRF_ideal_template
-        self.WRF_exe_template = WRF_exe_template
-        
-        # user defined
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def __str__(self):
-        return f'ClusterConfig: {self.__dict__}'
-
-    def run_job(self, cmd, jobname='', cfg_update=dict(), depends_on=None):
-        """Run scripts in a shell
-
-        If not using SLURM: calls scripts through shell
-        if using SLURM: uses slurmpy to submit jobs, keep certain default kwargs and only update some with kwarg `overwrite_these_configurations`
-
-        Args:
-            cmd (str): Bash command(s) to run
-            jobname (str, optional): Name of SLURM job
-            cfg_update (dict): The config keywords will be overwritten with values
-            depends_on (int or None): SLURM job id of dependency, job will start after this id finished.
-
-        Returns 
-            None
-        """
-        if self.use_slurm:
-            from slurmpy import Slurm
-            return Slurm(jobname, slurm_kwargs=dict(self.slurm_cfg, **cfg_update),
-                         log_dir=self.log_dir,
-                         scripts_dir=self.slurm_scripts_dir,
-                         ).run(cmd, depends_on=depends_on)
-        else:
-            print(cmd)
-            returncode = os.system(cmd)
-            if returncode != 0:
-                raise Exception('Error running command >>> '+cmd)
-
 
 class Config(object):
     """Collection of variables which define the experiment
@@ -165,31 +63,72 @@ class Config(object):
             keys are namelist section headers (e.g. &filter_nml)
             values are dictionaries of parameters and values (e.g. dict(ens_size=exp.ensemble_size,))
 
-        wrf_rundir_base (str): Path to temporary files for WRF
-        dart_rundir_base (str): Path to temporary files for DART
-        archive_base (str): Path to long-time output storage
+        # Important directory paths
+        dir_archive: e.g. '/jetfs/home/lkugler/data/sim_archive/<exp>/'
+        dir_wrf_run: e.g. '/jetfs/home/lkugler/data/run_WRF/<exp>/<ens>/'
+        dir_dart_run: e.g. '/jetfs/home/lkugler/data/run_DART/<exp>/'
 
     """
 
-    def __init__(self, name: str, model_dx: int, ensemble_size: int, 
-                 update_vars: list=[], dart_nml: dict={}, 
+    def __init__(self, 
+                 name: str, 
+                 model_dx: int, 
+                 ensemble_size: int, 
+
+                 # cluster config
+                 max_nproc: int = 20, 
+                 max_nproc_for_each_ensemble_member: int = 9,
+                 dir_archive: str = './sim_archive/<exp>/',
+                 dir_wrf_run: str = './run_WRF/<exp>/<ens>/',
+                 dir_dart_run: str = './run_DART/<exp>/',
+                 use_slurm: bool = False,
+                 pattern_obs_seq_out: str = './diagnostics/%Y-%m-%d_%H:%M_obs_seq.out',
+                 pattern_obs_seq_final: str = './diagnostics/%Y-%m-%d_%H:%M_obs_seq.final',
+                 
+                 # optional
+                 update_vars: list=[], 
+                 dart_nml: dict={}, 
                  use_existing_obsseq: bool | str = False,
-                 input_profile: bool | str = False,
                  nature_wrfout_pattern: bool | str = False,
+                 
+                 # others
                  **kwargs):
         
         # defining the compulsory variables
         self.name = name
         self.model_dx = model_dx
-        self.ensemble_size = ensemble_size
+        self.ensemble_size = int(ensemble_size)
         self.update_vars = update_vars
         self.dart_nml = dart_nml
         
+        # cluster config
+        self.max_nproc = max_nproc
+        self.max_nproc_for_each_ensemble_member = max_nproc_for_each_ensemble_member
+        self.dir_archive = dir_archive.replace('<exp>', self.name)
+        self.dir_wrf_run = dir_wrf_run.replace('<exp>', self.name)
+        self.dir_dart_run = dir_dart_run.replace('<exp>', self.name)
+        
+        # defaults
+        # these are overwritten with choices in **kwargs
+        self.debug = False
+        self.dart_modules = ''
+        self.wrf_modules = ''
+        self.size_jobarray = '1'
+        self.use_slurm = use_slurm
+        self.slurm_cfg = {}
+        self.python = 'python'
+        self.pattern_obs_seq_out = pattern_obs_seq_out.replace('<archivedir>', self.dir_archive)
+        self.pattern_obs_seq_final = pattern_obs_seq_final.replace('<archivedir>', self.dir_archive)
+        
         # optional
         self.use_existing_obsseq = use_existing_obsseq
-        self.input_profile = input_profile
         self.nature_wrfout_pattern = nature_wrfout_pattern
-        
+
+        # user defined
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+            
+        # warnings to the user
         if not update_vars:
             warnings.warn('No `update_vars` defined, not updating any variables after assimilation!')
             
@@ -203,30 +142,78 @@ class Config(object):
         if isinstance(use_existing_obsseq, str):
             print('Using existing observation sequence', use_existing_obsseq)
 
-        # user defined
+        # required attributes, derived from others
+        self.dir_archive = self.dir_archive.replace('<exp>', self.name)
+        self.dir_dartwrf_run = self.dir_archive+'/DART-WRF/dartwrf/'
+        self.dir_slurm = self.dir_archive+'/slurm-scripts/'
+        self.dir_log = self.dir_archive+'/logs/'
+
+        # save config
+        self.f_cfg_base = self.dir_archive + '/configs/'
+        
+        # write config to file
+        self.f_cfg_current = self.generate_name()
+        self.to_file(self.f_cfg_current)
+        
+    def __contains__(self, key):
+        return hasattr(self, key)
+    
+    def __getattribute__(self, name: str):
+        """Ask user if the attribute was defined in the first place"""
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            raise AttributeError(f'Attribute `{name}` not found in Config object. Did you set it?')
+
+    def generate_name(self):
+        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        return self.f_cfg_base+'/cfg_'+random_str+'.pkl'
+
+    def update(self, **kwargs):
+        """Update the configuration with new values
+        """
+        # d = read_Config_as_dict(self.f_cfg_current)
+        if 'name' in kwargs:
+            raise ValueError('You can not change the name of the experiment!')
+        
+        # set attributes in existing object
         for key, value in kwargs.items():
             setattr(self, key, value)
+        
+        # write to file
+        self.f_cfg_current = self.generate_name()
+        self.to_file(self.f_cfg_current)
+    
+    @staticmethod
+    def from_file(fname: str) -> 'Config':
+        """Read a configuration from a file"""
+        d = read_Config_as_dict(fname)
+        return Config(**d)
+
+    def to_file(self, filename: str):
+        """Write itself to a python file"""
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        d = self.__dict__
+        
+        with open(filename, 'wb') as handle:
+            pickle.dump(d, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        if self.debug:
+            print('Wrote config to', filename)
 
 
-
-def write_dict_to_pyfile(d: dict, filename: str):
-    """Write a dictionary to a python file"""
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    with open(filename, 'w') as f:
-        for key, value in d.items():
-            f.write(key+' = '+str(value)+'\n')
-
-def read_dict_from_pyfile(filename: str) -> Config:
+def read_Config_as_dict(filename: str) -> dict:
     """Read a dictionary from a python file,
     return as Config object
     """
-    with open(filename, 'r') as f:
-        d = {}
-        for line in f:
-            key, value = line.split('=')
-            d[key.strip()] = value.strip()
-    return Config(**d)
+    with open(filename, 'rb') as handle:
+        d = pickle.load(handle)
+    print('read config', filename)
+    return d
 
+def display_config(filename: str) -> None:
+    d = read_Config_as_dict(filename)
+    pprint(d)
 
 def shell(args, pythonpath=None):
     print(args)
