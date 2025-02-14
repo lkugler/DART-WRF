@@ -7,10 +7,10 @@ import time as time_module
 import datetime as dt
 import numpy as np
 
-from dartwrf.utils import Config, symlink, copy, try_remove, print, shell, write_txt, load_dict
+from dartwrf.utils import Config, symlink, copy, try_remove, print, shell, write_txt, obskind_read
 from dartwrf import wrfout_add_geo
 from dartwrf.obs import error_models as err
-from dartwrf.obs import obsseq, obskind_read
+from dartwrf.obs import obsseq
 from dartwrf import dart_nml
 
 

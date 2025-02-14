@@ -3,10 +3,9 @@ import shutil
 import glob
 import warnings
 
-from dartwrf.utils import Config, try_remove, print, shell, symlink, copy
+from dartwrf.utils import Config, try_remove, print, shell, symlink, copy, obskind_read
 import dartwrf.obs.create_obsseq_in as osi
-from dartwrf.obs import obsseq, obskind_read
-from dartwrf import assimilate as aso
+from dartwrf.obs import obsseq
 from dartwrf import wrfout_add_geo
 
 

@@ -12,7 +12,6 @@ from pysolar.solar import get_altitude, get_azimuth
 from dartwrf import utils
 from dartwrf.utils import Config
 from dartwrf.obs import calculate_obs_locations as col
-from dartwrf.obs import obskind_read
 
 # position on earth for RTTOV ray geometry
 lat0 = 45.
@@ -218,7 +217,7 @@ def create_obs_seq_in(cfg: Config, output_path='./obs_seq.in'):
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    obs_kind_nrs = obskind_read(cfg.dir_dart_src)
+    obs_kind_nrs = utils.obskind_read(cfg.dir_dart_src)
 
     print('creating obs_seq.in:')
     time_dt = _add_timezone_UTC(time_dt)
