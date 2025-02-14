@@ -79,7 +79,7 @@ def run(cfg: Config) -> None:
         
         try_remove(f_out)
         nml.write(f_out)
-        print('saved', f_out)
+        #print('saved', f_out)
 
         # copy to archive
         init = start.strftime('/%Y-%m-%d_%H:%M/')

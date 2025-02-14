@@ -1,8 +1,8 @@
 """Cluster configuration file, see docstring of ClusterConfig class in dartwrf/utils.py for details"""
 
 cluster_defaults = dict(
-    max_nproc = 16,
-    max_nproc_for_each_ensemble_member = 9,
+    max_nproc = 20,
+    max_nproc_for_each_ensemble_member = 16,
     use_slurm = True,
 
     # binaries
@@ -33,7 +33,7 @@ cluster_defaults = dict(
     WRF_exe_template = '/jetfs/home/lkugler/DART-WRF/templates/run_WRF.jet.sh',
     WRF_ideal_template = '/jetfs/home/lkugler/DART-WRF/templates/run_WRF_ideal.sh',
 
-    slurm_kwargs = {"account": "lkugler", "partition": "hub",  
+    slurm_kwargs = {"account": "lkugler", "partition": "all", "time": "00:30:00",
                     "ntasks": "1", "ntasks-per-core": "1", "mem": "30G",
                     "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"},
 

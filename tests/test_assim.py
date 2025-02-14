@@ -17,7 +17,7 @@ def test_dartwrf_cycled_da():
     
     dart_nml['&filter_nml'].update(num_output_state_members=ensemble_size,
                                    ens_size=ensemble_size)
-            
+    
     t_raso = dict(var_name='Temperature', unit='[K]',
             kind='RADIOSONDE_TEMPERATURE',
             obs_locations=[(45., 0.)],
