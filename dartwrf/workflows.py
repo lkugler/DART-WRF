@@ -95,7 +95,7 @@ class WorkFlows(object):
             jobname = path_to_script.split('/')[-1]+'-'+cfg.f_cfg_current.split('/')[-1].replace('.py','')
             print('> SLURM job:', jobname)
             
-            slurm_kwargs = cfg.slurm_kwargs
+            slurm_kwargs = cfg.slurm_kwargs.copy()
             for key, value in kwargs.items():
                 slurm_kwargs[key] = value
                 
@@ -180,7 +180,7 @@ class WorkFlows(object):
                             ).replace('<wrf_rundir_base>', cfg.dir_wrf_run
                             ).replace('<wrf_modules>', cfg.wrf_modules,
                             )
-        id = self.run_job(cmd, cfg, depends_on=[depends_on])
+        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="30")
         return id
     
     def run_WRF(self, cfg, depends_on=None):
@@ -235,7 +235,7 @@ class WorkFlows(object):
                      )
         return id
 
-    def prepare_IC_from_prior(self, cfg, depends_on=None):
+    def prepare_IC_from_prior(self, cfg: Config, depends_on=None):
         """Create initial conditions from prior wrfrst files
 
         Args:
@@ -252,8 +252,7 @@ class WorkFlows(object):
         """
         path_to_script = self.dir_dartwrf_run + '/prep_IC_prior.py'
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
-
-        id = self.run_job(cmd, cfg, depends_on=[depends_on])
+        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="10")
         return id
 
     def update_IC_from_DA(self, cfg, depends_on=None):
@@ -269,7 +268,7 @@ class WorkFlows(object):
         path_to_script = self.dir_dartwrf_run + '/update_IC.py'
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
 
-        id = self.run_job(cmd, cfg, depends_on=[depends_on])
+        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="10")
         return id
 
     def create_satimages(self, cfg, depends_on=None):
