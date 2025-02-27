@@ -2,11 +2,8 @@
 export SLURM_STEP_GRES=none
 
 echo "SLURM_ARRAY_TASK_ID:"$SLURM_ARRAY_TASK_ID
-EXPNAME=<expname> 
-MAINDIR=<wrf_rundir_base> 
-
 IENS=$SLURM_ARRAY_TASK_ID
-RUNDIR=$MAINDIR/$EXPNAME/$IENS
+RUNDIR=<wrf_rundir_base>
 echo "ENSEMBLE NR: "$IENS" in "$RUNDIR
 
 cd $RUNDIR

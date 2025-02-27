@@ -20,6 +20,7 @@ import importlib.util
 import random
 import string
 import pickle
+import yaml
 
 userhome = os.path.expanduser('~')
 
@@ -56,7 +57,7 @@ class Config(object):
             `loc_horiz_km`: float of horizontal localization half-width in km;
             `loc_vert_km`: float of vertical localization half-width in km;
 
-        use_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
+        assimilate_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
             time string is replaced by actual time: /path/%Y-%m-%d_%H:%M_obs_seq.out
 
         dart_nml (dict): updates to the default input.nml of DART (in dart_srcdir)
@@ -88,7 +89,7 @@ class Config(object):
                  # optional
                  update_vars: list=[], 
                  dart_nml: dict={}, 
-                 use_existing_obsseq: bool | str = False,
+                 assimilate_existing_obsseq: bool | str = False,
                  nature_wrfout_pattern: bool | str = False,
                  
                  # others
@@ -121,7 +122,7 @@ class Config(object):
         self.pattern_obs_seq_final = pattern_obs_seq_final.replace('<archivedir>', self.dir_archive)
         
         # optional
-        self.use_existing_obsseq = use_existing_obsseq
+        self.assimilate_existing_obsseq = assimilate_existing_obsseq
         self.nature_wrfout_pattern = nature_wrfout_pattern
 
         # user defined
@@ -135,12 +136,12 @@ class Config(object):
         if not dart_nml:
             warnings.warn('No `dart_nml` defined, using default DART namelist!')
             
-        if not isinstance(use_existing_obsseq, str):
-            if use_existing_obsseq != False:
-                raise ValueError('`use_existing_obsseq` must be a string or False, but is', use_existing_obsseq)
+        if not isinstance(assimilate_existing_obsseq, str):
+            if assimilate_existing_obsseq != False:
+                raise ValueError('`assimilate_existing_obsseq` must be a string or False, but is', assimilate_existing_obsseq)
         
-        if isinstance(use_existing_obsseq, str):
-            print('Using existing observation sequence', use_existing_obsseq)
+        if isinstance(assimilate_existing_obsseq, str):
+            print('Using existing observation sequence', assimilate_existing_obsseq)
 
         # required attributes, derived from others
         self.dir_archive = self.dir_archive.replace('<exp>', self.name)
@@ -152,6 +153,7 @@ class Config(object):
         self.f_cfg_base = self.dir_archive + '/configs/'
         
         # write config to file
+        self.use_pickle = True
         self.f_cfg_current = self.generate_name()
         self.to_file(self.f_cfg_current)
         
@@ -167,7 +169,7 @@ class Config(object):
 
     def generate_name(self):
         random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-        return self.f_cfg_base+'/cfg_'+random_str+'.pkl'
+        return self.f_cfg_base+'/cfg_'+random_str+'.yaml'
 
     def update(self, **kwargs):
         """Update the configuration with new values
@@ -187,7 +189,10 @@ class Config(object):
     @staticmethod
     def from_file(fname: str) -> 'Config':
         """Read a configuration from a file"""
-        d = read_Config_as_dict(fname)
+        if True:
+            d = read_pickle(fname)
+        else:
+            d = read_yaml(fname)
         return Config(**d)
 
     def to_file(self, filename: str):
@@ -195,24 +200,30 @@ class Config(object):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         d = self.__dict__
         
-        with open(filename, 'wb') as handle:
-            pickle.dump(d, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        if self.use_pickle:
+            with open(filename, 'wb') as handle:
+                pickle.dump(d, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        else:
+            with open(filename, 'w') as f:
+                yaml.dump(d, f)
         
         if self.debug:
             print('Wrote config to', filename)
 
 
-def read_Config_as_dict(filename: str) -> dict:
+def read_pickle(filename: str) -> dict:
     """Read a dictionary from a python file,
     return as Config object
     """
     with open(filename, 'rb') as handle:
-        d = pickle.load(handle)
-    print('read config', filename)
-    return d
+        return pickle.load(handle)
+    
+def read_yaml(filename: str) -> dict:
+        with open(filename, 'r') as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
 
 def display_config(filename: str) -> None:
-    d = read_Config_as_dict(filename)
+    d = read_pickle(filename)
     pprint(d)
 
 def shell(args, pythonpath=None):
@@ -244,9 +255,8 @@ def copy(src, dst, remove_if_exists=True):
 def try_remove(f):
     try:
         os.remove(f)
-    except:
+    except FileNotFoundError:
         pass
-
 
 def mkdir(path):
     os.system('mkdir -p '+path)

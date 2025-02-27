@@ -223,11 +223,10 @@ def set_obserr_assimilate_in_obsseqout(oso, outfile="./obs_seq.out"):
         osf_prior (ObsSeq): python representation of obs_seq.final (output of filter in evaluate-mode without posterior)
                         contains prior values; used for parameterized errors
     """
-    obs_kind_nrs = obskind_read(cfg.dir_dart_src)
 
     for obscfg in cfg.assimilate_these_observations:
         kind_str = obscfg['kind']  # e.g. 'RADIOSONDE_TEMPERATURE'
-        kind = obs_kind_nrs[kind_str]  # e.g. 263
+        kind = cfg.obs_kind_nrs[kind_str]  # e.g. 263
 
         # modify observation error of each kind sequentially
         where_oso_iskind = oso.df.kind == kind
@@ -520,13 +519,14 @@ def get_obsseq_out(time, prior_path_exp, prior_init_time, prior_valid_time, lag=
     """
     use_ACF = False
     if 'assimilate_cloudfractions' in cfg:
-        use_ACF = True
+        if cfg.assimilate_cloudfractions:
+            use_ACF = True
 
     oso = None
-    if isinstance(cfg.use_existing_obsseq, str):
+    if isinstance(cfg.assimilate_existing_obsseq, str):
         # assume that the user wants to use an existing obs_seq.out file
 
-        f_obsseq = time.strftime(cfg.use_existing_obsseq)
+        f_obsseq = time.strftime(cfg.assimilate_existing_obsseq)
         if os.path.isfile(f_obsseq):
             # copy to run_DART folder
             copy(f_obsseq, cfg.dir_dart_run+'/obs_seq.out')
@@ -534,21 +534,33 @@ def get_obsseq_out(time, prior_path_exp, prior_init_time, prior_valid_time, lag=
 
         else:
             # explain the error if the file does not exist
-            raise IOError('cfg.use_existing_obsseq is not False. \n'
-                          + 'In this case, use_existing_obsseq should be a file path (wildcards %H, %M allowed)!\n'
-                          + 'But there is no file with this pattern: '+str(cfg.use_existing_obsseq))
+            raise IOError('cfg.assimilate_existing_obsseq is not False. \n'
+                          + 'In this case, assimilate_existing_obsseq should be a file path (wildcards %H, %M allowed)!\n'
+                          + 'But there is no file with this pattern: '+str(cfg.assimilate_existing_obsseq))
 
     elif use_ACF:
         # prepare observations with precomputed FO
-        pattern_prior = prior_path_exp + prior_init_time.strftime(
-            '/%Y-%m-%d_%H:%M/<iens>/') + prior_valid_time.strftime(cfg.first_guess_pattern)
+        CF_config = cfg.CF_config.copy()
+        f_prior_pattern = CF_config.pop('first_guess_pattern')
+        f_obs_pattern = time.strftime(CF_config.pop('f_obs_pattern'))
+        f_obs = glob.glob(f_obs_pattern)
+        if len(f_obs) == 0:
+            raise FileNotFoundError(f_obs_pattern + ' not found')
+        f_obs = f_obs[0]
+        
+        pattern_prior = '/'.join([prior_path_exp,
+                                  prior_init_time.strftime('/%Y-%m-%d_%H:%M/'),
+                                  '<iens>/',
+                                  prior_valid_time.strftime(f_prior_pattern),
+                                  ])
 
         from CloudFractionDA import obsseqout as cfoso
-        cfoso.write_obsseq(time, pattern_prior, 
-                           time.strftime(cfg.obs_file_pattern), 
-                           cfg.cloudfraction_variable,
-                           path_output=cfg.dir_dart_run + "/obs_seq.out",
-        ) #**ACF_config)
+        cfoso.write_obsseq(time, pattern_prior, f_obs,
+                           cfg.obs_kind_nrs,
+                           path_output = cfg.dir_dart_run + "/obs_seq.out",
+                           **CF_config,
+                           
+        )
 
     else:
         # do NOT use an existing obs_seq.out file
@@ -594,6 +606,8 @@ def main(cfg: Config):
     prior_init_time = cfg.prior_init_time
     prior_valid_time = cfg.prior_valid_time
     prior_path_exp = cfg.prior_path_exp
+    
+    cfg.obs_kind_nrs = obskind_read(cfg.dir_dart_src)
     
     # do_reject_smallFGD: triggers additional evaluations of prior & posterior
     do_reject_smallFGD = getattr(cfg, "do_reject_smallFGD", False)
