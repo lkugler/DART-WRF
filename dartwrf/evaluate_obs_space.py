@@ -21,9 +21,9 @@ def evaluate_one_time(assim_time, valid_time, use_other_obsseq=False):
      aso.prepare_prior_ensemble(valid_time, prior_init_time=assim_time, prior_valid_time=valid_time, prior_path_exp=cluster.archivedir)
      dart_nml.write_namelist()
 
-     if os.path.isfile(exp.use_existing_obsseq):
+     if os.path.isfile(exp.assimilate_existing_obsseq):
           # use the existing obs_seq.out file
-          shutil.copy(exp.use_existing_obsseq, cluster.dart_rundir+'/obs_seq.out')
+          shutil.copy(exp.assimilate_existing_obsseq, cluster.dart_rundir+'/obs_seq.out')
      else:
           # is there a pre-existing obs file from assimilation before?
           f_oso = valid_time.strftime(cluster.pattern_obs_seq_out)

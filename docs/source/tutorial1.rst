@@ -61,7 +61,7 @@ In case you want to generate new observations, like for an observing system simu
 
 .. code-block:: python
 
-    exp.use_existing_obsseq = False
+    exp.assimilate_existing_obsseq = False
     
 in this case, you need to set the path to WRF nature run files from where DART can generate observations:
 
@@ -77,7 +77,7 @@ You can use pre-existing observation files with
 
 .. code-block:: python
 
-    exp.use_existing_obsseq = '/usr/data/sim_archive/exp_ABC/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'
+    exp.assimilate_existing_obsseq = '/usr/data/sim_archive/exp_ABC/obs_seq_out/%Y-%m-%d_%H:%M_obs_seq.out'
     
 where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
 

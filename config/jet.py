@@ -2,7 +2,7 @@
 
 cluster_defaults = dict(
     max_nproc = 20,
-    max_nproc_for_each_ensemble_member = 16,
+    max_nproc_for_each_ensemble_member = 9,
     use_slurm = True,
 
     # binaries
@@ -20,7 +20,7 @@ cluster_defaults = dict(
 
     # paths used as input
     dir_wrf_src = '/jetfs/home/lkugler/data/compile/WRF-4.3/run',
-    dir_dart_src = '/jetfs/home/lkugler/data/compile/DART/DART-10.8.3_10pct/models/wrf/work/',
+    dir_dart_src = '/jetfs/home/lkugler/data/compile/DART/DART-10.8.3/models/wrf/work/',
     dir_rttov_src = '/jetfs/home/lkugler/data/compile/RTTOV13/rtcoef_rttov13/',
     dir_dartwrf_dev = '/jetfs/home/lkugler/DART-WRF/',
     
