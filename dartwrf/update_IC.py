@@ -1,17 +1,13 @@
 
-import os, sys, warnings
-import datetime as dt
+import os, sys
 import netCDF4 as nc
 from dartwrf.utils import Config
 
 def update_initials_in_WRF_rundir(cfg: Config) -> None:
     """Updates wrfrst-files in `/run_WRF/` directory 
     with posterior state from ./filter output, e.g. filter_restart_d01.0001
-
-    Args:
-        time (dt.datetime):     time of assimilation (directory preceeding ./assim_stage0/...)
     """
-    time = cfg.time
+    time = cfg.time  # dt.datetime
     
     use_wrfrst = True  # if wrfrst is used to restart (recommended)
     if use_wrfrst:
@@ -40,12 +36,14 @@ def update_initials_in_WRF_rundir(cfg: Config) -> None:
                     # update all other variables
                     for var in update_vars:
                         if var in ds_new.variables:
-                            var_new = var
+                            # regular case
+                            ds_new.variables[var][:] = ds_filter.variables[var][:]
+                            print('updated', var)
                         else:
-                            var_new = var+'_2'  # e.g. U_2, W_2, THM_2
-                        
-                        ds_new.variables[var_new][:] = ds_filter.variables[var][:]
-                        print('updated', var_new, 'from', var)
+                            # special case, where a variable has 2 time levels, e.g. THM_1, THM_2
+                            for var_suffix in ['_1', '_2']:
+                                ds_new.variables[var+var_suffix][:] = ds_filter.variables[var][:]
+                                print('updated', var+var_suffix)
 
                 print(ic_file, 'created, updated from', filter_out)
 
