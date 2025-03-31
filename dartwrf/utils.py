@@ -270,12 +270,6 @@ def copy_contents(src, dst):
     os.system('cp -rf '+src+'/* '+dst+'/')
 
 
-def clean_wrfdir(dir):
-    for s in ['wrfout_*', 'rsl.*', 'wrfrst_*']:
-        for f in glob.glob(dir+'/'+s):
-            os.remove(f)
-
-
 def symlink(src, dst):
     """Create a symbolic link from src to dst
     Creates the folder if it does not exist
