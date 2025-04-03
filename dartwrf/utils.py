@@ -270,10 +270,14 @@ def copy_contents(src, dst):
     os.system('cp -rf '+src+'/* '+dst+'/')
 
 
-def symlink(src, dst):
+def symlink(src, dst, check_if_source_exists=False):
     """Create a symbolic link from src to dst
     Creates the folder if it does not exist
     """
+    if check_if_source_exists:
+        if not os.path.exists(src):
+            raise FileNotFoundError(f"Source file {src} does not exist")
+        
     try:  # this file may not exist
         os.remove(dst)
     except OSError:

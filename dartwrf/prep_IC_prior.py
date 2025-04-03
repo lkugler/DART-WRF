@@ -1,6 +1,6 @@
 import os, sys, glob
 import datetime as dt
-from dartwrf.utils import copy, Config
+from dartwrf.utils import copy, Config, symlink
 
 """
 Sets initial condition data (wrfinput/wrfrst file) in the run_WRF directory for each ensemble member 
@@ -21,15 +21,12 @@ def create_wrfrst_in_WRF_rundir(time: dt.datetime, prior_init_time: dt.datetime,
     """
     for iens in range(1, cfg.ensemble_size+1):
         dir_wrf_run = cfg.dir_wrf_run.replace('<exp>', cfg.name).replace('<ens>', str(iens))
-        
-        for f in glob.glob(dir_wrf_run+'/wrfrst_*'):
-            os.remove(f)
     
         prior_wrfrst = prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
                        +str(iens)+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
         wrfrst = dir_wrf_run + time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
-        print('copy prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
-        copy(prior_wrfrst, wrfrst)
+        print('linking prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
+        symlink(prior_wrfrst, wrfrst, check_if_source_exists=True)
         
 
 def create_updated_wrfinput_from_wrfout(time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str, new_start_time: dt.datetime) -> None:
