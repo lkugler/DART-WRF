@@ -15,7 +15,7 @@ Ad 2: copies wrfrst to run_WRF directory
 
 """
 
-def create_wrfrst_in_WRF_rundir(time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str) -> None:
+def create_wrfrst_in_WRF_rundir(cfg, time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str) -> None:
     """Copy WRF restart files to run_WRF directory 
     These files will be used as initial conditions for the next WRF run
     """
@@ -25,11 +25,14 @@ def create_wrfrst_in_WRF_rundir(time: dt.datetime, prior_init_time: dt.datetime,
         prior_wrfrst = prior_path_exp + prior_init_time.strftime('/%Y-%m-%d_%H:%M/') \
                        +str(iens)+time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
         wrfrst = dir_wrf_run + time.strftime('/wrfrst_d01_%Y-%m-%d_%H:%M:%S')
-        print('linking prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
-        symlink(prior_wrfrst, wrfrst, check_if_source_exists=True)
+        # we need a temporary copy of the wrfrst file, because there could be multiple experiments
+        # accessing the same file at the same time
+        print('copying prior (wrfrst)', prior_wrfrst, 'to', wrfrst)
+        copy(prior_wrfrst, wrfrst)
+
         
 
-def create_updated_wrfinput_from_wrfout(time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str, new_start_time: dt.datetime) -> None:
+def create_updated_wrfinput_from_wrfout(cfg, time: dt.datetime, prior_init_time: dt.datetime, prior_path_exp: str, new_start_time: dt.datetime) -> None:
     """Create a new wrfinput file from wrfout file
     Output is created inside the WRF run directory
     
@@ -58,21 +61,22 @@ def create_updated_wrfinput_from_wrfout(time: dt.datetime, prior_init_time: dt.d
         os.system('ncks -A -v XTIME,Times '+template_time+' '+new_start_wrfinput)
         print('overwritten times from', template_time)
 
-
-if __name__ == '__main__':
-    cfg = Config.from_file(sys.argv[1])
-    
+def main(cfg):
     prior_valid_time = cfg.prior_valid_time
     prior_init_time = cfg.prior_init_time
     prior_path_exp = cfg.prior_path_exp
-    
+
     if 'start_from_wrfout' in cfg:
         if cfg.start_from_wrfout:
             # use_wrfout_as_wrfinput
             # Caution: Even without assimilation increments, this will change the model forecast
             new_start_time = cfg.new_start_time
-            create_updated_wrfinput_from_wrfout(prior_valid_time, prior_init_time, prior_path_exp, new_start_time)
+            create_updated_wrfinput_from_wrfout(cfg, prior_valid_time, prior_init_time, prior_path_exp, new_start_time)
             sys.exit(0)
 
     # other case:
-    create_wrfrst_in_WRF_rundir(prior_valid_time, prior_init_time, prior_path_exp)
+    create_wrfrst_in_WRF_rundir(cfg, prior_valid_time, prior_init_time, prior_path_exp)
+
+if __name__ == '__main__':
+    cfg = Config.from_file(sys.argv[1])
+    main(cfg)
