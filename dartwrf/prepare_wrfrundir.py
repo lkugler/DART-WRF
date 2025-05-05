@@ -10,10 +10,8 @@ Args:
 Returns:
     None
 """
-import os, sys, shutil
-import datetime as dt
-
-from dartwrf.utils import Config, symlink, link_contents, try_remove
+import os, sys
+from dartwrf.utils import Config, symlink, link_contents
 from dartwrf import prepare_namelist
 
 def run(cfg: Config):

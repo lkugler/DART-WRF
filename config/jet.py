@@ -33,9 +33,10 @@ cluster_defaults = dict(
     WRF_exe_template = '/jetfs/home/lkugler/DART-WRF/templates/run_WRF.jet.sh',
     WRF_ideal_template = '/jetfs/home/lkugler/DART-WRF/templates/run_WRF_ideal.sh',
 
-    slurm_kwargs = {"account": "lkugler", "partition": "all", "time": "00:30:00",
-                    "ntasks": "1", "ntasks-per-core": "1", "mem": "30G",
-                    "mail-type": "FAIL", "mail-user": "lukas.kugler@univie.ac.at"},
+    slurm_kwargs = {"account": "lkugler", "partition": "devel", "time": "30",
+                    "nodes": "1", "ntasks": "1", "ntasks-per-core": "1", "mem": "25G",
+                    #"exclude": "jet07,jet11,jet16,jet18,jet19",
+                    "mail-type": "FAIL,TIME_LIMIT_80", "mail-user": "lukas.kugler@univie.ac.at"},
 
     # WRF file format, will only change if WRF changes
     wrfout_format = '/wrfout_d01_%Y-%m-%d_%H:%M:%S',

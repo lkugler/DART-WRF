@@ -31,7 +31,7 @@
  max_step_increase_pct               = 5, 51, 51,
  starting_time_step                  = 4,
  max_time_step                       = 16,
- min_time_step                       = 4,
+ min_time_step                       = 3,
  time_step                           = 8,
  time_step_fract_num                 = 0,
  time_step_fract_den                 = 1,

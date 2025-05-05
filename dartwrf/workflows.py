@@ -137,7 +137,7 @@ class WorkFlows(object):
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
 
         id = self.run_job(cmd, cfg, depends_on=[depends_on],
-                          **{"ntasks": "20", "time": "30", "mem": "200G", "ntasks-per-node": "20"})
+                          **{"ntasks": "20", "mem": "200G", "ntasks-per-node": "20"})
         return id
 
 
@@ -173,7 +173,7 @@ class WorkFlows(object):
                             ).replace('<wrf_rundir_base>', cfg.dir_wrf_run.replace('<ens>', '$IENS')
                             ).replace('<wrf_modules>', cfg.wrf_modules,
                             )
-        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="30", array="1-"+str(cfg.ensemble_size))
+        id = self.run_job(cmd, cfg, depends_on=[depends_on], array="1-"+str(cfg.ensemble_size))
         return id
     
     def run_WRF(self, cfg, depends_on=None):
@@ -184,11 +184,12 @@ class WorkFlows(object):
         end = cfg.WRF_end
         
         # SLURM configuration for WRF
-        slurm_kwargs = {"array": "1-"+str(cfg.ensemble_size),
-                      "nodes": "1", 
-                      "ntasks": str(cfg.max_nproc_for_each_ensemble_member), 
-                      "ntasks-per-core": "1", "mem": "90G", 
-                      "ntasks-per-node": str(cfg.max_nproc_for_each_ensemble_member),}
+        slurm_kwargs = {
+                "partition": "general",
+                "array": "1-"+str(cfg.ensemble_size),
+                "ntasks": str(cfg.max_nproc_for_each_ensemble_member), 
+                "ntasks-per-core": "1", "mem": "100G", 
+                "ntasks-per-node": str(cfg.max_nproc_for_each_ensemble_member),}
 
         # command from template file
         wrf_cmd = script_to_str(cfg.WRF_exe_template
@@ -203,13 +204,11 @@ class WorkFlows(object):
 
         # run WRF ensemble
         time_in_simulation_hours = (end-start).total_seconds()/3600
-        # runtime_wallclock_mins_expected = int(time_in_simulation_hours*15*1.5 + 15)  
-        runtime_wallclock_mins_expected = int(time_in_simulation_hours*30*1.5 + 15)  
-        # usually max 15 min/hour + 50% margin + 15 min buffer
+        runtime_wallclock_mins_expected = int(time_in_simulation_hours*.5)*60 + 20
+        # usually max 15 min/hour + 100% margin + 15 min buffer
         slurm_kwargs.update({"time": str(runtime_wallclock_mins_expected)})
-        if runtime_wallclock_mins_expected > 20:
-            slurm_kwargs.update({"partition": "amd"})
-            #cfg_update.update({"exclude": "jet03"})
+        # if runtime_wallclock_mins_expected > 30:  # this means jobs will mostly take < 15 mins
+        slurm_kwargs.update({"constraint": "zen4"})
 
         id = self.run_job(wrf_cmd, cfg, depends_on=[id], **slurm_kwargs)
         return id
@@ -224,8 +223,9 @@ class WorkFlows(object):
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
 
         id = self.run_job(cmd, cfg, depends_on=[depends_on], 
-                          **{"ntasks": "20", "time": "30", "mem": "110G",
-                            "ntasks-per-node": "20", "ntasks-per-core": "1"}, 
+                          **{"ntasks": str(cfg.max_nproc), "time": "30", 
+                             "mem": "110G", "partition": "devel",
+                             "ntasks-per-node": str(cfg.max_nproc), "ntasks-per-core": "1"}, 
                      )
         return id
 
@@ -246,7 +246,7 @@ class WorkFlows(object):
         """
         path_to_script = self.dir_dartwrf_run + '/prep_IC_prior.py'
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
-        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="10")
+        id = self.run_job(cmd, cfg, depends_on=[depends_on])
         return id
 
     def update_IC_from_DA(self, cfg, depends_on=None):
@@ -262,7 +262,7 @@ class WorkFlows(object):
         path_to_script = self.dir_dartwrf_run + '/update_IC.py'
         cmd = ' '.join([self.python, path_to_script, cfg.f_cfg_current])
 
-        id = self.run_job(cmd, cfg, depends_on=[depends_on], time="10")
+        id = self.run_job(cmd, cfg, depends_on=[depends_on])
         return id
 
     def run_RTTOV(self, cfg, depends_on=None):
@@ -275,17 +275,22 @@ class WorkFlows(object):
                         '$SLURM_ARRAY_TASK_ID'])
 
         id = self.run_job(cmd, cfg, depends_on=[depends_on],
-                          **{"ntasks": "1", "time": "60", "mem": "10G", 
-                                "array": "1-"+str(cfg.ensemble_size)})
+                          **{"ntasks": "1", "mem": "15G", "array": "1-"+str(cfg.ensemble_size)})
         return id
 
-    def verify(self, cfg: Config, depends_on=None):
+    def verify(self, cfg: Config, init=False,
+               depends_on=None):
         """Not included in DART-WRF"""
-        cmd = ' '.join(['python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py', 
-                        cfg.name, cfg.verify_against, #cfg.time.strftime('%y%m%d_%H:%M'),
-                        'sat', 'wrf', 'has_node', 'np=10', 'mem=250G'])
+        if not init:
+            cmd = ' '.join(['python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py', 
+                            cfg.name, cfg.verify_against, 
+                            'sat', 'wrf', 'has_node', 'np=10', 'mem=250G'])
+        else:
+            cmd = ' '.join(['python /jetfs/home/lkugler/osse_analysis/plot_from_raw/analyze_fc.py', 
+                            cfg.name, cfg.verify_against, 'init='+cfg.time.strftime('%Y%m%d_%H:%M'), 'force',
+                            'sat', 'wrf', 'has_node', 'np=10', 'mem=250G'])
         self.run_job(cmd, cfg, depends_on=[depends_on],
-                         **{"time": "03:00:00", "mail-type": "FAIL,END", 
+                         **{"time": "04:00:00", "mail-type": "FAIL", "partition": "general",
                                     "ntasks": "10", "ntasks-per-node": "10", 
                                     "ntasks-per-core": "1", "mem": "250G"})
 

@@ -120,6 +120,7 @@ class Config(object):
         self.python = 'python'
         self.pattern_obs_seq_out = pattern_obs_seq_out.replace('<archivedir>', self.dir_archive)
         self.pattern_obs_seq_final = pattern_obs_seq_final.replace('<archivedir>', self.dir_archive)
+        self.obs_kind_nrs = dict()  # will be filled later
         
         # optional
         self.assimilate_existing_obsseq = assimilate_existing_obsseq
@@ -401,3 +402,37 @@ def obskind_read(dart_srcdir: str) -> dict:
             kind_nr = int(data[1].strip())
             obskind_nrs[kind_str] = kind_nr
     return obskind_nrs
+
+def run_bash_command_in_directory(command, directory):
+    """Runs a Bash command in the specified directory.
+
+    Args:
+        command (str): The Bash command to execute.
+        directory (str): The path to the directory where the command should be run.
+
+    Returns:
+        subprocess.CompletedProcess: An object containing information about the executed command.
+    """
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=directory,
+            check=True,  # Raise an exception for non-zero exit codes
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True  # Decode stdout and stderr as text
+        )
+        print("Command executed successfully.")
+        print("Stdout:", result.stdout)
+        if result.stderr:
+            print("Stderr:", result.stderr)
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing command: {e}")
+        print("Stdout:", e.stdout)
+        print("Stderr:", e.stderr)
+        return e
+    except FileNotFoundError:
+        print(f"Error: Directory not found: {directory}")
+        return None
