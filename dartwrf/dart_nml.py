@@ -420,6 +420,7 @@ def write_namelist(cfg: Config, just_prior_values=False) -> dict:
     # write to file
     dir_dart_run = cfg.dir_dart_run.replace('<exp>', cfg.name)
     write_namelist_from_dict(nml, dir_dart_run + "/input.nml")
+    print('Wrote namelist to', dir_dart_run + "/input.nml")
 
     # append section for RTTOV
     if hasattr(cfg, 'rttov_nml'):
@@ -433,4 +434,3 @@ if __name__ == "__main__":
     cfg = Config.from_file(sys.argv[1])
 
     nml = write_namelist(cfg)
-    print(nml)
