@@ -26,7 +26,9 @@ def prepare_DART_grid_template(cfg):
         copy(f_wrfout_dummy, cfg.dir_dart_run + "/wrfinput_d01")
     
         if cfg.geo_em_forecast:
-            wrfout_add_geo.run(cfg, cfg.geo_em_forecast, cfg.dir_dart_run + "/wrfinput_d01")
+            wrfout_add_geo.run(cfg.geo_em_forecast, 
+                               cfg.dir_dart_run + "/wrfinput_d01",
+                               cfg.ncks)
     else:
         pass # what now?
 

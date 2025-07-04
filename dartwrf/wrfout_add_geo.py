@@ -1,6 +1,6 @@
 import os
 import netCDF4 as nc
-from dartwrf.utils import Config
+import argparse
 
 fields_old = ["XLAT_M",   "XLONG_M",]
              # "XLONG_U",  "XLONG_V",     
@@ -10,10 +10,11 @@ fields_new = ["XLAT",     "XLONG",]
              # "XLONG_U",  "XLONG_V",
              # "XLAT_U",    "XLAT_V"]
 
+debug = False
 
-def run(cfg: Config, 
-        geo_data_file: str,
-        wrfout_file: str) -> None: #geo_data_file, wrfout_file):
+def run(geo_data_file: str,
+        wrfout_file: str,
+        path_ncks: str) -> None:
     """Add geogrid data to a wrfout file
     DART needs a georeference, but ideal.exe does not provide it
 
@@ -30,8 +31,9 @@ def run(cfg: Config,
     print('updating geodata in', wrfout_file, 'from', geo_data_file)
     geo_ds = nc.Dataset(geo_data_file, 'r')
     wrfinp_ds = nc.Dataset(wrfout_file, 'r+')
-    # print('wrfinput.variables', list(wrfinp_ds.variables))
-    # print('geo_em.variables',  list(geo_ds.variables))
+    if debug:
+        print('wrfinput.variables', list(wrfinp_ds.variables))
+        print('geo_em.variables',  list(geo_ds.variables))
 
     for old, new in zip(fields_old, fields_new):
 
@@ -56,4 +58,14 @@ def run(cfg: Config,
     geo_ds.close()
 
     # overwrite attributes
-    os.system(cfg.ncks+' -A -x '+geo_data_file+' '+wrfout_file)
+    os.system(path_ncks+' -A -x '+geo_data_file+' '+wrfout_file)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Add geogrid data to a wrfout file for DART.")
+    parser.add_argument("geo_data_file", type=str, help="Path to geogrid data file (geo_em*).")
+    parser.add_argument("wrfout_file", type=str, help="Path to WRF output file (wrfout*).")
+    parser.add_argument("path_ncks", type=str, help="Path to ncks executable.")
+
+    args = parser.parse_args()
+
+    run(args.geo_data_file, args.wrfout_file, args.path_ncks)
