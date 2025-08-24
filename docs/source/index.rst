@@ -41,10 +41,10 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
 .. toctree::
    :maxdepth: 2
 
-   1_observations
-   2_assimilate
-   4_cycling
-   5_customization
+   1_assimilate
+   2_wrf
+   3_cycling
+   4_customization
 
 
 Other helpful resources
