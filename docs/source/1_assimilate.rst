@@ -7,23 +7,11 @@ Directory structure
 
 There are five important directories.
 
-1) A directory where you compile DART. 
-E.g. `/jetfs/scratch/username/DART`. 
-Download and compile DART to this directory, see `docs.dart.ucar.edu<https://docs.dart.ucar.edu/en/latest>`_.
-
-2) A directory where you develop DART-WRF and start experiments. 
-E.g. `/jetfs/scratch/username/DART-WRF`. 
-Download DART-WRF to this directory, ``git clone https://gitlab.phaidra.org/dataassimilation/DART-WRF.git``.
-
-3) A directory where you store your experiment data.
-To run this tutorial, download sample data (543 MB) using 
-``wget https://zenodo.org/records/12614519/files/raw_data.zip; unzip raw_data.zip``.
-
-4) A directory to run DART in, containing temporary files
-E.g. `/jetfs/scratch/username/run_DART`.
-
-5) A directory to run WRF in, containing temporary files
-E.g. `/jetfs/scratch/username/run_WRF`.
+1. A directory where you compile DART. E.g. ``/jetfs/scratch/username/DART``. Download and compile DART to this directory, see `docs.dart.ucar.edu <https://docs.dart.ucar.edu/en/latest>`_.
+2. A directory where you develop DART-WRF and start experiments. E.g. ``/jetfs/scratch/username/DART-WRF``. Download DART-WRF to this directory, ``git clone https://gitlab.phaidra.org/dataassimilation/DART-WRF.git``.
+3. A directory where you store your experiment data. To run this tutorial, download sample data (543 MB) using ``wget https://zenodo.org/records/12614519/files/raw_data.zip; unzip raw_data.zip``.
+4. A directory to run DART in, containing temporary files. E.g. ``/jetfs/scratch/username/run_DART``.
+5. A directory to run WRF in, containing temporary files. E.g. ``/jetfs/scratch/username/run_WRF``.
 
 
 Basic configuration
@@ -42,9 +30,9 @@ Workflow
 Now, we can set up a workflow in the script ``tutorial_1.py``. 
 
 Customize the settings,
-* `expname` should be a unique experiment name and will be used as folder name
-* `ensemble_size` is the ensemble size
-* `update_vars` are the WRF variables which shall be updated by the assimilation
+* ``expname`` should be a unique experiment name and will be used as folder name
+* ``ensemble_size`` is the ensemble size
+* ``update_vars`` are the WRF variables which shall be updated by the assimilation
 
 
 .. code-block:: python
@@ -81,7 +69,7 @@ Options
 *******
 
 * To create observations one by one, follow the instructions in the DART documentation for 
-the `perfect_model_obs` program.
+the ``perfect_model_obs`` program.
 * To use existing obs_seq files, set 
 ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` 
 where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.

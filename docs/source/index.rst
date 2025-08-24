@@ -43,7 +43,7 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
 
    1_assimilate
    2_wrf
-   3_cycling
+   notebooks/3_cycling
    4_customization
 
 
