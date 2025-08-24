@@ -66,13 +66,10 @@ Customize the settings,
 
 
 Options
-*******
+=======
 
-* To create observations one by one, follow the instructions in the DART documentation for 
-the ``perfect_model_obs`` program.
-* To use existing obs_seq files, set 
-``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` 
-where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
+* To create observations one by one, follow the instructions in the DART documentation for the ``perfect_model_obs`` program.
+* To use existing obs_seq files, set ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
 * To create observations on the fly, set ``assimilate_existing_obsseq = False``.
     
 
@@ -84,7 +81,7 @@ For a description of DART's parameters, see `the official DART documentation <ht
 
 
 Observations
-============
+************
 
 If you want to assimilate one observation, use 
 
@@ -104,7 +101,7 @@ If you want to assimilate one observation, use
 
 
 Multiple observations
-*********************
+=====================
 
 To generate a grid of observations with homogeneous observation density, 
 set ``km_between_obs``and ``skip_border_km``.
@@ -132,7 +129,7 @@ For vertical observations, set the ``heights`` parameter to specify the vertical
 
 
 Run the workflow
-================
+****************
 
 Execute the programs by running ``python tutorial_1.py``.
 
