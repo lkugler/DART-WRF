@@ -30,6 +30,7 @@ Workflow
 Now, we can set up a workflow in the script ``tutorial_1.py``. 
 
 Customize the settings,
+
 * ``expname`` should be a unique experiment name and will be used as folder name
 * ``ensemble_size`` is the ensemble size
 * ``update_vars`` are the WRF variables which shall be updated by the assimilation
