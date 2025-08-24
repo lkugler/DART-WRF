@@ -1,5 +1,8 @@
-Adding and modifying scripts
-============================
+Developer guide
+===============
+
+Overview of functionality
+*************************
 
 Workflow methods are defined in the :class:`dartwrf.workflows.WorkFlows` class (`dartwrf/workflows.py`).
 A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this
@@ -39,3 +42,6 @@ Let's say you need a new script ``verification.py``. Then you need to do the fol
 #. Write the script ``verification.py`` and parse the command-line arguments.
 #. Lastly, call the workflow method ``WorkFlow.call_verif()`` from your control-script, e.g. ``cycled_exp.py``.
 
+
+Example: Adding an observation
+------------------------------

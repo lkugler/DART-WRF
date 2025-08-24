@@ -12,7 +12,8 @@ DART-WRF documentation
 Installation
 *************
 
-DART-WRF can be downloaded from `github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_. To use it, you don't need to install it, but only its requirements:
+DART-WRF can be downloaded from `github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_. 
+To use it, install its requirements:
 
 .. code-block::
    
@@ -25,11 +26,12 @@ Note that `pysolar` is necessary to generate synthetic satellite observations.
 First steps
 ************
 
-To get started, go through the tutorials in the :ref:`tutorials` section.
-:ref:`Tutorial 1<Tutorial 1: The assimilation step>` shows you how to configure DART-WRF, generate observations and assimilate them.
-:ref:`Tutorial 2<Tutorial 2: Forecast after DA>` shows you how to run a WRF forecast with the output from data assimilation.
-:ref:`Tutorial 3<Tutorial 3: Cycle forecast and assimilation>` shows you how assimilation and forecast can be run in a cycle.
-See also the `DART-WRF overview over directory structure, in- and output files. <https://github.com/lkugler/DART-WRF/blob/17428cb29a9526c17d4878125a046777f0892996/docs/source/DART_WRF_visual.pdf>`_
+It is recommended to go through tutorials, to get familiar with DART-WRF's capabilities.
+:ref:`Tutorial 1<Tutorial 1: Observations>` shows you how to create observations from a nature run simulation.
+:ref:`Tutorial 2<Tutorial 2: The assimilation>` shows you how to combine observations and prior forecasts into an analysis.
+:ref:`Tutorial 3<Tutorial 3: Forecast after DA>` shows you how to run a WRF forecast with an analysis.
+:ref:`Tutorial 4<Tutorial 4: Cycle forecast and assimilation>` combines all steps into a single script.
+See also `a graphical overview over DART-WRF's directory structure. <https://github.com/lkugler/DART-WRF/blob/17428cb29a9526c17d4878125a046777f0892996/docs/source/DART_WRF_visual.pdf>`_
 
 .. toctree::
    :hidden:
@@ -38,12 +40,11 @@ See also the `DART-WRF overview over directory structure, in- and output files. 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
 
-   tutorial1
-   tutorial2
-   notebooks/tutorial3
-   custom_scripts
+   1_observations
+   2_assimilate
+   4_cycling
+   5_customization
 
 
 Other helpful resources
