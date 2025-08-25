@@ -3,6 +3,6 @@
 dartwrf.egg*
 __*
 .vscode
-docs/build
+docs/_*
 not-public*
 config/*
