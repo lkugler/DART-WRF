@@ -9,22 +9,8 @@ DART-WRF documentation
 * on a computing cluster or on your local machine.
 
 
-Installation
-*************
-
-DART-WRF can be downloaded from `GitHub <https://github.com/lkugler/DART-WRF>`_ or `GitLab <https://gitlab.phaidra.org/dataassimilation/DART-WRF/>`_.
-To use it, install its requirements:
-
-.. code-block::
-   
-   git clone https://github.com/lkugler/DART-WRF.git
-   pip install xarray netCDF4 docopt pysolar==0.10.0
-
-Note that `pysolar` is necessary to generate synthetic satellite observations.
-
-
-First steps
-************
+Goals of this documentation
+---------------------------
 
 It is recommended to go through tutorials, to get familiar with DART-WRF's capabilities.
 Tutorial 1 shows you how to create observations from a nature run simulation. 
@@ -37,6 +23,7 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
    :hidden:
 
    Home <self>
+   setup
 
 .. toctree::
    :maxdepth: 2
@@ -49,7 +36,7 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
 
 
 Other helpful resources
-************************
+-----------------------
 
 * `DART documentation <https://docs.dart.ucar.edu/en/latest/README.html>`_
 * `WRF user guide <http://www2.mmm.ucar.edu/wrf/users/docs/user_guide_v4/v4.2/WRFUsersGuide_v42.pdf>`_
