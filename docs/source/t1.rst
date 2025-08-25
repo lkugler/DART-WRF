@@ -2,15 +2,11 @@ Tutorial 1: Assimilate
 #######################
 
 
-Set up a workflow
------------------
-
 Now, we can set up a workflow in the script ``tutorial_1.py``. 
+In the following, its contents are explained step-by-step.
 
-Imports
-^^^^^^^^
 
-The first block of the imports is fixed
+The first block of imports never changes.
 
 .. code-block:: python
 
@@ -19,13 +15,11 @@ The first block of the imports is fixed
     from dartwrf.utils import Config
 
 
-Configuration
-^^^^^^^^^^^^^
 
-Defaults
-^^^^^^^^^
+Default configuration
+^^^^^^^^^^^^^^^^^^^^^
 
-The second block of imports loads dictionaries which contain default settings.
+A second block of imports loads dictionaries which contain default settings.
 You can customize those by modification of ``config/jet_1node.py`` and ``config/defaults.py``.
 
 .. code-block:: python

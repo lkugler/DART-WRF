@@ -46,6 +46,7 @@ Other helpful resources
    :hidden:
    :caption: Reference
    
+   modules
    genindex 
    
 
