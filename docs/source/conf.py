@@ -27,7 +27,7 @@ extensions = [
     'sphinx_rtd_theme',
 ]
 
-autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils']
+autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4',]
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
