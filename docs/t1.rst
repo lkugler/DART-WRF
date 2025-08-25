@@ -129,6 +129,28 @@ For vertical observations, set the ``heights`` parameter to specify the vertical
     assimilate_these_observations = [t,]
 
 
+Modify localization radius
+**************************
+
+To modify the localization radius for an observation, set the ``loc_horiz_km`` and ``loc_vert_km`` parameters in the observation dictionary:
+
+.. code-block:: python
+
+    t = dict(..., loc_horiz_km=100, loc_vert_km=5)
+    assimilate_these_observations = [t,]
+
+
+Modify observation error
+************************
+
+To assimilate observations assuming a larger error, set the ``error_assimilate`` parameter in the observation dictionary, e.g.:
+
+.. code-block:: python
+
+    t = dict(..., error_assimilate=1.2)
+    assimilate_these_observations = [t,]
+
+
 Run the workflow
 ****************
 
