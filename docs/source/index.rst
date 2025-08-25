@@ -40,6 +40,7 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
 
 .. toctree::
    :maxdepth: 2
+   :caption: Tutorials
 
    1_assimilate
    2_wrf
