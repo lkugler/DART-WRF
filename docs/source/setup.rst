@@ -1,14 +1,14 @@
 Setup DART-WRF
 ==============
 
-Install DART
-------------
+1) Install DART
+^^^^^^^^^^^^^^^^^^^
 
 Download and compile DART to this directory, see `docs.dart.ucar.edu <https://docs.dart.ucar.edu/en/latest>`_.
 
 
-Install DART-WRF
-----------------
+2) Install DART-WRF
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 DART-WRF can be downloaded from `GitHub <https://github.com/lkugler/DART-WRF>`_ or `GitLab <https://gitlab.phaidra.org/dataassimilation/DART-WRF/>`_.
 To use it, install its requirements:
@@ -21,8 +21,8 @@ To use it, install its requirements:
 Note that `pysolar` is necessary to generate synthetic satellite observations.
 
 
-Data directory
---------------
+3) Data directory
+^^^^^^^^^^^^^^^^^^^
 
 Create a directory where you store your experiment data.
 E.g. ``/jetfs/scratch/username/data``.
@@ -45,10 +45,6 @@ Additional directories are created at runtime:
 5. A directory to run WRF in, containing temporary files. E.g. ``/jetfs/scratch/username/run_WRF``.
 
 
-Basic configuration
--------------------
-
-Set these directories and other parameters in a configuration.
-The file ``DART-WRF/config/jet_1node.py`` contains an example.
-The parameters are explained in the API reference :class:`dartwrf.utils.Config` (code in ``dartwrf/utils.py``).
-
+Before running DART-WRF, you need to set paths, specifically the parameters to :class:`dartwrf.utils.Config`.
+See the file ``DART-WRF/config/jet_1node.py`` as an example.
+The settings will be imported later.

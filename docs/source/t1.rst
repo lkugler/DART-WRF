@@ -2,39 +2,12 @@ Tutorial 1: Assimilate
 #######################
 
 
-Directory structure
-*******************
-
-There are five important directories.
-
-1. A directory where you compile DART. E.g. ``/jetfs/scratch/username/DART``. Download and compile DART to this directory, see `docs.dart.ucar.edu <https://docs.dart.ucar.edu/en/latest>`_.
-2. A directory where you develop DART-WRF and start experiments. E.g. ``/jetfs/scratch/username/DART-WRF``. Download DART-WRF to this directory, ``git clone https://gitlab.phaidra.org/dataassimilation/DART-WRF.git``.
-3. A directory where you store your experiment data. To run this tutorial, download sample data (543 MB) using ``wget https://zenodo.org/records/12614519/files/raw_data.zip; unzip raw_data.zip``.
-4. A directory to run DART in, containing temporary files. E.g. ``/jetfs/scratch/username/run_DART``.
-5. A directory to run WRF in, containing temporary files. E.g. ``/jetfs/scratch/username/run_WRF``.
-
-
-Basic configuration
-*******************
-
-Set these directories and other parameters in a configuration, 
-you can take ``DART-WRF/config/jet_1node.py`` as an example.
-The parameters are explained in the API reference :class:`dartwrf.utils.Config` 
-(code in ``dartwrf/utils.py``).
-
-
-
-Workflow
-********
-
 Now, we can set up a workflow in the script ``tutorial_1.py``. 
 
-Customize the settings,
+Imports
+********
 
-* ``expname`` should be a unique experiment name and will be used as folder name
-* ``ensemble_size`` is the ensemble size
-* ``update_vars`` are the WRF variables which shall be updated by the assimilation
-
+The first block of the imports is fixed
 
 .. code-block:: python
 
@@ -42,10 +15,30 @@ Customize the settings,
     from dartwrf.workflows import WorkFlows
     from dartwrf.utils import Config
 
+
+The second block contains default for your settings, ``config/jet_1node.py`` and ``config/defaults.py``.
+
+.. code-block:: python
+
     from config.jet_1node import cluster_defaults
     from config.defaults import dart_nml, t2m
 
-    cfg = Config(name='exp1',
+
+Now you can specify other parameters to the config (or overwrite defaults):
+
+* ``name`` should be a unique experiment name and will be used as folder name
+* ``ensemble_size`` is the ensemble size
+* ``update_vars`` are the WRF variables which shall be updated by the assimilation
+* ``time`` is the time of the assimilation
+
+**Which parameters are required?** This depends on the code you're running. 
+The advantage of this behavior is that you can add parameters in any function and add it as additional argument to  :class:`dartwrf.utils.Config`.
+
+
+.. code-block:: python
+
+    cfg = Config(
+        name='exp1',
         ensemble_size = 10,
         dart_nml = dart_nml,
 
@@ -60,14 +53,18 @@ Customize the settings,
         update_vars = ['THM', 'PH', 'MU', 'QVAPOR',],
         **cluster_defaults)
 
+
+Lastly, you can set up and run the workflow:
+
+.. code-block:: python
+
     w = WorkFlows(cfg)
     w.prepare_WRFrundir(cfg)
     id = w.assimilate(cfg, depends_on=id)
 
 
-
-Options
-=======
+Observations
+************
 
 * To create observations one by one, follow the instructions in the DART documentation for the ``perfect_model_obs`` program.
 * To use existing obs_seq files, set ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
@@ -80,9 +77,8 @@ them as arguments to the :class:`dartwrf.utils.Config` instance.
 For a description of DART's parameters, see `the official DART documentation <https://docs.dart.ucar.edu/>`_.
 
 
-
-Observations
-************
+Example: single observation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to assimilate one observation, use 
 
@@ -102,7 +98,7 @@ If you want to assimilate one observation, use
 
 
 Multiple observations
-=====================
+^^^^^^^^^^^^^^^^^^^^^^
 
 To generate a grid of observations with homogeneous observation density, 
 set ``km_between_obs``and ``skip_border_km``.
@@ -130,7 +126,7 @@ For vertical observations, set the ``heights`` parameter to specify the vertical
 
 
 Modify localization radius
-**************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To modify the localization radius for an observation, set the ``loc_horiz_km`` and ``loc_vert_km`` parameters in the observation dictionary:
 
@@ -141,7 +137,7 @@ To modify the localization radius for an observation, set the ``loc_horiz_km`` a
 
 
 Modify observation error
-************************
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To assimilate observations assuming a larger error, set the ``error_assimilate`` parameter in the observation dictionary, e.g.:
 
@@ -152,7 +148,7 @@ To assimilate observations assuming a larger error, set the ``error_assimilate``
 
 
 Run the workflow
-****************
+*****************
 
 Execute the programs by running ``python tutorial_1.py``.
 
