@@ -12,7 +12,7 @@ DART-WRF documentation
 Installation
 *************
 
-DART-WRF can be downloaded from `github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_. 
+DART-WRF can be downloaded from `GitHub <https://github.com/lkugler/DART-WRF>`_ or `GitLab <https://gitlab.phaidra.org/dataassimilation/DART-WRF/>`_.
 To use it, install its requirements:
 
 .. code-block::

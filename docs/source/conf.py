@@ -6,9 +6,9 @@ import sys
 # -- Project information
 
 project = 'DART-WRF'
-copyright = '2023, Lukas Kugler'
+copyright = '2025, University of Vienna'
 author = 'Lukas Kugler'
-release = '2023.2.21'
+release = '2025.8'
 
 # -- General configuration
 sys.path.insert(0, os.path.abspath('../../'))
