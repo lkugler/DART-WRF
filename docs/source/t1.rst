@@ -2,10 +2,13 @@ Tutorial 1: Assimilate
 #######################
 
 
+Set up a workflow
+-----------------
+
 Now, we can set up a workflow in the script ``tutorial_1.py``. 
 
 Imports
-********
+^^^^^^^^
 
 The first block of the imports is fixed
 
@@ -16,7 +19,14 @@ The first block of the imports is fixed
     from dartwrf.utils import Config
 
 
-The second block contains default for your settings, ``config/jet_1node.py`` and ``config/defaults.py``.
+Configuration
+^^^^^^^^^^^^^
+
+Defaults
+^^^^^^^^^
+
+The second block of imports loads dictionaries which contain default settings.
+You can customize those by modification of ``config/jet_1node.py`` and ``config/defaults.py``.
 
 .. code-block:: python
 
@@ -24,47 +34,24 @@ The second block contains default for your settings, ``config/jet_1node.py`` and
     from config.defaults import dart_nml, t2m
 
 
-Now you can specify other parameters to the config (or overwrite defaults):
 
-* ``name`` should be a unique experiment name and will be used as folder name
-* ``ensemble_size`` is the ensemble size
-* ``update_vars`` are the WRF variables which shall be updated by the assimilation
-* ``time`` is the time of the assimilation
+Set ensemble size
+^^^^^^^^^^^^^^^^^
 
-**Which parameters are required?** This depends on the code you're running. 
-The advantage of this behavior is that you can add parameters in any function and add it as additional argument to  :class:`dartwrf.utils.Config`.
-
+The ensemble size needs to be set in the DART namelist and for DART-WRF.
+To do that, we overwrite the default values in ``dart_nml``:
 
 .. code-block:: python
 
-    cfg = Config(
-        name='exp1',
-        ensemble_size = 10,
-        dart_nml = dart_nml,
-
-        assimilate_these_observations = [t2m,],
-        assimilate_existing_obsseq = False,
-        nature_wrfout_pattern = '/jetfs/scratch/username/raw_data/nature/*/1/wrfout_d01_%Y-%m-%d_%H_%M_%S',
-        
-        geo_em_nature = '/jetfs/scratch/username/geo_em.d01.nc',
-        geo_em_forecast = '/jetfs/scratch/username/geo_em.d01.nc',
-        
-        time = dt.datetime(2008, 7, 30, 11),
-        update_vars = ['THM', 'PH', 'MU', 'QVAPOR',],
-        **cluster_defaults)
+    ensemble_size = 10
+    dart_nml['&filter_nml'].update(num_output_state_members=ensemble_size,
+                                   ens_size=ensemble_size)
+    settings = cluster_defaults
+    settings.update(ensemble_size=ensemble_size,)
 
 
-Lastly, you can set up and run the workflow:
-
-.. code-block:: python
-
-    w = WorkFlows(cfg)
-    w.prepare_WRFrundir(cfg)
-    id = w.assimilate(cfg, depends_on=id)
-
-
-Observations
-************
+Select observations
+--------------------
 
 * To create observations one by one, follow the instructions in the DART documentation for the ``perfect_model_obs`` program.
 * To use existing obs_seq files, set ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
@@ -77,8 +64,8 @@ them as arguments to the :class:`dartwrf.utils.Config` instance.
 For a description of DART's parameters, see `the official DART documentation <https://docs.dart.ucar.edu/>`_.
 
 
-Example: single observation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Single observation
+^^^^^^^^^^^^^^^^^^^
 
 If you want to assimilate one observation, use 
 
@@ -148,7 +135,44 @@ To assimilate observations assuming a larger error, set the ``error_assimilate``
 
 
 Run the workflow
-*****************
+----------------
 
-Execute the programs by running ``python tutorial_1.py``.
+We create a Config object and fill it with all parameters we want.
+
+* ``name`` should be a unique experiment name and will be used as folder name
+* ``update_vars`` are the WRF variables which shall be updated by the assimilation
+* ``time`` is the time of the assimilation
+* ``dart_nml`` is a dictionary with DART namelist parameters
+
+**Which parameters are required?** This depends on the code you're running. 
+The advantage of this behavior is that you can add parameters in any function and add it as additional argument to  :class:`dartwrf.utils.Config`.
+
+
+In this example, we set up the run_WRF directories with ``w.prepare_WRFrundir(cfg)`` and 
+then assimilate using ``w.assimilate(cfg)``.
+Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
+
+.. code-block:: python
+
+    cfg = Config(
+        name='exp1',
+        dart_nml = dart_nml,
+
+        assimilate_these_observations = [t2m,],
+        assimilate_existing_obsseq = False,
+        nature_wrfout_pattern = '/jetfs/scratch/username/raw_data/nature/*/1/wrfout_d01_%Y-%m-%d_%H_%M_%S',
+        
+        geo_em_nature = '/jetfs/scratch/username/geo_em.d01.nc',
+        geo_em_forecast = '/jetfs/scratch/username/geo_em.d01.nc',
+        
+        time = dt.datetime(2008, 7, 30, 13),
+        update_vars = ['THM', 'PH', 'MU', 'QVAPOR',],
+        **cluster_defaults)
+
+    w = WorkFlows(cfg)
+    w.prepare_WRFrundir(cfg)
+    id = w.assimilate(cfg, depends_on=id)
+
+
+Execute the script with ``python tutorial_1.py``.
 

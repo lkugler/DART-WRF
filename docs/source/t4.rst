@@ -4,8 +4,8 @@ Developer guide
 Overview of functionality
 *************************
 
-Workflow methods are defined in the :class:`dartwrf.workflows.WorkFlows` class (`dartwrf/workflows.py`).
-A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this
+Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
+A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this:
 
 .. code-block:: python
 
