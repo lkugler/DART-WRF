@@ -1,5 +1,5 @@
 Tutorial 2: Forecast after DA
-###############################
+##############################
 
 **Goal**: To run an ensemble of forecasts. 
 `[free_forecast.py] <https://github.com/lkugler/DART-WRF/blob/master/free_forecast.py>`_ contains examples.
@@ -12,7 +12,7 @@ Initialize the forecast with either (1) or (2). Run the forecast with (3)
 
 
 1) Initialize from sounding profiles
-***********************************
+************************************
 
 It is necessary to set the path to the prepared WRF input soundings in `config/cfg.py` like this
 
@@ -68,7 +68,7 @@ Documentation can be found at :func:`dartwrf.workflows.WorkFlows.prepare_IC_from
     w.prepare_WRFrundir(begin)
     w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time)
 
-Now, we are ready :ref:`to start a forecast <1) Run the Forecast>`.
+Now, we are ready :ref:`to start a forecast <3) Run the Forecast>`.
 
 
 2b) Optional: Update posterior with increments from assimilation

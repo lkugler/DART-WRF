@@ -3,7 +3,7 @@ DART-WRF documentation
 
 **DART-WRF** is a python package which allows you to
 
-* run the `weather research and forecast model` (`WRF <https://www2.mmm.ucar.edu/wrf/users/docs/docs_and_pubs.html>`_),
+* run the Weather Research and Forecast model (`WRF <https://www2.mmm.ucar.edu/wrf/users/docs/docs_and_pubs.html>`_),
 * generate (satellite) observations from a nature run,
 * and assimilate these observations in ensemble data assimilation using `DART <https://docs.dart.ucar.edu/en/latest/>`_,
 * on a computing cluster or on your local machine.
@@ -44,7 +44,7 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
 
    1_assimilate
    2_wrf
-   notebooks/3_cycling
+   cycling
    4_customization
 
 
