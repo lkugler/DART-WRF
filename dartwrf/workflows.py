@@ -20,7 +20,7 @@ class WorkFlows(object):
     def __init__(self, cfg: Config):
         """Create the archive directory, copy scripts to archive
 
-        Attributes:
+        Parameters:
             use_slurm: if True, run jobs with SLURM
             dir_log: Logging directory for slurm
             dir_slurm: Scripts directory for slurm

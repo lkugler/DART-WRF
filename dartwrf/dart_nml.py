@@ -92,17 +92,9 @@ def write_namelist_from_dict(d, filepath):
         filepath (str): Path to namelist file
 
     Note:
-        The namelist dictionary should have the following structure:
-        d = {
-            '&section1': {
-                'parameter1': [['arg1', 'arg2'], ['arg3', 'arg4']],
-                'parameter2': [['arg1', 'arg2'], ['arg3', 'arg4']],
-            },
-            '&section2': {
-                'parameter1': [['arg1', 'arg2'], ['arg3', 'arg4']],
-                'parameter2': [['arg1', 'arg2'], ['arg3', 'arg4']],
-            },
-        }
+        The namelist dictionary should have the following structure::
+        
+        >>> d = {'&section1': {'parameter1': [['arg1', 'arg2'], ['arg3', 'arg4']],},}
 
     Returns:
         None (writes to file)

@@ -68,7 +68,7 @@ def main(cfg):
             if plot:
                 pdata = incr2[0,:,:]  # select lowest level
                 pdata = pdata - pdata.min()  
-                c = next(ax._get_lines.prop_cycler)['color']
+                c = next(ax._get_lines.prop_cycler)['color'] # type: ignore
                 ax.contour(pdata, levels=[2.,], linewidths=1, colors=[c], zorder=3)
                 ax.contour(pdata, levels=[1.,], linewidths=0.5, colors=[c], zorder=3)
         

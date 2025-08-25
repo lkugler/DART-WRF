@@ -34,7 +34,7 @@ def import_from_path(module_name, file_path):
 class Config(object):
     """Collection of variables which define the experiment
 
-    Attributes:
+    Parameters:
         expname (str): Name of the experiment
         model_dx (int): WRF grid spacing in meters
         ensemble_size (int): Ensemble size
