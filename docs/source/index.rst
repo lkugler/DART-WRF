@@ -42,10 +42,10 @@ See also `a graphical overview over DART-WRF's directory structure. <https://git
    :maxdepth: 2
    :caption: Tutorials
 
-   1_assimilate
-   2_wrf
-   3_cycling
-   4_customization
+   tutorials/1
+   tutorials/2
+   tutorials/3
+   tutorials/4
 
 
 Other helpful resources
