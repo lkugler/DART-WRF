@@ -18,13 +18,13 @@ The first block of imports never changes.
 Default configuration
 ^^^^^^^^^^^^^^^^^^^^^
 
-A second block of imports loads dictionaries which contain default settings.
-You can customize those by modification of ``config/jet.py`` and ``config/defaults.py``.
+The second block of imports loads dictionaries that contain a default configuration.
+You can customize those by modifying ``config/jet.py`` and ``config/defaults.py``.
 
 .. code-block:: python
 
     from config.jet import cluster_defaults
-    from config.defaults import dart_nml, t2m
+    from config.defaults import dart_nml
 
 
 
@@ -39,8 +39,7 @@ To do that, we overwrite the default values in ``dart_nml``:
     ensemble_size = 10
     dart_nml['&filter_nml'].update(num_output_state_members=ensemble_size,
                                    ens_size=ensemble_size)
-    settings = cluster_defaults
-    settings.update(ensemble_size=ensemble_size,)
+    cluster_defaults.update(ensemble_size=ensemble_size,)
 
 
 Select observations
@@ -60,21 +59,26 @@ For a description of DART's parameters, see `the official DART documentation <ht
 Single observation
 ^^^^^^^^^^^^^^^^^^^
 
-If you want to assimilate one observation, use 
+To define an observation type, we use a dictionary.
+If you want to assimilate radiosonde temperature observations, use 
 
 .. code-block:: python
 
     t = dict(
              kind='RADIOSONDE_TEMPERATURE', 
              obs_locations=[(45., 0.)],  # location of observations
-             error_generate=0.2,    # observation error used to generate observations
-             error_assimilate=0.2,  # observation error used for assimilation
+             error_generate=0.25,    # observation error used to generate observations
+             error_assimilate=0.5,  # observation error used for assimilation
              heights=[1000,],       # for radiosondes, use range(1000, 17001, 2000)
              loc_horiz_km=50,       # horizontal localization half-width
              loc_vert_km=2.5        # vertical localization half-width
             )  
 
     assimilate_these_observations = [t,]  # select observations for assimilation
+
+
+* ``kind`` is the observation type as defined by DART (``DART/observations/forward_operators/obs_def_mod.f90``)
+* ``obs_locations`` takes a list of coordinates for each observation
 
 
 Multiple observations
