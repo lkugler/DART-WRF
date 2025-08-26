@@ -1,21 +1,23 @@
-DART-WRF Output
+Output files
 ###############
 
 **Goal**: Give an overview of the output files and folders created by DART-WRF.
 
-WRF
-^^^
+Forecast files
+^^^^^^^^^^^^^^
 
 Forecast history files are stored per init time in ``/<experiment>/YYMMDD_HHMM/<ens>/wrfout_d0*``, 
 as set in the parameter ``dir_archive`` of :class:`dartwrf.utils.Config`.
 
 
-DART
-^^^^
+Assimilation files
+^^^^^^^^^^^^^^^^^^^
 
 Diagnostics (obs_seq files) are stored in ``/<experiment>/diagnostics/``, as defined in
 the parameters ``pattern_obs_seq_out`` and ``pattern_obs_seq_final`` of :class:`dartwrf.utils.Config`.
+Files are typically named ``%Y-%m-%d_%H:%M_obs_seq.final``.
 
-Analysis files are stored per assimilation time in ``/<experiment>/YYMMDD_HHMM/``, 
+Analysis files are stored per assimilation time in ``/<experiment>/YYMMDD_HHMM/``, e.g.
+``output_mean.nc`` or ``filter_restart_d01.0001`` (one file per ensemble member). 
 Which files are output by DART is set in the DART namelist, settable through the ``dart_nml`` parameter, 
 see `DART docs <https://docs.dart.ucar.edu/en/latest/guide/controlling-files-output.html>`_.

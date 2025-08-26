@@ -1,5 +1,6 @@
 sphinx>=6
 pysolar==0.10.0
 docopt
+yaml
 nbsphinx
 sphinx-rtd-theme==1.2.2
