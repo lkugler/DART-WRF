@@ -2,7 +2,7 @@ Developer guide
 ===============
 
 Overview of functionality
-*************************
+-------------------------
 
 Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
 A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this:
@@ -24,24 +24,23 @@ Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of
 
 
 Recipe to add new functionality
-*******************************
+-------------------------------
 
-Option 1: Add a function in an existing script
-----------------------------------------------
+Modify a workflow method
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Easy. Only change the respective script in ``dartwrf/``.
+Change the respective script in ``dartwrf/``.
 
+Add a new workflow method
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Option 2: Add a new script
---------------------------
+Define the workflow method in ``dartwrf/workflows.py``.
+Therein, call a separate script ``dartwrf/my_new_method.py``.
+Copy and customize existing workflow methods as a template.
+Then you can use any parameters in the ``cfg`` object.
 
-Let's say you need a new script ``verification.py``. Then you need to do the following:
+Add an observation type
+^^^^^^^^^^^^^^^^^^^^^^^
 
-#. Write a workflow method ``WorkFlow.call_verif()`` in ``dartwrf/workflows.py``, e.g. copy and modify an existing one, 
-#. Inside, you call ``verification.py`` with :meth:`dartwrf.utils.ClusterConfig.run_job` (this will submit a SLURM job). Be careful which command-line arguments you need.
-#. Write the script ``verification.py`` and parse the command-line arguments.
-#. Lastly, call the workflow method ``WorkFlow.call_verif()`` from your control-script, e.g. ``cycled_exp.py``.
-
-
-Example: Adding an observation
-------------------------------
+Define the forward operator in DART. 
+Then its descriptor string ('kind') can be used as in tutorial 1.
