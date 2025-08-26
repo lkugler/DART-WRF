@@ -5,8 +5,10 @@ Usage:
     python print_config.py <config_file>
 """
 import sys, pickle, pprint
-f = sys.argv[1]
-with open(f, 'rb') as f:
-    cfg = pickle.load(f)
-    
-pprint.pprint(cfg)
+
+if __name__ == '__main__':
+    f = sys.argv[1]
+    with open(f, 'rb') as f:
+        cfg = pickle.load(f)
+
+    pprint.pprint(cfg)

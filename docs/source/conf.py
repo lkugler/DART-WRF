@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os, sys
-sys.path.insert(0, os.path.abspath('../../dartwrf/'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 
 project = 'DART-WRF'
@@ -29,7 +29,7 @@ extensions = [
     'nbsphinx',
     'sphinx_rtd_theme',
 ]
-autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4','osselyze','osselyze.utils']
+autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4', 'pysolar']
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
