@@ -165,7 +165,7 @@ Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
 
     w = WorkFlows(cfg)
     w.prepare_WRFrundir(cfg)
-    id = w.assimilate(cfg, depends_on=id)
+    w.assimilate(cfg)
 
 
 Execute the script with ``python tutorial_1.py``.

@@ -1,47 +1,21 @@
-Developer guide
-===============
+DART-WRF Output
+###############
 
-Overview of functionality
-*************************
+**Goal**: Give an overview of the output files and folders created by DART-WRF.
 
-Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
-A workflow method is for example :meth:`dartwrf.workflows.WorkFlows.assimilate`, which can be run like this:
+WRF
+^^^
 
-.. code-block:: python
-
-    from dartwrf.workflows import WorkFlows
-
-    prior_path_exp = '/users/students/lehre/advDA_s2023/data/sample_ensemble/'
-    prior_init_time = dt.datetime(2008,7,30,12)
-    prior_valid_time = dt.datetime(2008,7,30,13)
-    assim_time = prior_valid_time
-
-    w = WorkFlows(exp_config='exp_template.py', server_config='srvx1.py')
-
-    id = w.assimilate(assim_time, prior_init_time, prior_valid_time, prior_path_exp)
-
-Calling :meth:`dartwrf.workflows.WorkFlows.assimilate` triggers the execution of the script `dartwrf/assimilate.py`.
+Forecast history files are stored per init time in ``/<experiment>/YYMMDD_HHMM/<ens>/wrfout_d0*``, 
+as set in the parameter ``dir_archive`` of :class:`dartwrf.utils.Config`.
 
 
-Recipe to add new functionality
-*******************************
+DART
+^^^^
 
-Option 1: Add a function in an existing script
-----------------------------------------------
+Diagnostics (obs_seq files) are stored in ``/<experiment>/diagnostics/``, as defined in
+the parameters ``pattern_obs_seq_out`` and ``pattern_obs_seq_final`` of :class:`dartwrf.utils.Config`.
 
-Easy. Only change the respective script in ``dartwrf/``.
-
-
-Option 2: Add a new script
---------------------------
-
-Let's say you need a new script ``verification.py``. Then you need to do the following:
-
-#. Write a workflow method ``WorkFlow.call_verif()`` in ``dartwrf/workflows.py``, e.g. copy and modify an existing one, 
-#. Inside, you call ``verification.py`` with :meth:`dartwrf.utils.ClusterConfig.run_job` (this will submit a SLURM job). Be careful which command-line arguments you need.
-#. Write the script ``verification.py`` and parse the command-line arguments.
-#. Lastly, call the workflow method ``WorkFlow.call_verif()`` from your control-script, e.g. ``cycled_exp.py``.
-
-
-Example: Adding an observation
-------------------------------
+Analysis files are stored per assimilation time in ``/<experiment>/YYMMDD_HHMM/``, 
+Which files are output by DART is set in the DART namelist, settable through the ``dart_nml`` parameter, 
+see `DART docs <https://docs.dart.ucar.edu/en/latest/guide/controlling-files-output.html>`_.
