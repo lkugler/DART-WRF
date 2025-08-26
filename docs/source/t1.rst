@@ -19,11 +19,11 @@ Default configuration
 ^^^^^^^^^^^^^^^^^^^^^
 
 A second block of imports loads dictionaries which contain default settings.
-You can customize those by modification of ``config/jet_1node.py`` and ``config/defaults.py``.
+You can customize those by modification of ``config/jet.py`` and ``config/defaults.py``.
 
 .. code-block:: python
 
-    from config.jet_1node import cluster_defaults
+    from config.jet import cluster_defaults
     from config.defaults import dart_nml, t2m
 
 
