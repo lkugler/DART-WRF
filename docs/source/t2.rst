@@ -3,8 +3,8 @@ Tutorial 2: Run a forecast
 
 There are two options to initialize a forecast.
 
-#. Initialization from defined profiles of temperature, humidity and wind, i.e. from a ``wrf_profile`` (see WRF guide). Only usable for WRF's idealized mode.
-#. Initialization from an previous forecast, i.e. from WRF restart files - optionally with updates from data assimilation.
+* Initialization from sounding profiles, i.e. defined profiles of temperature, humidity and wind, from ``wrf_profile`` files (see WRF guide). Only usable for WRF's idealized mode.
+* Initialization from an previous forecast, i.e. from WRF restart files - optionally with updates from data assimilation.
 
 
 a) Initialization from sounding profiles
@@ -14,7 +14,7 @@ It is necessary to set the path to the prepared WRF input soundings as argument 
 
 .. code-block:: python
 
-    input_profile = '/users/students/lehre/advDA_s2023/data/initial_profiles/raso.fc.<iens>.wrfprof'
+    input_profile = '/jetfs/scratch/wrf_profiles/raso.fc.<iens>.wrfprof'
 
 where `<iens>` is a placeholder, since there is one file for each member, from `raso.fc.001.wrfprof` to `raso.fc.040.wrfprof`.
 
@@ -29,26 +29,21 @@ b) Initialization from a previous forecast
 ------------------------------------------
 
 Let's say you want to run a forecast starting at 9 UTC until 12 UTC.
-We use initial conditions of a previous experiment ``/user/test/data/sim_archive/exp_abc`` which was initialized at 6 UTC and there are WRF restart files for 9 UTC.
+We use initial conditions of a previous experiment ``/user/test/data/sim_archive/exp_abc`` 
+which was initialized at 6 UTC and there are WRF restart files for 9 UTC.
 Documentation can be found at :func:`dartwrf.workflows.WorkFlows.prepare_IC_from_prior`.
 
 .. code-block:: python
 
     import datetime as dt
-    from dartwrf.workflows import WorkFlows
-    w = WorkFlows(exp_config='cfg.py', server_config='srvx1.py')
+    cfg.update(
+        time = dt.datetime(2008, 7, 30, 6),
+        prior_init_time = dt.datetime(2008, 7, 30, 6),
+        prior_valid_time = dt.datetime(2008, 7, 30, 9),
+        prior_path_exp = '/user/test/data/sim_archive/exp_abc/',)
+    w.prepare_IC_from_prior(cfg)
 
-    prior_path_exp = '/user/test/data/sim_archive/exp_abc'
-    prior_init_time = dt.datetime(2008,7,30,6)
-    prior_valid_time = dt.datetime(2008,7,30,9)
-
-    begin = dt.datetime(2008, 7, 30, 9)
-    end = dt.datetime(2008, 7, 30, 12)
-
-    w.prepare_WRFrundir(begin)
-    w.prepare_IC_from_prior(prior_path_exp, prior_init_time, prior_valid_time)
-
-Now, we are ready :ref:`to start a forecast <3) Run the Forecast>`.
+Now, we are ready to run the forecast, or update the initial conditions with increments from assimilation.
 
 
 Optional: Update posterior with increments from assimilation
@@ -59,10 +54,10 @@ To continue a forecast after assimilation you need the posterior = prior (1) + i
 .. code-block:: python
 
     w.prepare_IC_from_prior(cfg)
-    w.update_IC_from_DA(cfg)
+    w.update_IC_from_DA(cfg) 
 
 The second step updates the initial conditions, i.e. the WRFrst files (that were copied to the run_WRF directories), 
-with assimilation increments from DART output.
+with assimilation increments at ``time``.
 Now we can run the forecast ensemble.
 
 
