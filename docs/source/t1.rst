@@ -10,7 +10,6 @@ The first block of imports never changes.
 
 .. code-block:: python
 
-    import datetime as dt
     from dartwrf.workflows import WorkFlows
     from dartwrf.utils import Config
 
@@ -65,7 +64,7 @@ If you want to assimilate one observation, use
 
 .. code-block:: python
 
-    t = dict(plotname='Temperature', 
+    t = dict(
              kind='RADIOSONDE_TEMPERATURE', 
              obs_locations=[(45., 0.)],  # location of observations
              error_generate=0.2,    # observation error used to generate observations
