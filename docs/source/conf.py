@@ -29,7 +29,7 @@ extensions = [
     'nbsphinx',
     'sphinx_rtd_theme',
 ]
-autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4', 'pysolar']
+autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4', 'pysolar', 'yaml']
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
