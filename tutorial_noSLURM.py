@@ -1,6 +1,6 @@
 """Run experiments in one script without SLURM.
 """
-from timer import Timer
+from dartwrf.utils import Timer
 
 with Timer('imports'):
     import datetime as dt
@@ -9,7 +9,7 @@ with Timer('imports'):
     from dartwrf.utils import Config, run_bash_command_in_directory
 
     # import default config for jet
-    from config.jet_1node import cluster_defaults
+    from config.jet import cluster_defaults
     from config.defaults import dart_nml
 
 def runWRF(cfg):

@@ -2,7 +2,8 @@ import datetime as dt
 from dartwrf.workflows import WorkFlows
 from dartwrf.utils import Config
 
-from config.jet_1node import cluster_defaults
+from config.jet import cluster_defaults
+cluster_defaults.update(use_slurm=True)
 from config.defaults import dart_nml, t2m
 
 cfg = Config(name='exp1',

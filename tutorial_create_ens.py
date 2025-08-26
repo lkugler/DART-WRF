@@ -2,19 +2,16 @@ import sys, os
 import datetime as dt
 import pandas as pd
 from dartwrf.workflows import WorkFlows
-from dartwrf.utils import Config, symlink
 
-
-# import default config for jet
+from dartwrf.utils import Config
 from config.jet import cluster_defaults
-#from config.defaults import dart_nml, CF_config
 
 
 ensemble_size = 40
 t0 = dt.datetime(2008, 7, 30, 8)
 id = None
 
-cfg = Config(name='exp_nat250m_noDA_b', 
+cfg = Config(name='ensemble_noDA', 
     model_dx = 2000,
     ensemble_size = ensemble_size,
     #geo_em_forecast = '/jetfs/home/lkugler/data/sim_archive/geo_em.d01.nc.2km_200x200',
@@ -27,14 +24,8 @@ cfg = Config(name='exp_nat250m_noDA_b',
 
 
 w = WorkFlows(cfg)
-#w.prepare_WRFrundir(cfg)
-#id = w.run_ideal(cfg, depends_on=id)
-
-
-# for iens in range(1, cfg.ensemble_size+1):
-#     src = '/jetfs/home/lkugler/data/sim_archive/exp_nat250m_noDA/2008-07-30_08:00/'+str(iens)+'/wrfinput_d01'
-#     dst = '/jetfs/home/lkugler/data/run_WRF/exp_nat250m_noDA_b/'+str(iens)+'/wrfinput_d01'
-#     symlink(src, dst)
+w.prepare_WRFrundir(cfg)
+id = w.run_ideal(cfg, depends_on=id)
 
 inits = [t0]
 inits += list(pd.date_range(start=dt.datetime(2008, 7, 30, 11),
@@ -76,7 +67,3 @@ for i, time in enumerate(inits):
                 hist_interval_s=300,
     )
     id = w.run_WRF(cfg, depends_on=id)
-    
-    #id = w.run_RTTOV(cfg, depends_on=id)
-
-#w.verify(cfg, depends_on=id)
