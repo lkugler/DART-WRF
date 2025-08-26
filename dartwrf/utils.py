@@ -7,7 +7,6 @@ because loading this would lead to a circular import.
 import os
 import sys
 import shutil
-import glob
 import warnings
 import builtins as __builtin__
 import subprocess
@@ -50,26 +49,28 @@ class Config(object):
         update_vars (list of str): Variables which will be updated after assimilation (update_IC.py)
             e.g. ['U', 'V', 'W', 'THM', 'PH', 'MU', 'QVAPOR',]
 
-        observations (list of dict): Dictionaries which define an observation;
-            keys: 
-            `error_generate`: measurement error standard-deviation;
-            `error_assimilate`: assigned observation error std-dev;
-            `heights`: list of integers at which observations are taken;
-            `loc_horiz_km`: float of horizontal localization half-width in km;
+        observations (list of dict): Each dictionary defines one observation type
+            The keys should be (optional):
+            `kind`: Identifier of the observation type as defined in DART; 
+            `error_generate`: measurement error standard-deviation; 
+            `error_assimilate`: assigned observation error std-dev; 
+            `heights`: list of integers at which observations are taken; 
+            `loc_horiz_km`: float of horizontal localization half-width in km; 
             `loc_vert_km`: float of vertical localization half-width in km;
 
         assimilate_existing_obsseq (str, False): Path to existing obs_seq.out file (False: generate new one);
             time string is replaced by actual time: /path/%Y-%m-%d_%H:%M_obs_seq.out
 
-        dart_nml (dict): updates to the default input.nml of DART (in dart_srcdir)
-            keys are namelist section headers (e.g. &filter_nml)
-            values are dictionaries of parameters and values (e.g. dict(ens_size=exp.ensemble_size,))
+        dart_nml (dict): Updates to the default input.nml of DART.
+            Keys are namelist section headers (e.g. &filter_nml).
+            Values are dictionaries of parameters and values (e.g. dict(ens_size=10,))
 
-        # Important directory paths
-        dir_archive: e.g. '/jetfs/home/lkugler/data/sim_archive/<exp>/'
-        dir_wrf_run: e.g. '/jetfs/home/lkugler/data/run_WRF/<exp>/<ens>/'
-        dir_dart_run: e.g. '/jetfs/home/lkugler/data/run_DART/<exp>/'
-
+        dir_archive (str): E.g. '/jetfs/home/lkugler/data/sim_archive/<exp>/'
+        dir_wrf_run (str): E.g. '/jetfs/home/lkugler/data/run_WRF/<exp>/<ens>/'
+        dir_dart_run (str): E.g. '/jetfs/home/lkugler/data/run_DART/<exp>/'
+        
+        geo_em_forecast (str): file path to geo_em containing coordinates of the forecast model
+        geo_em_nature (str): file path to geo_em containing coordinates of the nature simulation
     """
 
     def __init__(self, 

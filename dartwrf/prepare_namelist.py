@@ -9,6 +9,12 @@ from dartwrf.namelist_handler import WRF_namelist
 from dartwrf.utils import Config, copy, try_remove
 
 def run(cfg: Config) -> None:
+    """Prepare WRF namelist files.
+    
+    Note:
+        Important parameters are:
+        restart, restart_interval, hist_interval_s, WRF_start, WRF_end, WRF_namelist_template
+    """
     # defaults
     hist_interval_s = 300
     restart_interval = 9999  # dummy
@@ -56,10 +62,6 @@ def run(cfg: Config) -> None:
         'domains': {
             'dx': str(cfg.model_dx),
         }}
-    
-    if 'c_s' in cfg:
-        replace_dict['dynamics'] = {'c_s': str(cfg.c_s)}
-        
         
     print('prepare namelists from', start, 'to', end, 
           ', restart=', restart, 'restart_interval=', restart_interval)

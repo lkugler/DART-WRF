@@ -178,6 +178,17 @@ class WorkFlows(object):
     
     def run_WRF(self, cfg, depends_on=None):
         """Run the forecast ensemble
+        
+        Note:
+            Set the following parameters in ``cfg``:
+            WRF_start: start time of the WRF simulation;
+            WRF_end: end time of the WRF simulation;
+            hist_interval_s (int): history output frequency in seconds;
+            restart: whether it uses a restart file;
+            restart_interval: interval in minutes to write restart files;
+            
+        Returns:
+            str: job ID of the submitted job
         """
         ###########################################
         start = cfg.WRF_start

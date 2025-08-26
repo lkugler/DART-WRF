@@ -1,8 +1,7 @@
 Tutorial 3: Cycle forecast and assimilation
 ###########################################
 
-**Goal**: To run a cycled data assimilation experiment, as in the ``DART-WRF/cycled.py`` script.
-
+We will run a cycled data assimilation experiment.
 Let's say we want to cycle DA and forecasts from 13z to 14z.
 Then we can do it like this:
 

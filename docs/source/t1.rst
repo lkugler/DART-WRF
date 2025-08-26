@@ -2,7 +2,7 @@ Tutorial 1: Assimilate
 #######################
 
 
-Now, we can set up a workflow in the script ``tutorial_1.py``. 
+Now, we can set up a workflow in the script ``tutorial_assim.py``. 
 In the following, its contents are explained step-by-step.
 
 
@@ -167,5 +167,5 @@ Workflow methods are defined in ``DART-WRF/dartwrf/workflows.py``.
     w.assimilate(cfg)
 
 
-Execute the script with ``python tutorial_1.py``.
+Execute the script with ``python tutorial_assim.py``.
 
