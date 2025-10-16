@@ -45,13 +45,13 @@ All scripts can use the parameters in the config object ``cfg``.
                 prior_valid_time = t,
                 prior_path_exp = cfg.dir_archive,)
 
-        id = w.assimilate(cfg)
+        id = w.assimilate(cfg, depends_on=id)
 
         # 1) Set posterior = prior
-        id = w.prepare_IC_from_prior(cfg)
+        id = w.prepare_IC_from_prior(cfg, depends_on=id)
 
         # 2) Update posterior += updates from assimilation
-        id = w.update_IC_from_DA(cfg)
+        id = w.update_IC_from_DA(cfg, depends_on=id)
         
         cfg.update( WRF_start=t, 
                     WRF_end=t+dt.timedelta(hours=1),  # make 1h forecasts
@@ -60,7 +60,7 @@ All scripts can use the parameters in the config object ``cfg``.
         )
 
         # 3) Run WRF ensemble
-        id = w.run_WRF(cfg)
+        id = w.run_WRF(cfg, depends_on=id)
 
 
 Using SLURM
