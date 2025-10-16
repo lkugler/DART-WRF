@@ -21,16 +21,16 @@ Program Structure
 
 DART-WRF is controlled by a **control script** which defines a high-level workflow. 
 The control script specifies the workflow you want to run in an experiment by calling workflow functions.
-For example, to assimilate observations, then initialize, and run a forecast, the control script calls the workflow functions in this order:
+For example, to assimilate observations, then initialize, and run a forecast, the control script calls the workflow functions in this order.
 
 .. code-block:: python
 
     w = WorkFlows(cfg)
     w.prepare_WRFrundir(cfg)
     id = w.assimilate(cfg)
-    id = w.prepare_IC_from_prior(cfg)
-    id = w.update_IC_from_DA(cfg)
-    id = w.run_WRF(cfg)
+    id = w.prepare_IC_from_prior(cfg, depends_on=id)
+    id = w.update_IC_from_DA(cfg, depends_on=id)
+    w.run_WRF(cfg, depends_on=id)
 
 
 Workflow Functions
