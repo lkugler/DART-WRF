@@ -3,3 +3,4 @@ pysolar==0.10.0
 docopt
 nbsphinx
 sphinx-rtd-theme==1.2.2
+myst-parser
