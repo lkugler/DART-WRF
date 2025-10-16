@@ -127,8 +127,7 @@ To get familiar with DART-WRF's capabilities, please have a look at the **tutori
    :maxdepth: 2
    :caption: Tutorials
 
-   t1
-   test.md
+   t1.md
    t2
    t3
    t4
