@@ -43,7 +43,7 @@ To do that, we overwrite the default values in ``dart_nml``:
 
 
 Select observations
---------------------
+===================
 
 * To create observations one by one, follow the instructions in the DART documentation for the ``perfect_model_obs`` program.
 * To use existing obs_seq files, set ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
@@ -131,8 +131,8 @@ To assimilate observations assuming a larger error, set the ``error_assimilate``
     assimilate_these_observations = [t,]
 
 
-Run the workflow
-----------------
+Assimilate
+==========
 
 We create a Config object and fill it with all parameters we want.
 
