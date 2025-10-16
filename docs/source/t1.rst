@@ -131,19 +131,25 @@ To assimilate observations assuming a larger error, set the ``error_assimilate``
     assimilate_these_observations = [t,]
 
 
-Assimilate
-^^^^^^^^^^
+Config parameters
+=================
 
-We create a Config object and fill it with all parameters we want.
+We create a :class:`dartwrf.utils.Config` object and fill it with all parameters we want.
 
 * ``name`` should be a unique experiment name and will be used as folder name
 * ``update_vars`` are the WRF variables which shall be updated by the assimilation
 * ``time`` is the time of the assimilation
 * ``dart_nml`` is a dictionary with DART namelist parameters
 
-**Which parameters are required?** This depends on the code you're running. 
-The advantage of this behavior is that you can add parameters in any function and add it as additional argument to  :class:`dartwrf.utils.Config`.
 
+**Which parameters are required?** This depends on the code you're running. 
+The advantage of this behavior is that you can easily introduce new parameters.
+You just need to pass them as argument into :class:`dartwrf.utils.Config`.
+Existing configs can be updated by calling ``cfg.update(new_parameter = 'abc')``.
+
+
+Assimilate
+^^^^^^^^^^
 
 In this example, we set up the run_WRF directories with ``w.prepare_WRFrundir(cfg)`` and 
 then assimilate using ``w.assimilate(cfg)``.
