@@ -28,6 +28,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'nbsphinx',
     'sphinx_rtd_theme',
+    'myst_parser'
 ]
 autodoc_mock_imports = ['numpy','scipy','xarray','pandas','netCDF4', 'pysolar', 'yaml']
 
