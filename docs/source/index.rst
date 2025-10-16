@@ -19,9 +19,9 @@ No install required, just download it from the University of Vienna (`gitlab.pha
 Program Structure
 -----------------
 
-DART-WRF is controlled by a **control script** which defines a high-level workflow. The control script specifies the workflow you want to run in an experiment by calling **workflow functions**.
-
-For example, to assimilate observations, then initialize, and run a forecast, you call the respective workflow functions in this order:
+DART-WRF is controlled by a **control script** which defines a high-level workflow. 
+The control script specifies the workflow you want to run in an experiment by calling workflow functions.
+For example, to assimilate observations, then initialize, and run a forecast, the control script calls the workflow functions in this order:
 
 .. code-block:: python
 
