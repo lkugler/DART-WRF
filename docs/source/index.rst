@@ -12,9 +12,8 @@ DART-WRF documentation
 Installation
 ------------
 
-No install required, just download it from the University of Vienna (`gitlab.phaidra.org <PHAIDRA_URL>`_) or Github (`github.com/lkugler/DART-WRF <GITHUB_URL>`_).
+No install required, just download it from the University of Vienna (`gitlab.phaidra.org <https://gitlab.phaidra.org/dataassimilation/DART-WRF/>`_) or Github (`github.com/lkugler/DART-WRF <https://github.com/lkugler/DART-WRF>`_).
 
-Documentation and tutorials are available at `readthedocs.io <READTHEDOCS_URL>`_.
 
 
 Program Structure
@@ -112,16 +111,6 @@ To get familiar with DART-WRF's capabilities, please have a look at the **tutori
 * **Tutorial 3** shows you how to run a WRF forecast with an analysis. 
 * **Tutorial 4** combines all steps into a single script.
 
-..
-   Explicit Target Definitions (for uniformity)
-   This section is hidden from the main rendered text.
-..
-
-.. _WRF_URL: https://www2.mmm.ucar.edu/wrf/users/docs/docs_and_pubs.html
-.. _DART_URL: https://docs.dart.ucar.edu/en/latest/
-.. _PHAIDRA_URL: https://gitlab.phaidra.org/dataassimilation/DART-WRF/
-.. _GITHUB_URL: https://github.com/lkugler/DART-WRF
-.. _READTHEDOCS_URL: https://dart-wrf.readthedocs.io/en/latest/
 
 .. toctree::
    :hidden:
