@@ -8,6 +8,11 @@ DART-WRF documentation
 * and assimilate these observations in ensemble data assimilation using `DART <https://docs.dart.ucar.edu/en/latest/>`_,
 * on a computing cluster or on your local machine.
 
+DART-WRF was started a python version of the original DART-WRF tutorial written in `csh`. 
+It is simpler to use than comparable tools, such as the autosubmit package of Barcelona Supercomputing Center, and ECMWF's ecFlow.
+
+Current limitations: 'real'-mode WRF, nested domains are not supported.
+
 
 Installation
 ------------
