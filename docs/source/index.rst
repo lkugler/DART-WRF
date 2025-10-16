@@ -128,6 +128,7 @@ To get familiar with DART-WRF's capabilities, please have a look at the **tutori
    :caption: Tutorials
 
    t1
+   test.md
    t2
    t3
    t4
