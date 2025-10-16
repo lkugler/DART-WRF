@@ -16,7 +16,7 @@ The first block of imports never changes.
 
 
 Default configuration
-^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The second block of imports loads dictionaries that contain a default configuration.
 You can customize those by modifying ``config/jet.py`` and ``config/defaults.py``.
@@ -29,7 +29,7 @@ You can customize those by modifying ``config/jet.py`` and ``config/defaults.py`
 
 
 Set ensemble size
-^^^^^^^^^^^^^^^^^
+------------------
 
 The ensemble size needs to be set in the DART namelist and for DART-WRF.
 To do that, we overwrite the default values in ``dart_nml``:
@@ -43,7 +43,7 @@ To do that, we overwrite the default values in ``dart_nml``:
 
 
 Select observations
-===================
+^^^^^^^^^^^^^^^^^^^
 
 * To create observations one by one, follow the instructions in the DART documentation for the ``perfect_model_obs`` program.
 * To use existing obs_seq files, set ``assimilate_existing_obsseq = '/jetfs/scratch/username/obs/%Y-%m-%d_%H:%M_obs_seq.out'`` where time-placeholders (``%Y-%m-%d_%H:%M``) are filled in later, depending on the assimilation time.
@@ -57,7 +57,7 @@ For a description of DART's parameters, see `the official DART documentation <ht
 
 
 Single observation
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 To define an observation type, we use a dictionary.
 If you want to assimilate radiosonde temperature observations, use 
@@ -82,7 +82,7 @@ If you want to assimilate radiosonde temperature observations, use
 
 
 Multiple observations
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 To generate a grid of observations with homogeneous observation density, 
 set ``km_between_obs``and ``skip_border_km``.
@@ -110,7 +110,7 @@ For vertical observations, set the ``heights`` parameter to specify the vertical
 
 
 Modify localization radius
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
 
 To modify the localization radius for an observation, set the ``loc_horiz_km`` and ``loc_vert_km`` parameters in the observation dictionary:
 
@@ -121,7 +121,7 @@ To modify the localization radius for an observation, set the ``loc_horiz_km`` a
 
 
 Modify observation error
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 To assimilate observations assuming a larger error, set the ``error_assimilate`` parameter in the observation dictionary, e.g.:
 
@@ -132,7 +132,7 @@ To assimilate observations assuming a larger error, set the ``error_assimilate``
 
 
 Assimilate
-==========
+^^^^^^^^^^
 
 We create a Config object and fill it with all parameters we want.
 
