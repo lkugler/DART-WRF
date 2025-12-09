@@ -32,15 +32,10 @@ class WorkFlows(object):
         
         ############### ARCHIVE SCRIPTS AND CONFIGS
         # Copy scripts and config files to `self.archivedir` folder
-        dirs_exist_ok = False
-        if os.path.exists(cfg.dir_archive+'/DART-WRF/'):
-            if input('The experiment name already exists! Overwrite existing scripts? (Y/n) ') in ['Y', 'y']:
-                dirs_exist_ok = True
-
         shutil.copytree(cfg.dir_dartwrf_dev,
                         cfg.dir_archive+'/DART-WRF/',
                         ignore=shutil.ignore_patterns('*.git','config/','__*','tests/'),
-                        dirs_exist_ok=dirs_exist_ok)
+                        dirs_exist_ok=True)
         
         
         ################# INFORM USER
@@ -49,14 +44,9 @@ class WorkFlows(object):
         print('>>> DART will run in         "'+cfg.dir_dart_run+'"')
         print('>>> WRF will run in          "'+cfg.dir_wrf_run+'"')
         
-        # do we run slurm?
-        self.use_slurm = cfg.use_slurm
         self.dir_log = cfg.dir_log
-        self.dir_slurm = cfg.dir_slurm
-        
-        if self.use_slurm:
-            print(" ")
-            print('>>> Using SLURM, see logs in "'+self.dir_log+'"')
+        self.jobscripts = cfg.dir_archive + '/jobscripts/'
+
         print('------------------------------------------------------')
         
         # use this python path
@@ -71,33 +61,45 @@ class WorkFlows(object):
         if using SLURM: uses slurmpy to submit jobs, keep certain default kwargs and only update some with kwarg `overwrite_these_configurations`
 
         Args:
-            cmd (str): Bash command(s) to run
-            jobname (str, optional): Name of SLURM job
+            cmd (str): Bash command(s) to run, as multiline string.
+            jobname (str, optional): Name of job
             cfg_update (dict): The config keywords will be overwritten with values
+                e.g. {dependency='after:12454'}
             depends_on (int or None): SLURM job id of dependency, job will start after this id finished.
 
         Returns 
             None
         """
-        if self.use_slurm:
-            from slurmpy import Slurm
-            # name of calling function
-            path_to_script = inspect.stack()[1].function
+        def define_jobname_for_queue(cfg):
+            path_to_script = inspect.stack()[2].function
             if 'time' in cfg:
-                jobname = path_to_script.split('/')[-1]+'-'+cfg.time.strftime('%H:%M')
+                jobname = path_to_script.split('/')[-1]+'-'+cfg.time.strftime('%H%M')
             else:
                 jobname = path_to_script.split('/')[-1]+'-'+cfg.name
-            print('> SLURM job:', jobname)
+            print('> jobname:', jobname)
+            return jobname
+        
+        if cfg.scheduler:
+            #from myqueue.workflow import run as submit_to_queue
+            from clusterjob import Job
             
-            slurm_kwargs = cfg.slurm_kwargs.copy()
+            jobname = define_jobname_for_queue(cfg)
+            queue_kwargs = getattr(cfg, 'scheduler_kwargs', {}).copy()
+            
+            # update defaults with kwargs
             for key, value in kwargs.items():
-                slurm_kwargs[key] = value
-                
-            return Slurm(jobname,
-                        slurm_kwargs=slurm_kwargs,
-                        log_dir=self.dir_log, 
-                        scripts_dir=self.dir_slurm,
-                        ).run(cmd, depends_on=depends_on)
+                queue_kwargs[key] = value
+            print(queue_kwargs)
+            
+            script = Job(cmd, jobname, 
+                         backend=cfg.scheduler,
+                         stdout=self.dir_log+'/'+jobname+'.out', 
+                         stderr=self.dir_log+'/'+jobname+'.err', 
+                         **queue_kwargs)
+            script.write(self.jobscripts+'/'+jobname+'.sh')
+            res = script.submit()
+            return res.job_id
+
         else:
             print(cmd)
             returncode = os.system(cmd)
@@ -320,3 +322,11 @@ class WorkFlows(object):
         #                                                                        "time": "15", "mail-type": "FAIL"},
         #                           depends_on=[id])
         return id
+    
+    def test_pbs(self, cfg: Config, depends_on=None):
+
+        cmd = self.python+' '+self.dir_dartwrf_run+'/import.py '+cfg.f_cfg_current
+        self.run_job(cmd, cfg, depends_on=[depends_on])
+        
+        
+        

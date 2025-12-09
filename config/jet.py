@@ -3,7 +3,6 @@
 cluster_defaults = dict(
     max_nproc = 20,
     max_nproc_for_each_ensemble_member = 9,
-    use_slurm = False,
 
     # binaries
     python = '/jetfs/home/lkugler/miniforge3/envs/verif/bin/python',

@@ -85,6 +85,7 @@ class Config(object):
                  dir_wrf_run: str = './run_WRF/<exp>/<ens>/',
                  dir_dart_run: str = './run_DART/<exp>/',
                  use_slurm: bool = False,
+                 use_pbs: bool = False,
                  pattern_obs_seq_out: str = './diagnostics/%Y-%m-%d_%H:%M_obs_seq.out',
                  pattern_obs_seq_final: str = './diagnostics/%Y-%m-%d_%H:%M_obs_seq.final',
                  
@@ -118,7 +119,9 @@ class Config(object):
         self.wrf_modules = ''
         self.size_jobarray = '1'
         self.use_slurm = use_slurm
-        self.slurm_cfg = {}
+        self.use_pbs = use_pbs
+        self.slurm_kwargs = {}
+        self.pbs_kwargs = {}
         self.python = 'python'
         self.pattern_obs_seq_out = pattern_obs_seq_out.replace('<archivedir>', self.dir_archive)
         self.pattern_obs_seq_final = pattern_obs_seq_final.replace('<archivedir>', self.dir_archive)

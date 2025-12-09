@@ -21,7 +21,7 @@ def read_requirements(fname):
 
 setuptools.setup(
     name="dartwrf",
-    version="2025.8",
+    version="2025.10",
     author="Lukas Kugler",
     author_email="lukas.kugler@univie.ac.at",
     description="Observing system simulation experiments with WRF and DART",
@@ -37,6 +37,5 @@ setuptools.setup(
     python_requires=">=3.8.3",
     install_requires=["xarray", 
                       "netCDF4",
-                      "slurmpy",
                       "pysolar>=0.10"],
 )
